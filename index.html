@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Talk → Fairytale</title>
+  <style>
+    body { font-family: sans-serif; background: #f7f7fb; margin: 0; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    button { padding: 10px 16px; margin: 5px; border: none; border-radius: 6px; cursor: pointer; }
+    button:disabled { opacity: 0.6; }
+    .primary { background: #111; color: #fff; }
+    .secondary { background: #e6e6ea; color: #111; }
+    textarea { width: 100%; min-height: 120px; margin-top: 10px; padding: 10px; }
+    #storyCard { margin-top: 20px; padding: 16px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <h1>Talk → Fairytale Generator</h1>
+  <p>Click <b>Start listening</b>, chat with your child about the story ideas, then click <b>Stop listening</b>. After that, click <b>✨ Generate Story</b>.</p>
+
+  <div>
+    <button id="startBtn" class="primary">🎙️ Start listening</button>
+    <button id="stopBtn" class="secondary" style="display:none;">⏹️ Stop listening</button>
+  </div>
+
+  <h3>Transcript</h3>
+  <textarea id="output" readonly placeholder="Transcript will appear here…"></textarea>
+
+  <div>
+    <button id="copyBtn" class="secondary">Copy</button>
+    <button id="downloadBtn" class="secondary">Download</button>
+  </div>
+
+  <div style="margin-top:15px;">
+    <button id="genBtn">✨ Generate Story</button>
+    <span id="genStatus"></span>
+  </div>
+
+  <div id="storyCard" style="display:none;">
+    <h2>Your Fairytale</h2>
+    <div id="story" style="white-space:pre-wrap;"></div>
+  </div>
+
+  <script>
+    // --- Speech-to-text setup ---
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const output = document.getElementById('output');
+    const copyBtn = document.getElementById('copyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let recognition, listening = false, finalTranscript = "";
+
+    if (SR) {
+      recognition = new SR();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-GB";
+
+      recognition.onresult = (event) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const res = event.results[i];
+          if (res.isFinal) finalTranscript += res[0].transcript + " ";
+          else interim += res[0].transcript;
+        }
+        output.value = finalTranscript + interim;
+      };
+
+      recognition.onend = () => {
+        if (listening) recognition.start();
+      };
+
+      startBtn.addEventListener("click", () => {
+        finalTranscript = "";
+        output.value = "";
+        recognition.start();
+        listening = true;
+        startBtn.style.display = "none";
+        stopBtn.style.display = "inline-block";
+      });
+
+      stopBtn.addEventListener("click", () => {
+        recognition.stop();
+        listening = false;
+        startBtn.style.display = "inline-block";
+        stopBtn.style.display = "none";
+      });
+    } else {
+      alert("Speech recognition not supported in this browser.");
+    }
+
+    // Copy + download buttons
+    copyBtn.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(output.value);
+      alert("Copied!");
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      const blob = new Blob([output.value], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "transcript.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // --- Generate Story ---
+    const genBtn = document.getElementById("genBtn");
+    const genStatus = document.getElementById("genStatus");
+    const storyCard = document.getElementById("storyCard");
+    const storyEl = document.getElementById("story");
+
+    const API_URL = "https://fairytale-api.vercel.app/api/generate-story"; // <-- replace with your Vercel endpoint
+
+    genBtn.addEventListener("click", async () => {
+      const transcript = output.value.trim();
+      if (!transcript) {
+        alert("Please stop listening first to capture a transcript.");
+        return;
+      }
+
+      genStatus.textContent = "Generating story...";
+      storyCard.style.display = "none";
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transcript })
+        });
+        const data = await res.json();
+        storyEl.textContent = data.story || "No story returned.";
+        storyCard.style.display = "block";
+        genStatus.textContent = "Done ✓";
+      } catch (err) {
+        console.error(err);
+        genStatus.textContent = "Error creating story.";
+      }
+    });
+  </script>
+</body>
+</html>
