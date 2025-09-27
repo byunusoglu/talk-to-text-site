@@ -3,232 +3,143 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Talk → Text (Live Transcription)</title>
+  <title>Talk → Fairytale</title>
   <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body { margin: 0; background: #f7f7fb; color: #111; }
-    .wrap { max-width: 760px; margin: 0 auto; padding: 24px; }
-    header { margin-bottom: 18px; }
-    h1 { font-size: 1.5rem; margin: 0 0 6px; }
-    .note { font-size: 0.95rem; color: #555; }
-    .card { background: #fff; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); padding: 16px; margin: 16px 0; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    button {
-      border: 0; padding: 12px 16px; border-radius: 10px; font-size: 1rem; cursor: pointer;
-      background: #111; color: #fff;
-    }
-    button.secondary { background: #e6e6ea; color: #111; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .status { display: inline-flex; align-items: center; gap: 8px; font-size: 0.95rem; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: #bbb; display: inline-block; }
-    .dot.live { background: #e11; box-shadow: 0 0 0 6px rgba(238,17,17,0.12); animation: pulse 1.2s infinite; }
-    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
-    #interim { color: #666; font-style: italic; }
-    textarea {
-      width: 100%; min-height: 220px; border: 1px solid #ddd; border-radius: 10px; padding: 12px;
-      font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      background: #fafafa;
-    }
-    .subtle { color: #666; font-size: 0.9rem; }
-    label { font-size: 0.95rem; color: #333; }
-    select { padding: 8px; border-radius: 8px; border: 1px solid #ddd; background: #fff; }
-    .hidden { display: none !important; }
+    body { font-family: sans-serif; background: #f7f7fb; margin: 0; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    button { padding: 10px 16px; margin: 5px; border: none; border-radius: 6px; cursor: pointer; }
+    button:disabled { opacity: 0.6; }
+    .primary { background: #111; color: #fff; }
+    .secondary { background: #e6e6ea; color: #111; }
+    textarea { width: 100%; min-height: 120px; margin-top: 10px; padding: 10px; }
+    #storyCard { margin-top: 20px; padding: 16px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Talk → Text</h1>
-      <p class="note">Click <strong>Start listening</strong>, speak naturally, then click <strong>Stop listening</strong> to see the full transcription.</p>
-    </header>
+  <h1>Talk → Fairytale Generator</h1>
+  <p>Click <b>Start listening</b>, chat with your child about the story ideas, then click <b>Stop listening</b>. After that, click <b>✨ Generate Story</b>.</p>
 
-    <div class="card">
-      <div class="row" style="justify-content: space-between;">
-        <div class="row">
-          <button id="startBtn">🎙️ Start listening</button>
-          <button id="stopBtn" class="secondary hidden">⏹️ Stop listening</button>
-        </div>
-        <div class="row">
-          <label for="language">Language:</label>
-          <select id="language" title="Recognition language">
-            <option value="en-GB" selected>English (UK)</option>
-            <option value="en-US">English (US)</option>
-            <option value="tr-TR">Türkçe</option>
-            <option value="es-ES">Español (España)</option>
-            <option value="de-DE">Deutsch</option>
-            <option value="fr-FR">Français</option>
-            <option value="it-IT">Italiano</option>
-          </select>
-        </div>
-      </div>
-      <div style="margin-top: 10px;" class="status">
-        <span id="statusDot" class="dot"></span>
-        <span id="statusText">Idle</span>
-      </div>
-      <div id="unsupported" class="card hidden" style="background:#fff6f6; border:1px solid #ffd9d9;">
-        <strong>Speech recognition not supported in this browser.</strong>
-        <div class="subtle">Try Google Chrome or Microsoft Edge on desktop. On iPhone/iPad, Safari support is limited.</div>
-      </div>
-    </div>
+  <div>
+    <button id="startBtn" class="primary">🎙️ Start listening</button>
+    <button id="stopBtn" class="secondary" style="display:none;">⏹️ Stop listening</button>
+  </div>
 
-    <div class="card">
-      <strong>Live transcript (while listening):</strong>
-      <p id="live"><span id="final"></span><span id="interim"></span></p>
-    </div>
+  <h3>Transcript</h3>
+  <textarea id="output" readonly placeholder="Transcript will appear here…"></textarea>
 
-    <div class="card">
-      <strong>Conversation transcription (after you stop):</strong>
-      <textarea id="output" placeholder="Your transcription will appear here after you click Stop listening…" readonly></textarea>
-      <div class="row" style="margin-top:10px;">
-        <button id="copyBtn" class="secondary">Copy to clipboard</button>
-        <button id="downloadBtn" class="secondary">Download .txt</button>
-        <span id="copied" class="subtle hidden">Copied ✅</span>
-      </div>
-    </div>
+  <div>
+    <button id="copyBtn" class="secondary">Copy</button>
+    <button id="downloadBtn" class="secondary">Download</button>
+  </div>
 
-    <p class="subtle">Tip: keep this tab in the foreground for best results. Recognition restarts automatically if it pauses on silence.</p>
+  <div style="margin-top:15px;">
+    <button id="genBtn">✨ Generate Story</button>
+    <span id="genStatus"></span>
+  </div>
+
+  <div id="storyCard" style="display:none;">
+    <h2>Your Fairytale</h2>
+    <div id="story" style="white-space:pre-wrap;"></div>
   </div>
 
   <script>
-    // 1) Feature detection
+    // --- Speech-to-text setup ---
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const startBtn = document.getElementById('startBtn');
-    const stopBtn  = document.getElementById('stopBtn');
-    const statusDot = document.getElementById('statusDot');
-    const statusText = document.getElementById('statusText');
-    const langSelect = document.getElementById('language');
-    const finalEl = document.getElementById('final');
-    const interimEl = document.getElementById('interim');
+    const stopBtn = document.getElementById('stopBtn');
     const output = document.getElementById('output');
     const copyBtn = document.getElementById('copyBtn');
     const downloadBtn = document.getElementById('downloadBtn');
-    const copied = document.getElementById('copied');
-    const unsupported = document.getElementById('unsupported');
 
-    let recognition = null;
-    let listening = false;
-    let finalTranscript = '';
+    let recognition, listening = false, finalTranscript = "";
 
-    function setStatus(isLive, text) {
-      statusDot.classList.toggle('live', !!isLive);
-      statusText.textContent = text;
-    }
-    function show(el) { el.classList.remove('hidden'); }
-    function hide(el) { el.classList.add('hidden'); }
-
-    if (!SR) {
-      // Browser not supported
-      setStatus(false, 'Not supported');
-      hide(startBtn);
-      hide(stopBtn);
-      show(unsupported);
-    } else {
+    if (SR) {
       recognition = new SR();
-      recognition.continuous = true;       // keep going until we stop it
-      recognition.interimResults = true;   // partial results while speaking
-      recognition.lang = langSelect.value; // default language
-
-      langSelect.addEventListener('change', () => {
-        recognition.lang = langSelect.value;
-        // If currently listening, restart with the new language
-        if (listening) {
-          recognition.stop();
-          setTimeout(() => recognition.start(), 150);
-        }
-      });
-
-      recognition.onstart = () => {
-        setStatus(true, 'Listening…');
-      };
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-GB";
 
       recognition.onresult = (event) => {
-        let interimText = '';
+        let interim = "";
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const res = event.results[i];
-          const text = res[0].transcript;
-          if (res.isFinal) {
-            finalTranscript += text + ' ';
-          } else {
-            interimText += text;
-          }
+          if (res.isFinal) finalTranscript += res[0].transcript + " ";
+          else interim += res[0].transcript;
         }
-        finalEl.textContent = finalTranscript;
-        interimEl.textContent = interimText;
+        output.value = finalTranscript + interim;
       };
 
-      // Chrome sometimes ends on long pauses; restart automatically if still "listening"
       recognition.onend = () => {
-        setStatus(false, listening ? 'Restarting…' : 'Idle');
-        if (listening) {
-          try { recognition.start(); } catch (e) { /* ignore rapid restarts */ }
-        }
+        if (listening) recognition.start();
       };
 
-      recognition.onerror = (event) => {
-        console.warn('Speech recognition error:', event.error);
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-          setStatus(false, 'Microphone permission blocked');
-        } else if (event.error === 'no-speech') {
-          setStatus(false, 'No speech detected');
-        } else {
-          setStatus(false, 'Error: ' + event.error);
-        }
-      };
-
-      startBtn.addEventListener('click', async () => {
-        // Reset state for a new session
-        finalTranscript = '';
-        finalEl.textContent = '';
-        interimEl.textContent = '';
-        output.value = '';
-
+      startBtn.addEventListener("click", () => {
+        finalTranscript = "";
+        output.value = "";
+        recognition.start();
         listening = true;
-        startBtn.disabled = true;
-        show(stopBtn);
-
-        try {
-          recognition.start(); // triggers browser mic permission prompt if needed
-        } catch (e) {
-          // Starting twice throws; ignore
-        }
+        startBtn.style.display = "none";
+        stopBtn.style.display = "inline-block";
       });
 
-      stopBtn.addEventListener('click', () => {
+      stopBtn.addEventListener("click", () => {
+        recognition.stop();
         listening = false;
-        startBtn.disabled = false;
-        hide(stopBtn);
-        setStatus(false, 'Stopping…');
-        try { recognition.stop(); } catch (e) {}
-
-        // Show final transcript in the big box
-        setTimeout(() => {
-          output.value = (finalTranscript || '').trim();
-          setStatus(false, 'Idle');
-        }, 120);
+        startBtn.style.display = "inline-block";
+        stopBtn.style.display = "none";
       });
+    } else {
+      alert("Speech recognition not supported in this browser.");
     }
 
-    // Utilities: Copy and Download
-    copyBtn.addEventListener('click', async () => {
-      if (!output.value) return;
-      try {
-        await navigator.clipboard.writeText(output.value);
-        copied.classList.remove('hidden');
-        setTimeout(() => copied.classList.add('hidden'), 1200);
-      } catch (e) { alert('Copy failed'); }
+    // Copy + download buttons
+    copyBtn.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(output.value);
+      alert("Copied!");
     });
 
-    downloadBtn.addEventListener('click', () => {
-      const blob = new Blob([output.value || ''], { type: 'text/plain' });
+    downloadBtn.addEventListener("click", () => {
+      const blob = new Blob([output.value], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      const date = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-      a.download = `transcript-${date}.txt`;
-      document.body.appendChild(a);
+      a.download = "transcript.txt";
       a.click();
       URL.revokeObjectURL(url);
-      a.remove();
+    });
+
+    // --- Generate Story ---
+    const genBtn = document.getElementById("genBtn");
+    const genStatus = document.getElementById("genStatus");
+    const storyCard = document.getElementById("storyCard");
+    const storyEl = document.getElementById("story");
+
+    const API_URL = "https://fairytale-api-git-main-batuhan-yunusoglus-projects.vercel.app/api/generate-story"; // <-- replace with your Vercel endpoint
+
+    genBtn.addEventListener("click", async () => {
+      const transcript = output.value.trim();
+      if (!transcript) {
+        alert("Please stop listening first to capture a transcript.");
+        return;
+      }
+
+      genStatus.textContent = "Generating story...";
+      storyCard.style.display = "none";
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transcript })
+        });
+        const data = await res.json();
+        storyEl.textContent = data.story || "No story returned.";
+        storyCard.style.display = "block";
+        genStatus.textContent = "Done ✓";
+      } catch (err) {
+        console.error(err);
+        genStatus.textContent = "Error creating story.";
+      }
     });
   </script>
 </body>
