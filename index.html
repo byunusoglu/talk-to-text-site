@@ -119,7 +119,6 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           Theme
         </button>
-        <!-- ✅ API status pill -->
         <span id="apiStatus" class="btn ghost" style="pointer-events:none">⏳ Checking API…</span>
       </div>
     </header>
@@ -196,10 +195,14 @@
   </div>
 
   <script>
-    // ✅ Backend base URL (update here if you redeploy)
-    const BASE_API = 'https://fairytale-api.vercel.app/api/generate-story';
+    // ✅ Backend origin only
+    const BASE_API = 'https://fairytale-api.vercel.app';
+    // Helper to join safely
+    function joinURL(base, path) {
+      return `${base.replace(/\/+$/,'')}/${path.replace(/^\/+/, '')}`;
+    }
+    const STORY_ENDPOINT = joinURL(BASE_API, '/api/generate-story');
 
-    // ------------------ State ------------------
     const state = {
       tone: 'gentle',
       lang: 'EN',
@@ -211,7 +214,6 @@
       abortCtrl: null,
     };
 
-    // ------------------ Elements ------------------
     const conversationEl = document.getElementById('conversation');
     const customToneEl = document.getElementById('customTone');
     const pageEl = document.getElementById('page');
@@ -231,249 +233,41 @@
     const toggleTheme = document.getElementById('toggleTheme');
     const apiStatusEl = document.getElementById('apiStatus');
 
-    // ------------------ Tone buttons ------------------
-    document.querySelectorAll('[data-tone]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        state.tone = btn.dataset.tone;
-        document.querySelectorAll('[data-tone]').forEach(b=>b.classList.remove('primary'));
-        btn.classList.add('primary');
-      });
-    });
-
-    // ------------------ Microphone (simple, optional) ------------------
-    function setupSpeech(){
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if(!SpeechRecognition){
-        micBtn.disabled = true;
-        micBtn.textContent = '🎤 Not available';
-        return;
-      }
-      const rec = new SpeechRecognition();
-      rec.lang = state.lang === 'EN' ? 'en-US' : 'tr-TR';
-      rec.interimResults = true;
-      rec.continuous = true;
-      rec.onresult = (e)=>{
-        let interim = '';
-        for(let i=e.resultIndex;i<e.results.length;i++){
-          const transcript = e.results[i][0].transcript;
-          if(e.results[i].isFinal){
-            conversationEl.value += (conversationEl.value ? ' ' : '') + transcript.trim();
-          }else{
-            interim += transcript;
-          }
-        }
-        listenStateEl.textContent = interim ? 'Listening…' : 'Listening';
-      };
-      rec.onend = ()=> {
-        if(state.isListening){ rec.start(); } // keep alive
-      };
-      state.recognition = rec;
-    }
-    setupSpeech();
-
-    micBtn.addEventListener('click',()=>{
-      if(!state.recognition) return;
-      state.isListening = !state.isListening;
-      micBtn.setAttribute('aria-pressed', String(state.isListening));
-      if(state.isListening){
-        state.recognition.lang = state.lang === 'EN' ? 'en-US' : 'tr-TR';
-        state.recognition.start();
-        listenStateEl.textContent = 'Listening';
-        micBtn.textContent = '⏹️ Stop Listening';
-      }else{
-        state.recognition.stop();
-        listenStateEl.textContent = 'Idle';
-        micBtn.textContent = '🎤 Start Listening';
-      }
-    });
-
-    // ------------------ Utilities ------------------
-    function showSkeleton(show=true){
-      skeletonEl.hidden = !show;
-      storyTextEl.style.opacity = show ? .4 : 1;
-    }
-    function setPagePill(){
-      pagePillEl.textContent = `Page ${state.pageIndex}`;
-    }
-    function typewriter(node, text, speed=12){
-      node.innerHTML = '';
-      let i = 0;
-      const id = setInterval(()=>{
-        node.innerHTML += text[i++];
-        if(i >= text.length) clearInterval(id);
-      }, speed);
-    }
-    function compilePrompt(){
-      const notes = conversationEl.value.trim();
-      const baseTone = state.tone === 'custom' && customToneEl.value.trim() ? customToneEl.value.trim() : state.tone;
-      const lang = state.lang === 'EN' ? 'English' : 'Turkish';
-      const guidance = "Audience: 3–5 years old. Keep sentences short. Calm pacing. Avoid scary tension. 120–160 words per page. End each page with a soft micro-cliffhanger.";
-      return `${guidance}\nLanguage: ${lang}\nTone: ${baseTone}\nParent–child notes:\n${notes}\nCurrent pages so far (for continuity):\n${state.pages.map((p,i)=>`[Page ${i+1}] ${p}`).join('\n')}`;
-    }
-    function updateStoryUI(text){
-      const safe = text.replace(/\n{3,}/g, '\n\n').trim();
-      typewriter(storyTextEl, safe); // smooth typing
-      storyTextEl.setAttribute('data-raw', safe);
-      setPagePill();
-    }
-
-    // ---------- Helpers for API status + timeout ----------
+    // Helpers
     function setApiStatus(text, ok=null){
       if(!apiStatusEl) return;
       apiStatusEl.textContent = text;
       apiStatusEl.style.borderColor = ok === null ? 'var(--border)' : (ok ? 'var(--accent)' : 'var(--danger)');
-      apiStatusEl.style.color = ok === null ? 'inherit' : (ok ? 'inherit' : 'inherit');
     }
-
     async function fetchWithTimeout(url, options={}, ms=20000){
       const ctrl = new AbortController();
       const id = setTimeout(()=>ctrl.abort(), ms);
       try{
         return await fetch(url, { ...options, signal: ctrl.signal, mode: 'cors', credentials: 'omit', cache: 'no-store' });
-      } finally {
-        clearTimeout(id);
-      }
+      } finally { clearTimeout(id); }
     }
-
     async function checkApi(){
       try{
-        // If you add a dedicated /api/health, point to that; OPTIONS works as a cheap CORS/preflight check.
-        const res = await fetchWithTimeout(`${BASE_API}/api/generate-story`, { method: 'OPTIONS' }, 6000);
-        if (res.ok || res.status === 204) setApiStatus('✅ API ready', true);
+        const res = await fetchWithTimeout(STORY_ENDPOINT, { method: 'OPTIONS' }, 6000);
+        if(res.ok || res.status===204) setApiStatus('✅ API ready', true);
         else setApiStatus(`⚠️ API ${res.status}`, false);
-      } catch(e){
-        setApiStatus('❌ API unreachable', false);
-      }
+      } catch(e){ setApiStatus('❌ API unreachable', false); }
     }
     checkApi();
 
-    // ------------------ API calls ------------------
+    function showSkeleton(show=true){ skeletonEl.hidden=!show; storyTextEl.style.opacity= show? .4:1; }
+    function setPagePill(){ pagePillEl.textContent = `Page ${state.pageIndex}`; }
+    function typewriter(node, text, speed=12){ node.innerHTML=''; let i=0; const id=setInterval(()=>{ node.innerHTML+=text[i++]||''; if(i>=text.length) clearInterval(id);},speed);}
+    function compilePrompt(){
+      const notes=conversationEl.value.trim();
+      const baseTone= state.tone==='custom'&&customToneEl.value.trim()? customToneEl.value.trim(): state.tone;
+      const lang= state.lang==='EN'?'English':'Turkish';
+      const guidance="Audience: 3–5 years old. Keep sentences short. Calm pacing. Avoid scary tension. 120–160 words per page. End each page with a soft micro-cliffhanger.";
+      return `${guidance}\nLanguage: ${lang}\nTone: ${baseTone}\nNotes:\n${notes}\nSo far:\n${state.pages.map((p,i)=>`[Page ${i+1}] ${p}`).join('\n')}`;
+    }
+    function updateStoryUI(text){ const safe=text.replace(/\n{3,}/g,'\n\n').trim(); typewriter(storyTextEl,safe); setPagePill(); }
+
+    // API call
     async function callAPI(action){
       try{
-        state.abortCtrl?.abort();
-        state.abortCtrl = new AbortController();
-
-        showSkeleton(true);
-        const res = await fetchWithTimeout(`${BASE_API}/api/generate-story`, {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            action,                       // 'start' | 'next' | 'regenerate'
-            prompt: compilePrompt(),
-            lang: state.lang,
-            pageIndex: state.pageIndex
-          })
-        }, 20000);
-
-        if(!res.ok){
-          const txt = await res.text().catch(()=> '');
-          throw new Error(`API ${res.status}${txt ? `: ${txt.slice(0,180)}` : ''}`);
-        }
-        const data = await res.json().catch(()=> ({}));
-        const pageText = (data.pageText || '').trim();
-        if(!pageText) throw new Error('Empty story page returned');
-        if(action === 'regenerate'){
-          state.pages[state.pageIndex-1] = pageText;
-        }else{
-          state.pages.push(pageText);
-          state.pageIndex = state.pages.length;
-        }
-        updateStoryUI(pageText);
-        setApiStatus('✅ API ready', true);
-      }catch(err){
-        const msg = String(err && err.message || err);
-        const human =
-          msg.includes('AbortError') ? 'The request timed out. Internet hiccup or server slow.' :
-          msg.includes('Failed to fetch') ? 'The browser could not reach the server (CORS, ad-blocker, or network).' :
-          msg.startsWith('API 4') ? 'The server rejected the request. Check parameters or auth.' :
-          msg.startsWith('API 5') ? 'The server had an error.' :
-          'Something went wrong.';
-        storyTextEl.innerHTML = `<p>Hmm, the story elves are sleepy. ${human}</p>
-          <p class="fade" style="word-break:break-word">Details: ${msg}</p>`;
-        setApiStatus('❌ API error', false);
-        console.error(err);
-      }finally{
-        showSkeleton(false);
-      }
-    }
-
-    // ------------------ Buttons ------------------
-    generateBtn.addEventListener('click',()=>{
-      state.pages = [];
-      state.pageIndex = 0;
-      callAPI('start');
-    });
-
-    continueBtn.addEventListener('click',()=>{
-      if(state.pages.length === 0){
-        return callAPI('start');
-      }
-      callAPI('next');
-    });
-
-    regenerateBtn.addEventListener('click',()=>{
-      if(state.pages.length === 0){
-        return callAPI('start');
-      }
-      callAPI('regenerate');
-    });
-
-    resetBtn.addEventListener('click',()=>{
-      if(confirm('Clear notes and story?')){
-        state.pages = [];
-        state.pageIndex = 0;
-        conversationEl.value = '';
-        storyTextEl.innerHTML = '<p class="fade">Your story will appear here with a calm, large type for bedtime reading.</p>';
-        setPagePill();
-      }
-    });
-
-    // ------------------ Reading controls ------------------
-    bumpFont.addEventListener('click',()=>{
-      state.fontSize = Math.min(26, state.fontSize + 1);
-      pageEl.style.fontSize = state.fontSize + 'px';
-    });
-    dropFont.addEventListener('click',()=>{
-      state.fontSize = Math.max(16, state.fontSize - 1);
-      pageEl.style.fontSize = state.fontSize + 'px';
-    });
-    toggleLang.addEventListener('click',()=>{
-      state.lang = state.lang === 'EN' ? 'TR' : 'EN';
-      readingLang.textContent = state.lang;
-      if(state.recognition && state.isListening){
-        state.recognition.stop();
-        state.recognition.lang = state.lang === 'EN' ? 'en-US' : 'tr-TR';
-        state.recognition.start();
-      }
-    });
-
-    // ------------------ Theme toggle ------------------
-    toggleTheme.addEventListener('click',()=>{
-      if(document.documentElement.dataset.theme === 'light'){
-        delete document.documentElement.dataset.theme;
-      }else{
-        document.documentElement.dataset.theme = 'light';
-      }
-    });
-
-    // ------------------ UX niceties ------------------
-    const KEY = 'ft-notes-v1';
-    conversationEl.value = localStorage.getItem(KEY) || '';
-    conversationEl.addEventListener('input', ()=>{
-      localStorage.setItem(KEY, conversationEl.value);
-    });
-
-    // Keyboard: Cmd/Ctrl+Enter to generate/continue
-    document.addEventListener('keydown', (e)=>{
-      if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){
-        if(state.pages.length === 0) generateBtn.click();
-        else continueBtn.click();
-      }
-    });
-
-    // Initialize UI
-    setPagePill();
-  </script>
-</body>
-</html>
-
+        state.abortCtrl?.abort
