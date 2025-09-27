@@ -114,10 +114,14 @@
           <p>Gentle, interactive stories from your chat with your child (ages 3–5)</p>
         </div>
       </div>
-      <button id="toggleTheme" class="btn ghost" aria-label="Toggle theme">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        Theme
-      </button>
+      <div class="row">
+        <button id="toggleTheme" class="btn ghost" aria-label="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          Theme
+        </button>
+        <!-- ✅ API status pill -->
+        <span id="apiStatus" class="btn ghost" style="pointer-events:none">⏳ Checking API…</span>
+      </div>
     </header>
 
     <div class="grid">
@@ -193,7 +197,7 @@
 
   <script>
     // ✅ Backend base URL (update here if you redeploy)
-    const BASE_API = 'https://fairytale-api.vercel.app/api/generate-story';
+    const BASE_API = 'https://fairytale-api.vercel.app';
 
     // ------------------ State ------------------
     const state = {
@@ -225,6 +229,7 @@
     const toggleLang = document.getElementById('toggleLang');
     const readingLang = document.getElementById('readingLang');
     const toggleTheme = document.getElementById('toggleTheme');
+    const apiStatusEl = document.getElementById('apiStatus');
 
     // ------------------ Tone buttons ------------------
     document.querySelectorAll('[data-tone]').forEach(btn=>{
@@ -312,6 +317,36 @@
       setPagePill();
     }
 
+    // ---------- Helpers for API status + timeout ----------
+    function setApiStatus(text, ok=null){
+      if(!apiStatusEl) return;
+      apiStatusEl.textContent = text;
+      apiStatusEl.style.borderColor = ok === null ? 'var(--border)' : (ok ? 'var(--accent)' : 'var(--danger)');
+      apiStatusEl.style.color = ok === null ? 'inherit' : (ok ? 'inherit' : 'inherit');
+    }
+
+    async function fetchWithTimeout(url, options={}, ms=20000){
+      const ctrl = new AbortController();
+      const id = setTimeout(()=>ctrl.abort(), ms);
+      try{
+        return await fetch(url, { ...options, signal: ctrl.signal, mode: 'cors', credentials: 'omit', cache: 'no-store' });
+      } finally {
+        clearTimeout(id);
+      }
+    }
+
+    async function checkApi(){
+      try{
+        // If you add a dedicated /api/health, point to that; OPTIONS works as a cheap CORS/preflight check.
+        const res = await fetchWithTimeout(`${BASE_API}/api/generate-story`, { method: 'OPTIONS' }, 6000);
+        if (res.ok || res.status === 204) setApiStatus('✅ API ready', true);
+        else setApiStatus(`⚠️ API ${res.status}`, false);
+      } catch(e){
+        setApiStatus('❌ API unreachable', false);
+      }
+    }
+    checkApi();
+
     // ------------------ API calls ------------------
     async function callAPI(action){
       try{
@@ -319,22 +354,22 @@
         state.abortCtrl = new AbortController();
 
         showSkeleton(true);
-        const res = await fetch(`${BASE_API}/api/generate-story`, {
+        const res = await fetchWithTimeout(`${BASE_API}/api/generate-story`, {
           method: 'POST',
-          mode: 'cors', // explicit CORS
           headers: {'Content-Type':'application/json'},
-          signal: state.abortCtrl.signal,
           body: JSON.stringify({
             action,                       // 'start' | 'next' | 'regenerate'
             prompt: compilePrompt(),
             lang: state.lang,
             pageIndex: state.pageIndex
           })
-        });
+        }, 20000);
+
         if(!res.ok){
-          throw new Error(`API ${res.status}: ${await res.text()}`);
+          const txt = await res.text().catch(()=> '');
+          throw new Error(`API ${res.status}${txt ? `: ${txt.slice(0,180)}` : ''}`);
         }
-        const data = await res.json();
+        const data = await res.json().catch(()=> ({}));
         const pageText = (data.pageText || '').trim();
         if(!pageText) throw new Error('Empty story page returned');
         if(action === 'regenerate'){
@@ -344,9 +379,19 @@
           state.pageIndex = state.pages.length;
         }
         updateStoryUI(pageText);
+        setApiStatus('✅ API ready', true);
       }catch(err){
+        const msg = String(err && err.message || err);
+        const human =
+          msg.includes('AbortError') ? 'The request timed out. Internet hiccup or server slow.' :
+          msg.includes('Failed to fetch') ? 'The browser could not reach the server (CORS, ad-blocker, or network).' :
+          msg.startsWith('API 4') ? 'The server rejected the request. Check parameters or auth.' :
+          msg.startsWith('API 5') ? 'The server had an error.' :
+          'Something went wrong.';
+        storyTextEl.innerHTML = `<p>Hmm, the story elves are sleepy. ${human}</p>
+          <p class="fade" style="word-break:break-word">Details: ${msg}</p>`;
+        setApiStatus('❌ API error', false);
         console.error(err);
-        storyTextEl.innerHTML = `<p>Hmm, the story elves are sleepy. ${String(err.message || err)}</p><p class="fade">Try again, or check your internet connection.</p>`;
       }finally{
         showSkeleton(false);
       }
@@ -361,7 +406,6 @@
 
     continueBtn.addEventListener('click',()=>{
       if(state.pages.length === 0){
-        // If user forgot to generate first, do it now.
         return callAPI('start');
       }
       callAPI('next');
@@ -371,7 +415,6 @@
       if(state.pages.length === 0){
         return callAPI('start');
       }
-      // Regenerate current page based on latest notes
       callAPI('regenerate');
     });
 
@@ -433,3 +476,4 @@
   </script>
 </body>
 </html>
+
