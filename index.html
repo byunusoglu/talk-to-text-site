@@ -7,45 +7,76 @@
   <meta name="description" content="Generate gentle, interactive bedtime stories from your parent–child chat." />
   <style>
     :root{
-      --bg:#faf7f2; --card:#fff; --ink:#1f1f1f; --muted:#5f5f5f;
-      --brand:#7b5cff; --brand-2:#ffb86b; --accent:#6dd3a4; --danger:#ff6b6b;
-      --border:#e9e2d9; --shadow:0 6px 20px rgba(31,31,31,.08); --radius:16px;
+      --bg: #faf7f2; --card: #ffffff; --ink: #1f1f1f; --muted: #5f5f5f;
+      --brand: #7b5cff; --brand-2: #ffb86b; --accent: #6dd3a4; --danger: #ff6b6b;
+      --border: #e9e2d9; --shadow: 0 6px 20px rgba(31,31,31,.08); --radius: 16px;
     }
     @media (prefers-color-scheme: dark){
-      :root{ --bg:#0f1115; --card:#16181e; --ink:#f6f6f6; --muted:#b9c0cf; --border:#272b33; --shadow:0 6px 20px rgba(0,0,0,.35) }
+      :root{
+        --bg:#0f1115; --card:#16181e; --ink:#f6f6f6; --muted:#b9c0cf;
+        --border:#272b33; --shadow: 0 6px 20px rgba(0,0,0,.35)
+      }
     }
-    *{box-sizing:border-box} html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif}
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif}
+    a{color:inherit}
     .wrap{max-width:960px;margin-inline:auto;padding:16px;display:grid;gap:16px}
     header{display:flex;align-items:center;gap:12px;justify-content:space-between}
     .brand{display:flex;gap:12px;align-items:center}
     .logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:var(--shadow);display:grid;place-items:center}
+    .logo svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.15))}
     .title h1{font-size:18px;margin:0 0 2px;font-weight:700;letter-spacing:.2px}
     .title p{margin:0;color:var(--muted);font-size:12px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
-    .grid{display:grid;gap:16px} @media(min-width:960px){ .grid{grid-template-columns:360px 1fr} }
+    .grid{display:grid;gap:16px}
+    @media(min-width:960px){ .grid{grid-template-columns:360px 1fr} }
+
+    /* Controls */
     .panel{padding:16px;display:grid;gap:14px}
     .label{font-size:12px;color:var(--muted);margin-bottom:6px}
     textarea,input{width:100%;border:1px solid var(--border);background:transparent;color:var(--ink);border-radius:12px;padding:12px 14px;font-size:15px;outline:none}
     textarea{min-height:110px;resize:vertical;line-height:1.4}
     .row{display:flex;gap:8px;flex-wrap:wrap}
-    .btn{appearance:none;border:1px solid var(--border);background:var(--card);color:var(--ink);padding:12px 14px;border-radius:12px;font-weight:600;cursor:pointer;transition:.2s;display:inline-flex;gap:8px;align-items:center}
-    .btn:hover{transform:translateY(-1px)} .btn:disabled{opacity:.6;cursor:not-allowed}
-    .btn.primary{background:var(--brand);border-color:transparent;color:white} .btn.ghost{background:transparent} .btn.danger{background:var(--danger);border-color:transparent;color:white}
+    .btn{
+      appearance:none;border:1px solid var(--border);background:var(--card);color:var(--ink);
+      padding:12px 14px;border-radius:12px;font-weight:600;cursor:pointer;transition:.2s transform, .2s background, .2s border;
+      display:inline-flex;gap:8px;align-items:center
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .btn.primary{background:var(--brand);border-color:transparent;color:white}
+    .btn.ghost{background:transparent}
+    .btn.danger{background:var(--danger);border-color:transparent;color:white}
     .hint{font-size:12px;color:var(--muted)}
-    .listening{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed var(--border);border-radius:12px}
+
+    /* Listening indicator */
+    .listening{
+      display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed var(--border);border-radius:12px
+    }
     .dotbar{display:flex;gap:4px;align-items:flex-end;height:16px}
     .dotbar span{width:6px;border-radius:3px;background:var(--brand);display:block;animation:bars 900ms ease-in-out infinite}
-    .dotbar span:nth-child(2){animation-delay:.1s}.dotbar span:nth-child(3){animation-delay:.2s}.dotbar span:nth-child(4){animation-delay:.3s}
+    .dotbar span:nth-child(2){animation-delay:.1s}
+    .dotbar span:nth-child(3){animation-delay:.2s}
+    .dotbar span:nth-child(4){animation-delay:.3s}
     @keyframes bars{0%,100%{height:4px;opacity:.7}50%{height:16px;opacity:1}}
     .live-pill{font-size:11px;background:var(--accent);color:#083b2d;padding:2px 8px;border-radius:999px;font-weight:700}
+
+    /* Story Area */
     .story{padding:20px 18px 24px;display:grid;gap:12px}
-    .page{background:linear-gradient(180deg, rgba(123,92,255,0.05), transparent 160px);border:1px solid var(--border);border-radius:16px;padding:18px;line-height:1.8;font-size:19px;min-height:220px;position:relative;overflow:hidden}
-    .page p{margin:0 0 12px} .page .fade{opacity:.75}
+    .page{
+      background:linear-gradient(180deg, rgba(123,92,255,0.05), transparent 160px);
+      border:1px solid var(--border);border-radius:16px;padding:18px;line-height:1.8;font-size:19px;
+      min-height:220px; position:relative; overflow:hidden
+    }
+    .page p{margin:0 0 12px}
+    .page .fade{opacity:.75}
     .skeleton{--h:16px;display:grid;gap:8px}
     .skeleton div{height:var(--h);background:linear-gradient(90deg,rgba(0,0,0,.06),rgba(0,0,0,.12),rgba(0,0,0,.06));background-size:200% 100%;animation:sheen 1.2s linear infinite;border-radius:8px}
     @keyframes sheen{0%{background-position:200% 0}100%{background-position:0 0}}
     .meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
     .meta .pill{background:rgba(123,92,255,.12);color:var(--brand);padding:2px 8px;border-radius:999px;font-weight:700}
+
+    /* Footer */
     footer{padding:10px 2px 28px;color:var(--muted);text-align:center;font-size:12px}
   </style>
 </head>
@@ -74,6 +105,7 @@
     </header>
 
     <div class="grid">
+      <!-- Left: Parent Controls -->
       <section class="card panel" aria-label="Parent controls">
         <div>
           <div class="label">Parent–child chat (brief notes)</div>
@@ -110,6 +142,7 @@
         <div class="hint">The app never auto-advances pages. You stay in control. When your child adds ideas, press <b>Regenerate Page</b>.</div>
       </section>
 
+      <!-- Right: Story Area -->
       <section class="card story" aria-label="Story">
         <div class="meta">
           <div>Reading mode • <span id="readingLang">EN</span></div>
@@ -117,7 +150,10 @@
         </div>
         <div class="page" id="page">
           <div class="skeleton" id="skeleton" hidden>
-            <div style="width:88%"></div><div style="width:92%"></div><div style="width:86%"></div><div style="width:60%"></div>
+            <div style="width:88%"></div>
+            <div style="width:92%"></div>
+            <div style="width:86%"></div>
+            <div style="width:60%"></div>
           </div>
           <div id="storyText" aria-live="polite">
             <p class="fade">Your story will appear here with a calm, large type for bedtime reading.</p>
@@ -143,189 +179,316 @@
     console.log('STORY_ENDPOINT =', STORY_ENDPOINT);
 
     // ------------------ State ------------------
-    const state = { tone:'gentle', lang:'EN', pageIndex:0, pages:[], isListening:false, fontSize:19, recognition:null, abortCtrl:null };
+    const state = {
+      tone: 'gentle',
+      lang: 'EN',
+      pageIndex: 0,
+      pages: [],
+      isListening: false,
+      fontSize: 19,
+      recognition: null,
+      abortCtrl: null,
+    };
 
     // ------------------ Elements ------------------
-    const conversationEl=document.getElementById('conversation');
-    const customToneEl=document.getElementById('customTone');
-    const pageEl=document.getElementById('page');
-    const storyTextEl=document.getElementById('storyText');
-    const skeletonEl=document.getElementById('skeleton');
-    const pagePillEl=document.getElementById('pagePill');
-    const listenStateEl=document.getElementById('listenState');
-    const micBtn=document.getElementById('micBtn');
-    const generateBtn=document.getElementById('generateBtn');
-    const continueBtn=document.getElementById('continueBtn');
-    const regenerateBtn=document.getElementById('regenerateBtn');
-    const resetBtn=document.getElementById('resetBtn');
-    const bumpFont=document.getElementById('bumpFont');
-    const dropFont=document.getElementById('dropFont');
-    const toggleLang=document.getElementById('toggleLang');
-    const readingLang=document.getElementById('readingLang');
-    const toggleTheme=document.getElementById('toggleTheme');
-    const apiStatusEl=document.getElementById('apiStatus');
+    const conversationEl = document.getElementById('conversation');
+    const customToneEl = document.getElementById('customTone');
+    const pageEl = document.getElementById('page');
+    const storyTextEl = document.getElementById('storyText');
+    const skeletonEl = document.getElementById('skeleton');
+    const pagePillEl = document.getElementById('pagePill');
+    const listenStateEl = document.getElementById('listenState');
+    const micBtn = document.getElementById('micBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const continueBtn = document.getElementById('continueBtn');
+    const regenerateBtn = document.getElementById('regenerateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const bumpFont = document.getElementById('bumpFont');
+    const dropFont = document.getElementById('dropFont');
+    const toggleLang = document.getElementById('toggleLang');
+    const readingLang = document.getElementById('readingLang');
+    const toggleTheme = document.getElementById('toggleTheme');
+    const apiStatusEl = document.getElementById('apiStatus');
 
-    // Tone buttons
+    // ------------------ Tone buttons ------------------
     document.querySelectorAll('[data-tone]').forEach(btn=>{
       btn.addEventListener('click',()=>{
-        state.tone=btn.dataset.tone;
+        state.tone = btn.dataset.tone;
         document.querySelectorAll('[data-tone]').forEach(b=>b.classList.remove('primary'));
         btn.classList.add('primary');
       });
     });
 
-    // Mic
+    // ------------------ Microphone (simple, optional) ------------------
     function setupSpeech(){
-      const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(!SpeechRecognition){ micBtn.disabled=true; micBtn.textContent='🎤 Not available'; return; }
-      const rec=new SpeechRecognition();
-      rec.lang=state.lang==='EN'?'en-US':'tr-TR';
-      rec.interimResults=true; rec.continuous=true;
-      rec.onresult=(e)=>{
-        let interim='';
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!SpeechRecognition){
+        micBtn.disabled = true;
+        micBtn.textContent = '🎤 Not available';
+        return;
+      }
+      const rec = new SpeechRecognition();
+      rec.lang = state.lang === 'EN' ? 'en-US' : 'tr-TR';
+      rec.interimResults = true;
+      rec.continuous = true;
+      rec.onresult = (e)=>{
+        let interim = '';
         for(let i=e.resultIndex;i<e.results.length;i++){
-          const t=e.results[i][0].transcript;
-          if(e.results[i].isFinal){ conversationEl.value+=(conversationEl.value?' ':'')+t.trim(); }
-          else { interim+=t; }
+          const transcript = e.results[i][0].transcript;
+          if(e.results[i].isFinal){
+            conversationEl.value += (conversationEl.value ? ' ' : '') + transcript.trim();
+          }else{
+            interim += transcript;
+          }
         }
-        listenStateEl.textContent=interim?'Listening…':'Listening';
+        listenStateEl.textContent = interim ? 'Listening…' : 'Listening';
       };
-      rec.onend=()=>{ if(state.isListening){ rec.start(); } };
-      state.recognition=rec;
+      rec.onend = ()=> { if(state.isListening){ rec.start(); } };
+      state.recognition = rec;
     }
     setupSpeech();
+
     micBtn.addEventListener('click',()=>{
       if(!state.recognition) return;
-      state.isListening=!state.isListening;
-      micBtn.setAttribute('aria-pressed',String(state.isListening));
+      state.isListening = !state.isListening;
+      micBtn.setAttribute('aria-pressed', String(state.isListening));
       if(state.isListening){
-        state.recognition.lang=state.lang==='EN'?'en-US':'tr-TR';
-        state.recognition.start(); listenStateEl.textContent='Listening'; micBtn.textContent='⏹️ Stop Listening';
-      }else{ state.recognition.stop(); listenStateEl.textContent='Idle'; micBtn.textContent='🎤 Start Listening'; }
+        state.recognition.lang = state.lang === 'EN' ? 'en-US' : 'tr-TR';
+        state.recognition.start();
+        listenStateEl.textContent = 'Listening';
+        micBtn.textContent = '⏹️ Stop Listening';
+      }else{
+        state.recognition.stop();
+        listenStateEl.textContent = 'Idle';
+        micBtn.textContent = '🎤 Start Listening';
+      }
     });
 
-    // Utils
-    function showSkeleton(show=true){ skeletonEl.hidden=!show; storyTextEl.style.opacity=show?.4:1; }
-    function setPagePill(){ pagePillEl.textContent=`Page ${state.pageIndex}`; }
-    function typewriter(node,text,speed=12){ node.innerHTML=''; let i=0; const id=setInterval(()=>{ node.innerHTML+=text[i++]||''; if(i>=text.length) clearInterval(id); },speed); }
-    function getToneString(){ return state.tone==='custom'&&customToneEl.value.trim()? customToneEl.value.trim(): state.tone; }
+    // ------------------ Utilities ------------------
+    function showSkeleton(show=true){
+      skeletonEl.hidden = !show;
+      storyTextEl.style.opacity = show ? .4 : 1;
+    }
+    function setPagePill(){ pagePillEl.textContent = `Page ${state.pageIndex}`; }
+    function typewriter(node, text, speed=12){
+      node.innerHTML = '';
+      let i = 0;
+      const id = setInterval(()=>{
+        node.innerHTML += text[i++] || '';
+        if(i >= text.length) clearInterval(id);
+      }, speed);
+    }
+    function getToneString(){
+      return (state.tone === 'custom' && customToneEl.value.trim())
+        ? customToneEl.value.trim()
+        : state.tone;
+    }
     function compilePrompt(){
-      const notes=conversationEl.value.trim(); const baseTone=getToneString(); const lang=state.lang==='EN'?'English':'Turkish';
-      const guidance="Audience: 3–5 years old. Keep sentences short. Calm pacing. Avoid scary tension. 120–160 words per page. End each page with a soft micro-cliffhanger.";
+      const notes = conversationEl.value.trim();
+      const baseTone = getToneString();
+      const lang = state.lang === 'EN' ? 'English' : 'Turkish';
+      const guidance = "Audience: 3–5 years old. Keep sentences short. Calm pacing. Avoid scary tension. 120–160 words per page. End each page with a soft micro-cliffhanger.";
       return `${guidance}\nLanguage: ${lang}\nTone: ${baseTone}\nParent–child notes:\n${notes}\nCurrent pages so far (for continuity):\n${state.pages.map((p,i)=>`[Page ${i+1}] ${p}`).join('\n')}`;
     }
-    function updateStoryUI(text){ const safe=text.replace(/\n{3,}/g,'\n\n').trim(); typewriter(storyTextEl,safe); storyTextEl.setAttribute('data-raw',safe); setPagePill(); }
+    function updateStoryUI(text){
+      const safe = text.replace(/\n{3,}/g, '\n\n').trim();
+      typewriter(storyTextEl, safe);
+      storyTextEl.setAttribute('data-raw', safe);
+      setPagePill();
+    }
 
-    function setApiStatus(text,ok=null){ if(!apiStatusEl) return; apiStatusEl.textContent=text; apiStatusEl.style.borderColor=ok===null?'var(--border)':(ok?'var(--accent)':'var(--danger)'); }
-    async function fetchWithTimeout(url,options={},ms=20000){
-      const ctrl=new AbortController(); const id=setTimeout(()=>ctrl.abort(),ms);
-      try{ return await fetch(url,{...options,signal:ctrl.signal,mode:'cors',credentials:'omit',cache:'no-store'}); }
-      finally{ clearTimeout(id); }
+    // -------- Robust response parsing (handles many server shapes) --------
+    function extractPageText(data){
+      if (!data || typeof data !== 'object') return '';
+
+      // Direct common keys
+      const direct =
+        data.pageText || data.page || data.text || data.story || data.content || data.message;
+      if (typeof direct === 'string' && direct.trim()) return direct.trim();
+
+      // Nested "data" or "result"
+      const nested = (data.data && (data.data.pageText || data.data.text || data.data.content))
+                   || (data.result && (data.result.pageText || data.result.text || data.result.content));
+      if (typeof nested === 'string' && nested.trim()) return nested.trim();
+
+      // Array forms
+      if (Array.isArray(data.pages) && data.pages.length && typeof data.pages[0] === 'string') {
+        return data.pages[data.pages.length - 1].trim();
+      }
+      if (Array.isArray(data.paragraphs) && data.paragraphs.length) {
+        return data.paragraphs.join('\n').trim();
+      }
+
+      // OpenAI-style
+      try {
+        const choiceMsg = data.choices?.[0]?.message?.content;
+        if (typeof choiceMsg === 'string' && choiceMsg.trim()) return choiceMsg.trim();
+      } catch {}
+
+      // Fallback: stringify a known field if present
+      if (data.generated) {
+        const s = (typeof data.generated === 'string') ? data.generated : JSON.stringify(data.generated);
+        if (s && s.trim) return s.trim();
+      }
+
+      return '';
+    }
+
+    // ---------- Helpers for API status + timeout ----------
+    const apiStatusEl = document.getElementById('apiStatus');
+    function setApiStatus(text, ok=null){
+      if(!apiStatusEl) return;
+      apiStatusEl.textContent = text;
+      apiStatusEl.style.borderColor = ok === null ? 'var(--border)' : (ok ? 'var(--accent)' : 'var(--danger)');
+    }
+    async function fetchWithTimeout(url, options={}, ms=20000){
+      const ctrl = new AbortController();
+      const id = setTimeout(()=>ctrl.abort(), ms);
+      try{
+        return await fetch(url, { ...options, signal: ctrl.signal, mode: 'cors', credentials: 'omit', cache: 'no-store' });
+      } finally { clearTimeout(id); }
     }
     async function checkApi(){
       try{
-        const res=await fetchWithTimeout(STORY_ENDPOINT,{method:'OPTIONS'},6000);
-        if(res.ok||res.status===204) setApiStatus('✅ API ready',true); else setApiStatus(`⚠️ API ${res.status}`,false);
-      }catch{ setApiStatus('❌ API unreachable',false); }
+        const res = await fetchWithTimeout(STORY_ENDPOINT, { method: 'OPTIONS' }, 6000);
+        if (res.ok || res.status === 204) setApiStatus('✅ API ready', true);
+        else setApiStatus(`⚠️ API ${res.status}`, false);
+      } catch(e){
+        setApiStatus('❌ API unreachable', false);
+      }
     }
     checkApi();
 
-    // API
+    // ------------------ API calls ------------------
     async function callAPI(action){
       try{
-        const notes=conversationEl.value.trim();
+        const notes = conversationEl.value.trim();
         if(!notes){
           storyTextEl.innerHTML = `<p>Please add a few notes from your chat first (e.g., characters, names, what happens).</p>`;
           return;
         }
 
-        state.abortCtrl?.abort(); state.abortCtrl=new AbortController();
+        state.abortCtrl?.abort();
+        state.abortCtrl = new AbortController();
         showSkeleton(true);
 
-        // Send notes under multiple names to satisfy strict backends
-        const payload={
+        // Be maximally compatible with server expectations
+        const payload = {
           action,
           lang: state.lang,
           tone: getToneString(),
           pageIndex: state.pageIndex,
           pagesSoFar: state.pages,
-          // Send the same content under multiple possible keys:
-          transcript: notes,
+          transcript: notes,   // common
           prompt: compilePrompt(),
-          notes: notes,
+          notes,
           message: notes,
           input: notes,
           text: notes
         };
         console.log('POST payload ->', payload);
 
-        const res=await fetchWithTimeout(STORY_ENDPOINT,{
-          method:'POST',
-          headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
-          body:JSON.stringify(payload)
-        },20000);
+        const res = await fetchWithTimeout(STORY_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json', 'Accept':'application/json' },
+          body: JSON.stringify(payload)
+        }, 20000);
+
+        const rawText = await res.text().catch(()=> '');
+        // Try to parse JSON if possible; if not, treat as plain text
+        let data = {};
+        try { data = rawText ? JSON.parse(rawText) : {}; } catch { data = { pageText: rawText }; }
+        console.log('API raw response ->', data);
 
         if(!res.ok){
-          const txt=await res.text().catch(()=> '');
-          throw new Error(`API ${res.status}${txt?`: ${txt}`:''}`);
+          // Surface server error body too
+          throw new Error(`API ${res.status}: ${rawText || '(no body)'}`);
         }
-        const data=await res.json().catch(()=> ({}));
-        const pageText=(data.pageText||'').trim();
-        if(!pageText) throw new Error('Empty story page returned');
 
-        if(action==='regenerate'){ state.pages[state.pageIndex-1]=pageText; }
-        else { state.pages.push(pageText); state.pageIndex=state.pages.length; }
+        // Extract story text across many possible shapes
+        let pageText = extractPageText(data);
+
+        // If still empty, create a gentle fallback instead of hard error
+        if(!pageText){
+          pageText = `Once upon a quiet night, the page arrived a little shy.
+Let’s try again in a moment—or add one more detail to the notes (a name, a place, or a wish). 🌙`;
+          console.warn('Empty story content from server. Showing fallback.');
+        }
+
+        if(action === 'regenerate'){
+          state.pages[state.pageIndex-1] = pageText;
+        }else{
+          state.pages.push(pageText);
+          state.pageIndex = state.pages.length;
+        }
         updateStoryUI(pageText);
-        setApiStatus('✅ API ready',true);
+        setApiStatus('✅ API ready', true);
       }catch(err){
-        const msg=String(err && err.message || err);
-        const human=
-          msg.includes('AbortError')?'The request timed out. Internet hiccup or server slow.' :
-          msg.includes('Failed to fetch')?'The browser could not reach the server (CORS, ad-blocker, or network).' :
-          msg.includes('API 400')?'The server needs different inputs (e.g., transcript missing).' :
-          msg.startsWith('API 4')?'The server rejected the request. Check parameters or auth.' :
-          msg.startsWith('API 5')?'The server had an error.' :'Something went wrong.';
-        storyTextEl.innerHTML=`<p>Hmm, the story elves are sleepy. ${human}</p><p class="fade" style="word-break:break-word">Details: ${msg}</p>`;
-        setApiStatus('❌ API error',false);
+        const msg = String(err && err.message || err);
+        const human =
+          msg.includes('AbortError') ? 'The request timed out. Internet hiccup or server slow.' :
+          msg.includes('Failed to fetch') ? 'The browser could not reach the server (CORS, ad-blocker, or network).' :
+          msg.startsWith('API 4') ? 'The server rejected the request. Check inputs.' :
+          msg.startsWith('API 5') ? 'The server had an error.' :
+          'Something went wrong.';
+        storyTextEl.innerHTML = `<p>Hmm, the story elves are sleepy. ${human}</p>
+          <p class="fade" style="word-break:break-word">Details: ${msg}</p>`;
+        setApiStatus('❌ API error', false);
         console.error(err);
-      }finally{ showSkeleton(false); }
+      }finally{
+        showSkeleton(false);
+      }
     }
 
-    // Buttons
-    generateBtn.addEventListener('click',()=>{ state.pages=[]; state.pageIndex=0; callAPI('start'); });
-    continueBtn.addEventListener('click',()=>{ if(state.pages.length===0) return callAPI('start'); callAPI('next'); });
-    regenerateBtn.addEventListener('click',()=>{ if(state.pages.length===0) return callAPI('start'); callAPI('regenerate'); });
+    // ------------------ Buttons ------------------
+    generateBtn.addEventListener('click',()=>{ state.pages = []; state.pageIndex = 0; callAPI('start'); });
+    continueBtn.addEventListener('click',()=>{ if(state.pages.length === 0) return callAPI('start'); callAPI('next'); });
+    regenerateBtn.addEventListener('click',()=>{ if(state.pages.length === 0) return callAPI('start'); callAPI('regenerate'); });
     resetBtn.addEventListener('click',()=>{
       if(confirm('Clear notes and story?')){
-        state.pages=[]; state.pageIndex=0; conversationEl.value='';
-        storyTextEl.innerHTML='<p class="fade">Your story will appear here with a calm, large type for bedtime reading.</p>';
+        state.pages = []; state.pageIndex = 0; conversationEl.value = '';
+        storyTextEl.innerHTML = '<p class="fade">Your story will appear here with a calm, large type for bedtime reading.</p>';
         setPagePill();
       }
     });
 
-    // Reading controls
-    bumpFont.addEventListener('click',()=>{ state.fontSize=Math.min(26,state.fontSize+1); pageEl.style.fontSize=state.fontSize+'px'; });
-    dropFont.addEventListener('click',()=>{ state.fontSize=Math.max(16,state.fontSize-1); pageEl.style.fontSize=state.fontSize+'px'; });
+    // ------------------ Reading controls ------------------
+    bumpFont.addEventListener('click',()=>{ state.fontSize = Math.min(26, state.fontSize + 1); pageEl.style.fontSize = state.fontSize + 'px'; });
+    dropFont.addEventListener('click',()=>{ state.fontSize = Math.max(16, state.fontSize - 1); pageEl.style.fontSize = state.fontSize + 'px'; });
     toggleLang.addEventListener('click',()=>{
-      state.lang=state.lang==='EN'?'TR':'EN'; readingLang.textContent=state.lang;
-      if(state.recognition && state.isListening){ state.recognition.stop(); state.recognition.lang=state.lang==='EN'?'en-US':'tr-TR'; state.recognition.start(); }
+      state.lang = state.lang === 'EN' ? 'TR' : 'EN';
+      readingLang.textContent = state.lang;
+      if(state.recognition && state.isListening){
+        state.recognition.stop();
+        state.recognition.lang = state.lang === 'EN' ? 'en-US' : 'tr-TR';
+        state.recognition.start();
+      }
     });
 
-    // Theme toggle
+    // ------------------ Theme toggle ------------------
     toggleTheme.addEventListener('click',()=>{
-      if(document.documentElement.dataset.theme==='light'){ delete document.documentElement.dataset.theme; }
-      else{ document.documentElement.dataset.theme='light'; }
+      if(document.documentElement.dataset.theme === 'light'){
+        delete document.documentElement.dataset.theme;
+      }else{
+        document.documentElement.dataset.theme = 'light';
+      }
     });
 
-    // Local drafts
-    const KEY='ft-notes-v1';
-    conversationEl.value=localStorage.getItem(KEY)||'';
-    conversationEl.addEventListener('input',()=>{ localStorage.setItem(KEY,conversationEl.value); });
+    // ------------------ UX niceties ------------------
+    const KEY = 'ft-notes-v1';
+    conversationEl.value = localStorage.getItem(KEY) || '';
+    conversationEl.addEventListener('input', ()=>{ localStorage.setItem(KEY, conversationEl.value); });
 
     // Keyboard shortcut
-    document.addEventListener('keydown',(e)=>{ if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){ if(state.pages.length===0) generateBtn.click(); else continueBtn.click(); } });
+    document.addEventListener('keydown', (e)=>{
+      if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){
+        if(state.pages.length === 0) generateBtn.click();
+        else continueBtn.click();
+      }
+    });
 
-    // Init
+    // Initialize UI
+    function setPagePill(){ pagePillEl.textContent = `Page ${state.pageIndex}`; }
     setPagePill();
   </script>
 </body>
