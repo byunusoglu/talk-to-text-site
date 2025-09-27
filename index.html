@@ -196,15 +196,9 @@
   </div>
 
   <script>
-    // ===== Backend config (NO /api here) =====
-    const BASE_API = 'https://fairytale-api.vercel.app';
-
-    // Joiner to avoid double slashes
-    function joinURL(base, path) {
-      return `${base.replace(/\/+$/,'')}/${path.replace(/^\/+/, '')}`;
-    }
-    // Single source of truth for the story route
-    const STORY_ENDPOINT = joinURL(BASE_API, '/api/generate-story');
+    // ===== SINGLE ENDPOINT (no helpers to avoid duplication) =====
+    const STORY_ENDPOINT = 'https://fairytale-api.vercel.app/api/generate-story';
+    console.log('STORY_ENDPOINT =', STORY_ENDPOINT); // sanity
 
     // ------------------ State ------------------
     const state = {
@@ -482,4 +476,3 @@
   </script>
 </body>
 </html>
-
