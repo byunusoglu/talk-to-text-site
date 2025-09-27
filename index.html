@@ -196,9 +196,9 @@
   </div>
 
   <script>
-    // ===== SINGLE ENDPOINT (no helpers to avoid duplication) =====
+    // ===== SINGLE ENDPOINT =====
     const STORY_ENDPOINT = 'https://fairytale-api.vercel.app/api/generate-story';
-    console.log('STORY_ENDPOINT =', STORY_ENDPOINT); // sanity
+    console.log('STORY_ENDPOINT =', STORY_ENDPOINT);
 
     // ------------------ State ------------------
     const state = {
@@ -304,9 +304,12 @@
         if(i >= text.length) clearInterval(id);
       }, speed);
     }
+    function getToneString(){
+      return state.tone === 'custom' && customToneEl.value.trim() ? customToneEl.value.trim() : state.tone;
+    }
     function compilePrompt(){
       const notes = conversationEl.value.trim();
-      const baseTone = state.tone === 'custom' && customToneEl.value.trim() ? customToneEl.value.trim() : state.tone;
+      const baseTone = getToneString();
       const lang = state.lang === 'EN' ? 'English' : 'Turkish';
       const guidance = "Audience: 3–5 years old. Keep sentences short. Calm pacing. Avoid scary tension. 120–160 words per page. End each page with a soft micro-cliffhanger.";
       return `${guidance}\nLanguage: ${lang}\nTone: ${baseTone}\nParent–child notes:\n${notes}\nCurrent pages so far (for continuity):\n${state.pages.map((p,i)=>`[Page ${i+1}] ${p}`).join('\n')}`;
@@ -349,24 +352,37 @@
     // ------------------ API calls ------------------
     async function callAPI(action){
       try{
+        // Validate transcript first to avoid 400
+        const transcript = conversationEl.value.trim();
+        if(!transcript){
+          storyTextEl.innerHTML = `<p>Please add a few notes from your chat first (e.g., characters, names, what happens).</p>`;
+          return;
+        }
+
         state.abortCtrl?.abort();
         state.abortCtrl = new AbortController();
 
         showSkeleton(true);
+
+        const payload = {
+          action,                 // 'start' | 'next' | 'regenerate'
+          transcript,             // ✅ backend requires this
+          tone: getToneString(),  // optional extra
+          lang: state.lang,       // optional extra
+          pageIndex: state.pageIndex,
+          pagesSoFar: state.pages, // optional extra for continuity
+          // prompt: compilePrompt(), // keep if your backend also accepts 'prompt'
+        };
+
         const res = await fetchWithTimeout(STORY_ENDPOINT, {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            action,                       // 'start' | 'next' | 'regenerate'
-            prompt: compilePrompt(),
-            lang: state.lang,
-            pageIndex: state.pageIndex
-          })
+          body: JSON.stringify(payload)
         }, 20000);
 
         if(!res.ok){
           const txt = await res.text().catch(()=> '');
-          throw new Error(`API ${res.status}${txt ? `: ${txt.slice(0,180)}` : ''}`);
+          throw new Error(`API ${res.status}${txt ? `: ${txt}` : ''}`);
         }
         const data = await res.json().catch(()=> ({}));
         const pageText = (data.pageText || '').trim();
@@ -385,6 +401,7 @@
         const human =
           msg.includes('AbortError') ? 'The request timed out. Internet hiccup or server slow.' :
           msg.includes('Failed to fetch') ? 'The browser could not reach the server (CORS, ad-blocker, or network).' :
+          msg.includes('API 400') ? 'The server needs different inputs (e.g., transcript missing).' :
           msg.startsWith('API 4') ? 'The server rejected the request. Check parameters or auth.' :
           msg.startsWith('API 5') ? 'The server had an error.' :
           'Something went wrong.';
