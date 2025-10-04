@@ -349,7 +349,7 @@
     recBtn.onclick = ()=> recOn ? stopRec() : startRec();
 
     // ——— API integration ———
-    const apiUrl = '/api/generate-story'; // keep backend the same
+    const apiUrl = 'https://fairytale-api.vercel.app/api/generate-story'; // keep backend the same
     const statusEl = $('#status');
 
     async function generate(first=true){
@@ -358,14 +358,32 @@
         if(!transcript){ toast('Tell us a few ideas first.'); return; }
         const childName = $('#childName').value.trim();
         const age = $('#age').value;
-        const payload = { transcript };
-        // Optional hints many backends ignore safely:
-        if(childName) payload.childName = childName;
-        if(age) payload.age = Number(age);
-        if(!first && pages.length){ payload.previousPage = pages[pages.length-1]; }
+        const payload = {
+        action: first ? 'start' : 'next',
+        lang: 'EN',
+        tone: 'gentle',
+        pageIndex: pages.length,
+        pagesSoFar: pages.slice(),
+        transcript,
+        // keep aliases for maximum compatibility with the old API
+        prompt: transcript,
+        notes: transcript,
+        message: transcript,
+        input: transcript,
+        text: transcript,
+        // new optional hints (safe to ignore server-side)
+        childName: childName || undefined,
+        age: age ? Number(age) : undefined,
+        previousPage: pages.length ? pages[pages.length - 1] : undefined
+        }; 
 
         $('#genBtn').disabled = true; $('#nextBtn').disabled = true; statusEl.textContent = 'Generating…';
-        const res = await fetch(apiUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        });
         if(!res.ok){ const t = await res.text(); throw new Error(`API ${res.status}: ${t}`); }
         const data = await res.json().catch(()=>({ page: null }));
         // We expect either {page: string} or {pages: string[]} — be flexible.
