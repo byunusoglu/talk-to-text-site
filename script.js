@@ -3,7 +3,7 @@ const menuBtn = document.getElementById('menuBtn');
 const menu = document.getElementById('menu');
 if (menuBtn) menuBtn.addEventListener('click', () => menu.classList.toggle('hidden'));
 
-// Age group navigation
+// Age cards on home
 document.querySelectorAll('.age-card').forEach(card => {
   card.addEventListener('click', () => {
     const target = card.dataset.target;
@@ -16,171 +16,192 @@ document.querySelectorAll('.age-card').forEach(card => {
 const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-/* ------------------------------------------------------------------
-   Testimonials slider (manual; no auto-advance)
-   Expected markup in index.html:
-   - .testimonial-slider with .ts-prev, .ts-next
-   - .ts-viewport.edge-mask wrapping #tsTrack
-   - #tsDots for pagination dots
--------------------------------------------------------------------*/
-(function initTestimonialSlider() {
-  const track = document.getElementById('tsTrack');
-  const viewport = document.getElementById('tsViewport');
-  const prevBtn = document.querySelector('.ts-prev');
-  const nextBtn = document.querySelector('.ts-next');
-  const dotsWrap = document.getElementById('tsDots');
-  if (!track || !viewport || !prevBtn || !nextBtn || !dotsWrap) return; // not on this page
+// Testimonials fade (home)
+const testimonials = [
+  "“Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.” — Elif",
+  "“Finally a screen-free wind-down that works. He loves hearing his own ideas show up.” — James",
+  "“A calm five-minute story that’s always gentle. Instant favourite.” — Priya"
+];
+let tIndex = 0;
+const tEl = document.getElementById('testimonialText');
+if (tEl) {
+  setInterval(() => {
+    tIndex = (tIndex + 1) % testimonials.length;
+    tEl.style.opacity = 0;
+    setTimeout(() => {
+      tEl.innerHTML = testimonials[tIndex];
+      tEl.style.opacity = 1;
+    }, 400);
+  }, 6000);
+}
 
-  const cards = Array.from(track.children);
-  const total = cards.length;
+/* ===========================
+   CREATE PAGE — Stepper + Forms
+   =========================== */
+const stepper = document.querySelector('.stepper');
+const isCreatePage = !!document.getElementById('step1');
 
-  function getGapPx() {
-    const cs = window.getComputedStyle(track);
-    // CSS may expose gap via 'column-gap' or 'gap'
-    const gapStr = cs.getPropertyValue('column-gap') || cs.getPropertyValue('gap') || '0px';
-    const n = parseFloat(gapStr);
-    return Number.isFinite(n) ? n : 0;
+if (isCreatePage) {
+  // Radiogroup chips
+  function makeChipGroup(groupEl, onChange) {
+    groupEl.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        groupEl.querySelectorAll('.chip').forEach(c => {
+          c.classList.remove('selected');
+          c.setAttribute('aria-checked', 'false');
+        });
+        chip.classList.add('selected');
+        chip.setAttribute('aria-checked', 'true');
+        onChange?.(chip.dataset.value);
+      });
+    });
   }
 
-  // How many cards are visible based on actual layout
-  function visibleCount() {
-    const first = cards[0];
-    if (!first) return 1;
-    const cardW = first.getBoundingClientRect().width || 1;
-    const viewW = viewport.getBoundingClientRect().width || 1;
-    // Use floor to avoid overestimating, which can collapse pages
-    return Math.max(1, Math.floor((viewW + getGapPx()) / (cardW + getGapPx())));
+  // Inputs
+  const kidName = document.getElementById('kidName');
+  const ageGroup = document.getElementById('ageGroup');
+  const gender = document.getElementById('gender');
+  const kidDoneBtn = document.getElementById('kidDoneBtn');
+
+  let state = {
+    name: '',
+    age: '',
+    gender: '',
+    theme: '',
+    characters: []
+  };
+
+  // Persist minimal state in sessionStorage
+  function saveState() {
+    sessionStorage.setItem('storybuds_create', JSON.stringify(state));
   }
 
-  let perView = visibleCount();
-  let page = 0;
-
-  function pageCount() {
-    return Math.max(1, Math.ceil(total / perView));
+  // Enable/disable Done
+  function validateKidInfo() {
+    const ok = state.name.trim() && state.age && state.gender;
+    kidDoneBtn.disabled = !ok;
   }
 
-  function buildDots() {
-    dotsWrap.innerHTML = '';
-    for (let i = 0; i < pageCount(); i++) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.setAttribute('aria-label', `Go to slide ${i + 1}`);
-      b.addEventListener('click', () => goToPage(i));
-      dotsWrap.appendChild(b);
+  kidName?.addEventListener('input', e => {
+    state.name = e.target.value;
+    validateKidInfo();
+    saveState();
+  });
+
+  makeChipGroup(ageGroup, val => {
+    state.age = val;
+    validateKidInfo();
+    saveState();
+  });
+  makeChipGroup(gender, val => {
+    state.gender = val;
+    validateKidInfo();
+    saveState();
+  });
+
+  // Accordion toggles (programmatic open/close)
+  const accKid = document.getElementById('step1');
+  const accTheme = document.getElementById('theme');
+  const accSupport = document.getElementById('supporting');
+
+  function openAccordion(section) {
+    [accKid, accTheme, accSupport].forEach(sec => {
+      if (!sec) return;
+      const shouldOpen = sec === section;
+      sec.classList.toggle('open', shouldOpen);
+      sec.toggleAttribute('hidden', !shouldOpen);
+    });
+    // Update current step card scale
+    if (stepper) {
+      stepper.querySelectorAll('.step-card').forEach(card => card.classList.remove('current'));
+      if (section === accKid) stepper.querySelector('[data-step="1"]').classList.add('current');
+      if (section === accTheme) stepper.querySelector('[data-step="2"]').classList.add('current'); // visually preview next
+      if (section === accSupport) stepper.querySelector('[data-step="1"]').classList.add('current'); // still step 1 page content
     }
   }
 
-  function update() {
-    // Recompute perView each time to react to resizes
-    perView = visibleCount();
-    const maxPage = pageCount() - 1;
-    page = Math.min(page, maxPage);
+  kidDoneBtn?.addEventListener('click', () => {
+    openAccordion(accTheme);
+  });
 
-    // Calculate translateX using (cardWidth + gap) * index
-    const first = cards[0];
-    const cardW = first.getBoundingClientRect().width || 1;
-    const gap = getGapPx();
-    const targetIndex = Math.min(page * perView, total - 1);
-    const targetLeft = (cardW + gap) * targetIndex;
+  // Theme selection
+  const themeGrid = document.getElementById('themeGrid');
+  themeGrid?.querySelectorAll('.theme-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      themeGrid.querySelectorAll('.theme-card').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.theme = btn.dataset.theme;
+      saveState();
+      openAccordion(accSupport);
+      validateCharacters();
+    });
+  });
 
-    track.style.transform = `translateX(-${targetLeft}px)`;
+  // Supporting characters
+  const addCharacterBtn = document.getElementById('addCharacterBtn');
+  const charactersWrap = document.getElementById('characters');
+  const createStoriesBtn = document.getElementById('createStoriesBtn');
 
-    prevBtn.disabled = page <= 0;
-    nextBtn.disabled = page >= maxPage;
-
-    // update dots
-    const dots = Array.from(dotsWrap.children);
-    dots.forEach((d, i) =>
-      d.setAttribute('aria-current', i === page ? 'true' : 'false')
-    );
+  function characterRowTemplate(index, value = '') {
+    return `
+      <div class="char-row" data-index="${index}">
+        <input type="text" placeholder="Describe the character (e.g., Mom Isabel, loving, sings 'la-la')" value="${value.replace(/"/g, '&quot;')}" />
+        <button type="button" class="char-remove" aria-label="Remove character">✕</button>
+      </div>
+    `;
   }
 
-  function goToPage(i) {
-    page = i;
-    update();
+  function renderCharacters() {
+    charactersWrap.innerHTML = state.characters.map((c, i) => characterRowTemplate(i, c)).join('');
+    charactersWrap.querySelectorAll('.char-row input').forEach((inp, i) => {
+      inp.addEventListener('input', e => {
+        state.characters[i] = e.target.value;
+        saveState();
+        validateCharacters();
+      });
+    });
+    charactersWrap.querySelectorAll('.char-remove').forEach((btn, i) => {
+      btn.addEventListener('click', () => {
+        state.characters.splice(i, 1);
+        saveState();
+        renderCharacters();
+        validateCharacters();
+      });
+    });
   }
 
-  prevBtn.addEventListener('click', () => {
-    if (page > 0) {
-      page--;
-      update();
-    }
-  });
-
-  nextBtn.addEventListener('click', () => {
-    if (page < pageCount() - 1) {
-      page++;
-      update();
-    }
-  });
-
-  // Drag / swipe interactions
-  let startX = 0, dragging = false, startPage = 0, startTx = 0;
-
-  function currentTranslateX() {
-    const m = track.style.transform.match(/-?\d+(\.\d+)?/);
-    return m ? parseFloat(m[0]) : 0;
+  function addCharacter() {
+    if (state.characters.length >= 5) return;
+    state.characters.push('');
+    saveState();
+    renderCharacters();
+    validateCharacters();
   }
 
-  viewport.addEventListener('pointerdown', (e) => {
-    dragging = true;
-    startX = e.clientX;
-    startPage = page;
-    startTx = currentTranslateX();
-    viewport.setPointerCapture(e.pointerId);
-    track.style.transition = 'none';
-  });
-
-  viewport.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const dx = e.clientX - startX;
-    track.style.transform = `translateX(${startTx + dx}px)`;
-  });
-
-  function endDrag(e) {
-    if (!dragging) return;
-    dragging = false;
-    const dx = e.clientX - startX;
-    const threshold = viewport.clientWidth * 0.15;
-    track.style.transition = ''; // restore CSS transition
-    if (dx < -threshold && page < pageCount() - 1) page++;
-    if (dx > threshold && page > 0) page--;
-    update();
+  function validateCharacters() {
+    const hasAtLeastOne = state.characters.length >= 1;
+    const anyEmpty = state.characters.some(c => !c.trim());
+    const ok = hasAtLeastOne && !anyEmpty;
+    createStoriesBtn.disabled = !ok;
   }
 
-  viewport.addEventListener('pointerup', endDrag);
-  viewport.addEventListener('pointercancel', endDrag);
-  viewport.addEventListener('pointerleave', () => {
-    if (dragging) {
-      dragging = false;
-      update();
-    }
+  addCharacterBtn?.addEventListener('click', addCharacter);
+
+  createStoriesBtn?.addEventListener('click', () => {
+    // Final guard
+    validateCharacters();
+    if (createStoriesBtn.disabled) return;
+    // Navigate to Step 2 page for now (keep top layer + step map)
+    window.location.href = 'create-step2.html';
   });
 
-  // Keyboard support
-  viewport.setAttribute('tabindex', '0');
-  viewport.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight') nextBtn.click();
-    if (e.key === 'ArrowLeft') prevBtn.click();
-  });
+  // On load, ensure we begin with Kid section open and a single empty character slot once theme is chosen
+  openAccordion(accKid);
+}
 
-  // Recalculate on resize
-  window.addEventListener('resize', () => {
-    buildDots();
-    update();
-  });
-
-  // Initialize after images load (avatars can affect width)
-  if (document.readyState === 'complete') {
-    buildDots(); update();
-  } else {
-    window.addEventListener('load', () => { buildDots(); update(); });
-  }
-})();
-
-/* ------------------------------------------------------------------
-   Story creation logic (Create page)
--------------------------------------------------------------------*/
+/* ===========================
+   (Legacy) Single-page generator guard — retained for compatibility
+   =========================== */
 const generateBtn = document.getElementById('generateBtn');
 if (generateBtn) {
   const input = document.getElementById('storyInput');
@@ -189,8 +210,8 @@ if (generateBtn) {
 
   generateBtn.addEventListener('click', async () => {
     const text = input.value.trim();
-    if (!text) return alert('Please describe your story idea first!');
-    output.textContent = '';
+    if (!text) return alert("Please describe your story idea first!");
+    output.textContent = "";
     loading.classList.remove('hidden');
 
     try {
@@ -202,9 +223,9 @@ if (generateBtn) {
       const data = await res.json();
       output.innerHTML = data.story
         ? data.story.replace(/\n/g, '<br/>')
-        : 'Sorry, something went wrong.';
+        : "Sorry, something went wrong.";
     } catch {
-      output.textContent = 'Error connecting to the story generator.';
+      output.textContent = "Error connecting to the story generator.";
     } finally {
       loading.classList.add('hidden');
     }
