@@ -6,10 +6,10 @@
   <title>Create Your Story — StoryBuds</title>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
-  <script defer src="script.js"></script>
+  <!-- cache-bust to avoid old script behavior -->
+  <script defer src="script.js?v=2025-10-05-lock1"></script>
 </head>
 <body class="fade-in">
-  <!-- Top layer stays the same -->
   <header class="topbar">
     <a href="index.html" class="logo">
       <span class="logo-badge">
@@ -25,8 +25,8 @@
   </header>
 
   <main class="section center fade-up">
-    <!-- Stepper -->
-    <div class="stepper" role="tablist" aria-label="Story creation steps">
+    <!-- NOTE: lock-step1 added -->
+    <div class="stepper lock-step1" role="tablist" aria-label="Story creation steps">
       <button class="step-card current" data-step="1" role="tab" aria-selected="true" aria-controls="step1">
         <div class="step-number">1</div>
         <div class="step-text">
@@ -49,7 +49,7 @@
       </button>
     </div>
 
-    <!-- Accordion: Step 1 content -->
+    <!-- Step 1 accordions (unchanged) -->
     <section id="step1" class="accordion open" aria-labelledby="step1-h">
       <h2 id="step1-h" class="acc-title">Kid’s information</h2>
       <div class="acc-body">
@@ -81,7 +81,6 @@
       </div>
     </section>
 
-    <!-- Accordion: Step 1 → Theme -->
     <section id="theme" class="accordion" aria-labelledby="theme-h" hidden>
       <h2 id="theme-h" class="acc-title">Theme</h2>
       <div class="acc-body">
@@ -94,7 +93,6 @@
       </div>
     </section>
 
-    <!-- Accordion: Step 1 → Supporting characters -->
     <section id="supporting" class="accordion" aria-labelledby="supporting-h" hidden>
       <h2 id="supporting-h" class="acc-title">Supporting characters</h2>
       <p class="acc-sub">
@@ -103,7 +101,6 @@
       </p>
       <div class="acc-body">
         <div id="characters"></div>
-
         <div class="actions between stack-mobile">
           <button id="addCharacterBtn" class="btn btn-outline" type="button">Add character</button>
           <button id="createStoriesBtn" class="btn btn-primary" type="button" disabled>Create stories</button>
@@ -112,8 +109,6 @@
     </section>
   </main>
 
-  <footer>
-    © <span id="year"></span> StoryBuds
-  </footer>
+  <footer>© <span id="year"></span> StoryBuds</footer>
 </body>
 </html>
