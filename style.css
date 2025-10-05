@@ -1,19 +1,186 @@
-/* ---------- Base (keeps landing page intact) ---------- */
-*, *::before, *::after { box-sizing: border-box; } /* prevents border growth from changing widths */
+/* =========================================================
+   VARIABLES & BASE (keeps landing page intact)
+   ========================================================= */
+:root {
+  --gold: #C59D5F;
+  --plum: #7A4EAB;
+  --bg1: #fffaf3;
+  --bg2: #f7ebf7;
+  --bg3: #f3f0fa;
+  --text: #2f2a36;
+  --muted: #7b7b7b;
+  --radius: 18px;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+/* Prevent border/padding from changing widths */
+*, *::before, *::after { box-sizing: border-box; }
+
 html, body { width: 100%; }
-body { overflow-x: hidden; } /* avoid any accidental horizontal expansion */
 
-/* Keep your existing base .section/.center rules but DO NOT force left align globally.
-   If you had `text-align:left` on .section, remove it. We'll scope left-align to create pages below. */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
 
+/* Background + base typography (as before) */
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+  background-size: 200% 200%;
+  animation: gradientShift 12s ease infinite;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: hidden; /* avoid accidental horizontal expansion */
+}
 
-/* ---------- CREATE PAGE: scoped styles so homepage isn't affected ---------- */
+h1, h2 { font-family: 'Nunito', sans-serif; color: var(--plum); }
+
+.section { padding: 60px 20px; text-align: center; } /* center for landing */
+.center { max-width: 600px; margin: 0 auto; }
+
+/* =========================================================
+   HEADER / TOPBAR + LOGO (same as your previously working styles)
+   ========================================================= */
+.topbar {
+  position: sticky; top: 0;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  z-index: 100;
+}
+
+/* Circular logo structure */
+.logo { display:flex; align-items:center; text-decoration:none; }
+
+/* Circle clip wrapper */
+.logo .logo-badge {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+  background: transparent;
+}
+
+/* Optional small variant */
+.logo.small .logo-badge { width: 44px; height: 44px; }
+
+/* The image inside the circle */
+.logo .logo-badge > img {
+  width: 100% !important; height: 100% !important;
+  object-fit: cover; object-position: center;
+  display: block; background: transparent; border-radius: 50%;
+}
+
+/* Safe fallback on the <img> itself */
+.logo img {
+  height: 56px; width: 56px; max-width: none;
+  border-radius: 50%; object-fit: cover; object-position: center;
+  background-color: white; box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+}
+.logo.small img {
+  height: 44px; width: 44px; border-radius: 50%;
+  object-fit: cover; object-position: center;
+}
+
+/* Nav */
+.hamburger { font-size:24px; background:none; border:none; cursor:pointer; color:var(--plum); }
+.menu {
+  position: absolute; top: 56px; right: 16px;
+  background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; padding: 10px;
+}
+.menu a { color: var(--plum); text-decoration: none; padding: 8px 16px; border-radius: 8px; }
+.menu a:hover { background:#f8f5ff; }
+.hidden { display:none; }
+
+/* =========================================================
+   LANDING PAGE UI (as before)
+   ========================================================= */
+.age-options {
+  display: flex; justify-content: center; flex-wrap: wrap;
+  gap: 16px; margin-top: 20px;
+}
+
+.age-card {
+  background: white; border-radius: var(--radius); padding: 20px 30px;
+  box-shadow: var(--shadow); cursor: pointer; font-size: 18px;
+  transition: transform 0.2s, background 0.3s;
+}
+.age-card:hover { transform: translateY(-3px); background: #fff7fa; }
+
+.info p {
+  max-width: 500px; margin: 10px auto 20px; color: var(--muted);
+}
+
+/* Global landing button (kept) */
+.btn {
+  background: var(--plum); color: white; border: none;
+  padding: 14px 28px; border-radius: 999px; cursor: pointer;
+  font-weight: 600; box-shadow: var(--shadow);
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+.btn:hover { transform: translateY(-2px); background: #8757c7; }
+
+.testimonials {
+  background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+  max-width: 500px; margin: 40px auto; padding: 24px;
+  font-style: italic; transition: opacity 0.5s ease;
+}
+
+/* Input & story box used on simple create flow */
+textarea {
+  width: 100%; border-radius: var(--radius); border: 1px solid #e0dcec;
+  padding: 14px; font-family: inherit; font-size: 16px; box-shadow: var(--shadow);
+  resize: vertical; min-height: 140px;
+}
+.story-box {
+  margin-top: 30px; background: #fff; border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 20px; text-align: left;
+  line-height: 1.6; white-space: pre-wrap;
+}
+
+/* Footer */
+footer { margin-top: auto; text-align: center; padding: 20px; color: var(--muted); font-size: 14px; }
+
+/* Animations */
+.fade-in { animation: fadeIn 0.8s ease both; }
+.fade-up { opacity: 0; transform: translateY(20px); animation: fadeUp 0.9s ease forwards; }
+.delay-1 { animation-delay: 0.3s; }
+.delay-2 { animation-delay: 0.6s; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Responsive */
+@media (max-width: 600px) {
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  .age-card { font-size: 16px; padding: 16px 24px; }
+  .btn { width: 100%; }
+  textarea { min-height: 120px; }
+  .logo img { height: 46px; }
+  .logo.small img { height: 36px; }
+}
+
+/* =========================================================
+   CREATE PAGE (SCOPED) — your latest snippet applied safely
+   ========================================================= */
+
+/* Only create pages should be left-aligned */
 body[data-page="create"] .section { text-align: left; }
 
 /* Stepper: lock width and prevent content from forcing expansion */
 body[data-page="create"] .stepper {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)); /* minmax(0,1fr) stops tracks from growing due to content */
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* stops tracks from growing due to content */
   gap: 14px;
   width: 100%;
   max-width: 100%;
@@ -25,7 +192,7 @@ body[data-page="create"] .step-card .step-text { min-width: 0; }
 body[data-page="create"] .step-card .step-title,
 body[data-page="create"] .step-card .step-desc { overflow-wrap: anywhere; }
 
-/* Keep your existing step-card visuals; if needed, keep the "current" scale without affecting layout */
+/* Current step visual (scale does not affect layout width) */
 body[data-page="create"] .step-card.current {
   transform: scale(1.03);
   border-color: var(--plum);
@@ -46,7 +213,10 @@ body[data-page="create"] .stepper.lock-step1 .step-card[data-step="1"] {
 }
 
 /* Accordions (scoped) */
-body[data-page="create"] .accordion { background:#fff; border-radius:16px; box-shadow:var(--shadow); margin-bottom:16px; overflow:hidden; }
+body[data-page="create"] .accordion {
+  background:#fff; border-radius:16px; box-shadow:var(--shadow);
+  margin-bottom:16px; overflow:hidden;
+}
 body[data-page="create"] .acc-title { margin:0; padding:16px 18px; font-size:20px; color: var(--plum); }
 body[data-page="create"] .acc-sub { margin: 8px 18px 0; color: var(--muted); }
 body[data-page="create"] .acc-body { padding: 18px; border-top: 1px solid #eee7ff; display:grid; gap:16px; }
@@ -69,8 +239,8 @@ body[data-page="create"] .chip.selected { background: #efe6ff; color: #4b2c86; b
 /* Theme cards (scoped) */
 body[data-page="create"] .theme-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
 body[data-page="create"] .theme-card {
-  padding:18px; border-radius:14px; border:2px dashed #e0dcec; background:#fff; font-weight:800; color:#4b2c86; cursor:pointer;
-  transition: border .2s ease, transform .1s ease, box-shadow .2s ease; text-align:center;
+  padding:18px; border-radius:14px; border:2px dashed #e0dcec; background:#fff; font-weight:800; color:#4b2c86;
+  cursor:pointer; transition: border .2s ease, transform .1s ease, box-shadow .2s ease; text-align:center;
 }
 body[data-page="create"] .theme-card:hover { transform: translateY(-1px); }
 body[data-page="create"] .theme-card.selected { border-style: solid; border-color: var(--plum); box-shadow: 0 8px 20px rgba(122,78,171,0.12); }
@@ -86,29 +256,22 @@ body[data-page="create"] .char-remove:hover { background:#ffd9de; }
 
 /* Buttons on create page only (won't touch landing page buttons) */
 body[data-page="create"] .btn {
-  background: var(--plum);
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 700;
-  box-shadow: var(--shadow);
+  background: var(--plum); color: white; border: none;
+  padding: 12px 20px; border-radius: 12px; cursor: pointer;
+  font-weight: 700; box-shadow: var(--shadow);
   transition: transform .15s ease, background .2s ease, opacity .2s ease;
 }
 body[data-page="create"] .btn:hover { transform: translateY(-1px); }
 body[data-page="create"] .btn:disabled { opacity: .45; cursor: not-allowed; }
 body[data-page="create"] .btn-outline {
-  background: #fff;
-  color: var(--plum);
-  border: 2px solid #e0dcec;
+  background: #fff; color: var(--plum); border: 2px solid #e0dcec;
 }
 body[data-page="create"] .btn-primary { background: var(--plum); }
 
 /* Placeholder (Step 2) */
 body[data-page="create"] .placeholder { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:18px; }
 
-/* Mobile */
+/* Mobile (create page) */
 @media (max-width: 800px) {
   body[data-page="create"] .stepper { grid-template-columns: 1fr; }
   body[data-page="create"] .step-card.current { transform: scale(1.01); }
@@ -116,4 +279,21 @@ body[data-page="create"] .placeholder { background:#fff; border-radius:16px; box
 @media (max-width: 560px) {
   body[data-page="create"] .theme-grid { grid-template-columns: 1fr; }
   body[data-page="create"] .actions.stack-mobile { flex-direction: column; }
+}
+
+/* =========================================================
+   FINAL SAFETY CLAMP (ensures logo never scales up)
+   ========================================================= */
+.topbar .logo .logo-badge { width:56px; height:56px; }
+.topbar .logo .logo-badge > img {
+  width:100% !important; height:100% !important;
+  object-fit:cover; object-position:center; border-radius:50%; display:block;
+}
+.topbar .logo img {
+  width:56px !important; height:56px !important; max-width:none !important;
+  object-fit:cover; object-position:center; border-radius:50%; display:block;
+}
+@media (max-width: 600px) {
+  .topbar .logo .logo-badge { width:46px; height:46px; }
+  .topbar .logo img { width:46px !important; height:46px !important; }
 }
