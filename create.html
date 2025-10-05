@@ -6,30 +6,110 @@
   <title>Create Your Story — StoryBuds</title>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
-  <link rel="icon" type="image/png" href="./logo.png">
   <script defer src="script.js"></script>
 </head>
 <body class="fade-in">
+  <!-- Top layer stays the same -->
   <header class="topbar">
-<a href="index.html" class="logo">
-  <span class="logo-badge">
-    <img src="logo.png" alt="StoryBuds logo" />
-  </span>
-</a>
+    <a href="index.html" class="logo">
+      <span class="logo-badge">
+        <img src="logo.png" alt="StoryBuds logo" />
+      </span>
+    </a>
     <button class="hamburger" id="menuBtn">☰</button>
     <nav id="menu" class="menu hidden">
       <a href="index.html">Home</a>
-      <a href="create.html">Create Stories</a>
+      <a href="create.html" aria-current="page">Create Stories</a>
       <a href="#">My Profile</a>
     </nav>
   </header>
 
   <main class="section center fade-up">
-    <h1>Create Your Personalised Story</h1>
-    <textarea id="storyInput" placeholder="Talk about your child’s ideas: characters, feelings, events..."></textarea>
-    <button id="generateBtn" class="btn">Generate Story</button>
-    <div id="loading" class="hidden">✨ Generating your story...</div>
-    <div id="storyOutput" class="story-box"></div>
+    <!-- Stepper -->
+    <div class="stepper" role="tablist" aria-label="Story creation steps">
+      <button class="step-card current" data-step="1" role="tab" aria-selected="true" aria-controls="step1">
+        <div class="step-number">1</div>
+        <div class="step-text">
+          <div class="step-title">Personalise your story</div>
+          <div class="step-desc">Personalise your story by specifying your kid’s details as well as supporting actors’.</div>
+        </div>
+      </button>
+      <button class="step-card" data-step="2" role="tab" aria-selected="false" aria-controls="step2" disabled>
+        <div class="step-number">2</div>
+        <div class="step-text">
+          <div class="step-title">Choose from StoryBud product alternatives</div>
+          <div class="step-desc">Choose the end product among different alternatives.</div>
+        </div>
+      </button>
+      <button class="step-card" data-step="3" role="tab" aria-selected="false" aria-controls="step3" disabled>
+        <div class="step-number">3</div>
+        <div class="step-text">
+          <div class="step-title">Start enjoying unique stories of your kid!</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Accordion: Step 1 content -->
+    <section id="step1" class="accordion open" aria-labelledby="step1-h">
+      <h2 id="step1-h" class="acc-title">Kid’s information</h2>
+      <div class="acc-body">
+        <div class="form-row">
+          <label for="kidName">Name</label>
+          <input id="kidName" type="text" placeholder="e.g., Arthur" autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <span class="label">Age group</span>
+          <div class="chip-group" id="ageGroup" role="radiogroup" aria-label="Age group">
+            <button type="button" class="chip" data-value="0-3" role="radio" aria-checked="false">0–3 years</button>
+            <button type="button" class="chip" data-value="3-6" role="radio" aria-checked="false">3–6 years</button>
+            <button type="button" class="chip" data-value="6-9" role="radio" aria-checked="false">6–9 years</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <span class="label">Gender</span>
+          <div class="chip-group" id="gender" role="radiogroup" aria-label="Gender">
+            <button type="button" class="chip" data-value="Male" role="radio" aria-checked="false">Male</button>
+            <button type="button" class="chip" data-value="Female" role="radio" aria-checked="false">Female</button>
+          </div>
+        </div>
+
+        <div class="actions right">
+          <button id="kidDoneBtn" class="btn btn-primary" disabled>Done</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Accordion: Step 1 → Theme -->
+    <section id="theme" class="accordion" aria-labelledby="theme-h" hidden>
+      <h2 id="theme-h" class="acc-title">Theme</h2>
+      <div class="acc-body">
+        <div class="theme-grid" id="themeGrid">
+          <button class="theme-card" data-theme="Adventure">Adventure</button>
+          <button class="theme-card" data-theme="Mystery">Mystery</button>
+          <button class="theme-card" data-theme="Magical">Magical</button>
+          <button class="theme-card" data-theme="Education">Education</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Accordion: Step 1 → Supporting characters -->
+    <section id="supporting" class="accordion" aria-labelledby="supporting-h" hidden>
+      <h2 id="supporting-h" class="acc-title">Supporting characters</h2>
+      <p class="acc-sub">
+        You can add yourself, other family members, your pets, your kid’s toys, etc. Please add a new character and
+        describe them (relationship, name, behaviors, etc.).
+      </p>
+      <div class="acc-body">
+        <div id="characters"></div>
+
+        <div class="actions between stack-mobile">
+          <button id="addCharacterBtn" class="btn btn-outline" type="button">Add character</button>
+          <button id="createStoriesBtn" class="btn btn-primary" type="button" disabled>Create stories</button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer>
