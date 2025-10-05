@@ -40,11 +40,63 @@
     <button class="btn" onclick="window.location.href='create.html'">YOUR FIRST FREE STORY</button>
   </section>
 
-  <section class="section testimonials fade-up delay-2">
-    <div class="testimonial" id="testimonialText">
-      “Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.” — <b>Elif</b>
+<section class="section fade-up delay-2">
+  <h2>What parents say</h2>
+
+  <div class="testimonial-slider" aria-label="Testimonials">
+    <button class="ts-nav ts-prev" aria-label="Previous testimonials">‹</button>
+
+    <div class="ts-viewport" id="tsViewport">
+      <div class="ts-track" id="tsTrack">
+        <!-- 1 -->
+        <article class="testimonial-card">
+          <p>“Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.”</p>
+          <div class="author">— Elif</div>
+        </article>
+        <!-- 2 -->
+        <article class="testimonial-card">
+          <p>“Finally a screen-free wind-down that works. He loves hearing his own ideas show up.”</p>
+          <div class="author">— James</div>
+        </article>
+        <!-- 3 -->
+        <article class="testimonial-card">
+          <p>“Calm, sweet stories. Bedtime is smoother and we get giggles instead of protests.”</p>
+          <div class="author">— Priya</div>
+        </article>
+        <!-- 4 -->
+        <article class="testimonial-card">
+          <p>“It feels personal every time. She’s proud the story remembers her bunny’s name.”</p>
+          <div class="author">— Hannah</div>
+        </article>
+        <!-- 5 -->
+        <article class="testimonial-card">
+          <p>“As a tired dad, I love the gentle tone and short chapters. Easy to read, easy to pause.”</p>
+          <div class="author">— Mark</div>
+        </article>
+        <!-- 6 -->
+        <article class="testimonial-card">
+          <p>“We switch between Turkish and English—both come out beautifully.”</p>
+          <div class="author">— Selin</div>
+        </article>
+        <!-- 7 -->
+        <article class="testimonial-card">
+          <p>“My son lights up when his robot idea appears on the page. Magical.”</p>
+          <div class="author">— Aisha</div>
+        </article>
+        <!-- 8 -->
+        <article class="testimonial-card">
+          <p>“Stories are gentle and kind. Perfect right before lights out.”</p>
+          <div class="author">— Tom</div>
+        </article>
+      </div>
     </div>
-  </section>
+
+    <button class="ts-nav ts-next" aria-label="Next testimonials">›</button>
+  </div>
+
+  <div class="ts-dots" id="tsDots" aria-label="Pagination"></div>
+</section>
+
 
   <footer>
     © <span id="year"></span> StoryBuds
