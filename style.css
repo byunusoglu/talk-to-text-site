@@ -60,15 +60,18 @@ h1, h2 {
   z-index: 100;
 }
 
-/* ✅ Real logo image */
 .logo img {
-  height: 56px;          /* slightly larger as requested */
+  height: 56px;          /* keeps it tall enough */
+  max-width: 120px;      /* limits it horizontally */
   width: auto;
+  object-fit: contain;
 }
 .logo.small img {
   height: 44px;
+  max-width: 90px;
   width: auto;
 }
+
 
 .hamburger {
   font-size: 24px;
