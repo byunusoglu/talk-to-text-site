@@ -247,6 +247,49 @@ h1, h2 {
   color: var(--muted);
   font-weight: 600;
 }
+/* --- Horizontal scroll + snap --- */
+.ts-viewport {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 8px;
+  padding-bottom: 8px; /* room for hidden scrollbar */
+}
+
+/* Hide scrollbar (WebKit) */
+.ts-viewport::-webkit-scrollbar { height: 0; }
+
+/* Track becomes a row that grows wider than viewport */
+.ts-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 24px) / 1.15); /* show ~1.15 cards on small */
+  gap: 16px;
+  padding: 4px 8px;
+  transition: none; /* no transform animations now */
+}
+
+/* Each card snaps into view */
+.snap { scroll-snap-align: start; }
+
+/* Cards sizing for readability while dragging */
+.testimonial-card {
+  min-height: 140px;
+}
+
+/* Responsive: show larger “peeks” on wider screens */
+@media (min-width: 720px) {
+  .ts-track { grid-auto-columns: calc((100% - 32px) / 2.2); } /* ~2 on medium */
+}
+@media (min-width: 1100px) {
+  .ts-track { grid-auto-columns: calc((100% - 48px) / 3.2); } /* ~3 on wide */
+}
+
+/* (Optional) subtle hover lift */
+.testimonial-card:hover { transform: translateY(-2px); transition: transform .2s; }
+
+/* You already added avatars + edge mask earlier; keeping them: */
 
 /* nav buttons */
 .ts-nav {
