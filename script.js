@@ -42,6 +42,15 @@ const stepper = document.querySelector('.stepper');
 const isCreatePage = !!document.getElementById('step1');
 
 if (isCreatePage) {
+  // Ensure stepper shows Step 1 as current and keeps it that way on this page
+  function lockStepperToStep1() {
+    if (!stepper) return;
+    stepper.querySelectorAll('.step-card').forEach(card => card.classList.remove('current'));
+    const s1 = stepper.querySelector('[data-step="1"]');
+    if (s1) s1.classList.add('current');
+  }
+  lockStepperToStep1();
+
   // Radiogroup chips
   function makeChipGroup(groupEl, onChange) {
     groupEl.querySelectorAll('.chip').forEach(chip => {
@@ -53,6 +62,7 @@ if (isCreatePage) {
         chip.classList.add('selected');
         chip.setAttribute('aria-checked', 'true');
         onChange?.(chip.dataset.value);
+        lockStepperToStep1(); // keep stepper on Step 1
       });
     });
   }
@@ -86,6 +96,7 @@ if (isCreatePage) {
     state.name = e.target.value;
     validateKidInfo();
     saveState();
+    lockStepperToStep1();
   });
 
   makeChipGroup(ageGroup, val => {
@@ -111,16 +122,12 @@ if (isCreatePage) {
       sec.classList.toggle('open', shouldOpen);
       sec.toggleAttribute('hidden', !shouldOpen);
     });
-    // Update current step card scale
-    if (stepper) {
-      stepper.querySelectorAll('.step-card').forEach(card => card.classList.remove('current'));
-      if (section === accKid) stepper.querySelector('[data-step="1"]').classList.add('current');
-      if (section === accTheme) stepper.querySelector('[data-step="2"]').classList.add('current'); // visually preview next
-      if (section === accSupport) stepper.querySelector('[data-step="1"]').classList.add('current'); // still step 1 page content
-    }
+    // Keep stepper visually on Step 1 throughout Step 1 page
+    lockStepperToStep1();
   }
 
   kidDoneBtn?.addEventListener('click', () => {
+    if (kidDoneBtn.disabled) return;
     openAccordion(accTheme);
   });
 
@@ -158,6 +165,7 @@ if (isCreatePage) {
         state.characters[i] = e.target.value;
         saveState();
         validateCharacters();
+        lockStepperToStep1();
       });
     });
     charactersWrap.querySelectorAll('.char-remove').forEach((btn, i) => {
@@ -166,6 +174,7 @@ if (isCreatePage) {
         saveState();
         renderCharacters();
         validateCharacters();
+        lockStepperToStep1();
       });
     });
   }
@@ -176,6 +185,7 @@ if (isCreatePage) {
     saveState();
     renderCharacters();
     validateCharacters();
+    lockStepperToStep1();
   }
 
   function validateCharacters() {
@@ -188,14 +198,13 @@ if (isCreatePage) {
   addCharacterBtn?.addEventListener('click', addCharacter);
 
   createStoriesBtn?.addEventListener('click', () => {
-    // Final guard
     validateCharacters();
     if (createStoriesBtn.disabled) return;
-    // Navigate to Step 2 page for now (keep top layer + step map)
+    // All Step 1 sub-sections complete → proceed to Step 2 page
     window.location.href = 'create-step2.html';
   });
 
-  // On load, ensure we begin with Kid section open and a single empty character slot once theme is chosen
+  // On load, begin with Kid section open
   openAccordion(accKid);
 }
 
