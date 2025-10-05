@@ -48,7 +48,7 @@ if (isCreatePage && stepper) {
   stepper.querySelectorAll('.step-card').forEach(card => card.classList.remove('current'));
   stepper.querySelector('[data-step="1"]')?.classList.add('current');
 
-  // Last-resort guard: if something toggles classes, revert immediately
+  // Guard: if something toggles classes, revert immediately
   const guard = new MutationObserver(() => {
     stepper.querySelectorAll('.step-card').forEach(card => {
       if (card.dataset.step !== '1' && card.classList.contains('current')) {
@@ -192,7 +192,9 @@ if (isCreatePage) {
   openAccordion(accKid);
 }
 
-/* Legacy generator (unchanged) */
+/* ===========================
+   Legacy generator (kept for older page)
+   =========================== */
 const generateBtn = document.getElementById('generateBtn');
 if (generateBtn) {
   const input = document.getElementById('storyInput');
