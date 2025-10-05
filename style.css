@@ -59,6 +59,38 @@ h1, h2 {
   border-bottom: 1px solid rgba(0,0,0,0.05);
   z-index: 100;
 }
+/* --- Circular logo that works on mobile + desktop --- */
+.logo { display:flex; align-items:center; text-decoration:none; }
+
+/* The circular clip container */
+.logo .logo-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;                 /* clips the image perfectly circular */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+  background: transparent;          /* no gray/square background */
+}
+
+/* Smaller variant */
+.logo.small .logo-badge {
+  width: 44px;
+  height: 44px;
+}
+
+/* The image itself (use strong selector to beat previous rules) */
+.logo .logo-badge > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;                /* fills the circle */
+  object-position: center;
+  display: block;                   /* removes inline gaps */
+  background: transparent;
+  border-radius: 50%;               /* belt-and-suspenders for Safari */
+}
 
 .logo img {
   height: 56px;
