@@ -250,11 +250,10 @@ h1, h2 {
 /* --- Horizontal scroll + snap --- */
 .ts-viewport {
   overflow-x: auto;
-  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
-  scroll-padding-left: 8px;
-  padding-bottom: 8px; /* room for hidden scrollbar */
+  scroll-padding-left: 12px;
+  padding-bottom: 8px;
 }
 
 /* Hide scrollbar (WebKit) */
@@ -264,14 +263,14 @@ h1, h2 {
 .ts-track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: calc((100% - 24px) / 1.15); /* show ~1.15 cards on small */
+  /* was: grid-auto-columns: calc((100% - 24px) / 1.15); */
+  grid-auto-columns: 85%;
   gap: 16px;
-  padding: 4px 8px;
-  transition: none; /* no transform animations now */
+  padding: 4px 12px; /* a touch more side room so the peek feels nice */
 }
 
 /* Each card snaps into view */
-.snap { scroll-snap-align: start; }
+.snap { scroll-snap-align: start; scroll-snap-stop: always; }
 
 /* Cards sizing for readability while dragging */
 .testimonial-card {
@@ -280,10 +279,20 @@ h1, h2 {
 
 /* Responsive: show larger “peeks” on wider screens */
 @media (min-width: 720px) {
-  .ts-track { grid-auto-columns: calc((100% - 32px) / 2.2); } /* ~2 on medium */
+  .ts-track {
+    /* was: calc((100% - 32px) / 2.2) */
+    grid-auto-columns: 45%;
+    gap: 18px;
+    padding: 6px 16px;
+  }
 }
 @media (min-width: 1100px) {
-  .ts-track { grid-auto-columns: calc((100% - 48px) / 3.2); } /* ~3 on wide */
+  .ts-track {
+    /* was: calc((100% - 48px) / 3.2) */
+    grid-auto-columns: 30%;
+    gap: 20px;
+    padding: 6px 20px;
+  }
 }
 
 /* (Optional) subtle hover lift */
