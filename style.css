@@ -202,6 +202,98 @@ h1, h2 {
   transition: opacity 0.5s ease;
 }
 
+/* === Testimonials slider === */
+.testimonial-slider {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  max-width: 960px;
+  margin: 24px auto 8px;
+}
+
+.ts-viewport {
+  overflow: hidden;
+}
+
+.ts-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 32px) / 2); /* show ~2 cards on desktop */
+  gap: 16px;
+  transition: transform 300ms ease;
+  will-change: transform;
+  padding: 4px;
+}
+
+.testimonial-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  text-align: left;
+  line-height: 1.6;
+  min-height: 120px;
+}
+
+.testimonial-card p {
+  margin: 0 0 10px;
+  font-style: italic;
+  color: var(--text);
+}
+
+.testimonial-card .author {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* nav buttons */
+.ts-nav {
+  background: #fff;
+  border: 1px solid #eee;
+  box-shadow: var(--shadow);
+  color: var(--plum);
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 24px;
+  display: grid;
+  place-items: center;
+}
+.ts-nav:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* dots */
+.ts-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ts-dots button {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: none;
+  background: #d8cdea;
+  cursor: pointer;
+}
+.ts-dots button[aria-current="true"] {
+  background: var(--plum);
+}
+
+/* Responsive: 1 card on small screens, 3 on wide */
+@media (max-width: 720px) {
+  .ts-track { grid-auto-columns: 100%; } /* 1 card */
+}
+@media (min-width: 1100px) {
+  .ts-track { grid-auto-columns: calc((100% - 32px) / 3); } /* ~3 cards */
+}
+
 /* 📝 Story input & box */
 textarea {
   width: 100%;
