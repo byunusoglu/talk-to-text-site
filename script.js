@@ -18,9 +18,9 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 /* ------------------------------------------------------------------
    Testimonials slider (manual; no auto-advance)
-   Markup expected in index.html:
+   Expected markup in index.html:
    - .testimonial-slider with .ts-prev, .ts-next
-   - .ts-viewport wrapping #tsTrack
+   - .ts-viewport.edge-mask wrapping #tsTrack
    - #tsDots for pagination dots
 -------------------------------------------------------------------*/
 (function initTestimonialSlider() {
@@ -29,19 +29,27 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   const prevBtn = document.querySelector('.ts-prev');
   const nextBtn = document.querySelector('.ts-next');
   const dotsWrap = document.getElementById('tsDots');
-
-  if (!track || !viewport || !prevBtn || !nextBtn || !dotsWrap) return;
+  if (!track || !viewport || !prevBtn || !nextBtn || !dotsWrap) return; // not on this page
 
   const cards = Array.from(track.children);
   const total = cards.length;
 
+  function getGapPx() {
+    const cs = window.getComputedStyle(track);
+    // CSS may expose gap via 'column-gap' or 'gap'
+    const gapStr = cs.getPropertyValue('column-gap') || cs.getPropertyValue('gap') || '0px';
+    const n = parseFloat(gapStr);
+    return Number.isFinite(n) ? n : 0;
+  }
+
   // How many cards are visible based on actual layout
   function visibleCount() {
-    const firstCard = cards[0];
-    if (!firstCard) return 1;
-    const cardWidth = firstCard.getBoundingClientRect().width || 1;
-    const viewWidth = viewport.getBoundingClientRect().width || 1;
-    return Math.max(1, Math.round(viewWidth / cardWidth));
+    const first = cards[0];
+    if (!first) return 1;
+    const cardW = first.getBoundingClientRect().width || 1;
+    const viewW = viewport.getBoundingClientRect().width || 1;
+    // Use floor to avoid overestimating, which can collapse pages
+    return Math.max(1, Math.floor((viewW + getGapPx()) / (cardW + getGapPx())));
   }
 
   let perView = visibleCount();
@@ -63,19 +71,24 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   }
 
   function update() {
+    // Recompute perView each time to react to resizes
     perView = visibleCount();
     const maxPage = pageCount() - 1;
     page = Math.min(page, maxPage);
 
-    const firstLeft = cards[0].offsetLeft;
+    // Calculate translateX using (cardWidth + gap) * index
+    const first = cards[0];
+    const cardW = first.getBoundingClientRect().width || 1;
+    const gap = getGapPx();
     const targetIndex = Math.min(page * perView, total - 1);
-    const targetLeft = cards[targetIndex].offsetLeft - firstLeft;
+    const targetLeft = (cardW + gap) * targetIndex;
 
     track.style.transform = `translateX(-${targetLeft}px)`;
 
     prevBtn.disabled = page <= 0;
     nextBtn.disabled = page >= maxPage;
 
+    // update dots
     const dots = Array.from(dotsWrap.children);
     dots.forEach((d, i) =>
       d.setAttribute('aria-current', i === page ? 'true' : 'false')
@@ -102,19 +115,18 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   });
 
   // Drag / swipe interactions
-  let startX = 0,
-    dragging = false,
-    startMatrixX = 0;
+  let startX = 0, dragging = false, startPage = 0, startTx = 0;
 
   function currentTranslateX() {
-    const m = track.style.transform.match(/translateX\((-?\d+(\.\d+)?)px\)/);
-    return m ? parseFloat(m[1]) : 0;
+    const m = track.style.transform.match(/-?\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : 0;
   }
 
   viewport.addEventListener('pointerdown', (e) => {
     dragging = true;
     startX = e.clientX;
-    startMatrixX = currentTranslateX();
+    startPage = page;
+    startTx = currentTranslateX();
     viewport.setPointerCapture(e.pointerId);
     track.style.transition = 'none';
   });
@@ -122,7 +134,7 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   viewport.addEventListener('pointermove', (e) => {
     if (!dragging) return;
     const dx = e.clientX - startX;
-    track.style.transform = `translateX(${startMatrixX + dx}px)`;
+    track.style.transform = `translateX(${startTx + dx}px)`;
   });
 
   function endDrag(e) {
@@ -158,14 +170,16 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     update();
   });
 
-  // Init
-  buildDots();
-  update();
+  // Initialize after images load (avatars can affect width)
+  if (document.readyState === 'complete') {
+    buildDots(); update();
+  } else {
+    window.addEventListener('load', () => { buildDots(); update(); });
+  }
 })();
 
 /* ------------------------------------------------------------------
    Story creation logic (Create page)
-   (unchanged; posts transcript to your Vercel API)
 -------------------------------------------------------------------*/
 const generateBtn = document.getElementById('generateBtn');
 if (generateBtn) {
