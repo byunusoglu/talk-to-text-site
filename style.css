@@ -171,3 +171,16 @@ footer { margin-top:auto; text-align:center; padding:20px; color:var(--muted); f
   .theme-grid { grid-template-columns: 1fr; }
   .stack-mobile { flex-direction: column; }
 }
+
+.stepper.lock-step1 .step-card {
+  /* ignore any .current that might be toggled by old JS */
+  pointer-events: none;
+  transform: scale(0.98) !important;
+  border-color: transparent !important;
+  box-shadow: var(--shadow) !important;
+}
+.stepper.lock-step1 .step-card[data-step="1"] {
+  transform: scale(1.03) !important;
+  border-color: var(--plum) !important;
+  box-shadow: 0 10px 28px rgba(122,78,171,0.12) !important;
+}
