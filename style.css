@@ -10,12 +10,14 @@
   --shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
 }
 
+/* 🌈 Background animation */
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
+/* 🩵 Base setup */
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
@@ -29,55 +31,94 @@ body {
   overflow-x: hidden;
 }
 
-h1, h2 { font-family: 'Nunito', sans-serif; color: var(--plum); }
+h1, h2 {
+  font-family: 'Nunito', sans-serif;
+  color: var(--plum);
+}
 
-.section { padding: 60px 20px; text-align: center; }
-.center { max-width: 600px; margin: 0 auto; }
+.section {
+  padding: 60px 20px;
+  text-align: center;
+}
 
+.center {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* 🧭 Header / Topbar */
 .topbar {
-  position: sticky; top: 0;
+  position: sticky;
+  top: 0;
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(8px);
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 20px; border-bottom: 1px solid rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
   z-index: 100;
 }
 
+/* ✅ Real logo image */
 .logo img {
-  height: 56px;       /* adjust between 50–60px as you like */
+  height: 56px;          /* slightly larger as requested */
   width: auto;
 }
 .logo.small img {
   height: 44px;
+  width: auto;
 }
 
 .hamburger {
-  font-size: 24px; background: none; border: none;
-  cursor: pointer; color: var(--plum);
+  font-size: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--plum);
 }
 
+/* 🍔 Dropdown menu */
 .menu {
-  position: absolute; top: 56px; right: 16px;
-  background: white; border-radius: var(--radius);
+  position: absolute;
+  top: 56px;
+  right: 16px;
+  background: white;
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
   padding: 10px;
 }
 .menu a {
-  color: var(--plum); text-decoration: none;
-  padding: 8px 16px; border-radius: 8px;
+  color: var(--plum);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
 }
-.menu a:hover { background: #f8f5ff; }
-.hidden { display: none; }
+.menu a:hover {
+  background: #f8f5ff;
+}
+.hidden {
+  display: none;
+}
 
+/* 🧒 Age group selection */
 .age-options {
-  display: flex; justify-content: center;
-  flex-wrap: wrap; gap: 16px; margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
 }
+
 .age-card {
-  background: white; border-radius: var(--radius);
-  padding: 20px 30px; box-shadow: var(--shadow);
-  cursor: pointer; font-size: 18px;
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px 30px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-size: 18px;
   transition: transform 0.2s, background 0.3s;
 }
 .age-card:hover {
@@ -85,43 +126,73 @@ h1, h2 { font-family: 'Nunito', sans-serif; color: var(--plum); }
   background: #fff7fa;
 }
 
-.info p { max-width: 500px; margin: 10px auto 20px; color: var(--muted); }
-
-.btn {
-  background: var(--plum); color: white; border: none;
-  padding: 14px 28px; border-radius: 999px;
-  cursor: pointer; font-weight: 600;
-  box-shadow: var(--shadow); transition: transform 0.2s ease;
+/* 💬 Info section */
+.info p {
+  max-width: 500px;
+  margin: 10px auto 20px;
+  color: var(--muted);
 }
-.btn:hover { transform: translateY(-2px); }
 
-.testimonials {
-  background: white; border-radius: var(--radius);
+/* ☁️ Button */
+.btn {
+  background: var(--plum);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
   box-shadow: var(--shadow);
-  max-width: 500px; margin: 40px auto;
-  padding: 24px; font-style: italic;
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+.btn:hover {
+  transform: translateY(-2px);
+  background: #8757c7;
+}
+
+/* 💬 Testimonials */
+.testimonials {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 24px;
+  font-style: italic;
   transition: opacity 0.5s ease;
 }
 
+/* 📝 Story input & box */
 textarea {
-  width: 100%; border-radius: var(--radius);
-  border: 1px solid #e0dcec; padding: 14px;
-  font-family: inherit; font-size: 16px;
-  box-shadow: var(--shadow); resize: vertical;
+  width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid #e0dcec;
+  padding: 14px;
+  font-family: inherit;
+  font-size: 16px;
+  box-shadow: var(--shadow);
+  resize: vertical;
   min-height: 140px;
 }
 
 .story-box {
-  margin-top: 30px; background: #fff;
+  margin-top: 30px;
+  background: #fff;
   border-radius: var(--radius);
-  box-shadow: var(--shadow); padding: 20px;
-  text-align: left; line-height: 1.6;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  text-align: left;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 
+/* 🦶 Footer */
 footer {
-  margin-top: auto; text-align: center;
-  padding: 20px; color: var(--muted); font-size: 14px;
+  margin-top: auto;
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+  font-size: 14px;
 }
 
 /* ✨ Animations */
@@ -129,24 +200,34 @@ footer {
   animation: fadeIn 0.8s ease both;
 }
 .fade-up {
-  opacity: 0; transform: translateY(20px);
+  opacity: 0;
+  transform: translateY(20px);
   animation: fadeUp 0.9s ease forwards;
 }
-.delay-1 { animation-delay: 0.3s; }
-.delay-2 { animation-delay: 0.6s; }
+.delay-1 {
+  animation-delay: 0.3s;
+}
+.delay-2 {
+  animation-delay: 0.6s;
+}
 
 @keyframes fadeIn {
-  from { opacity: 0; } to { opacity: 1; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* 📱 Responsive */
+/* 📱 Responsive design */
 @media (max-width: 600px) {
   h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
   .age-card { font-size: 16px; padding: 16px 24px; }
   .btn { width: 100%; }
   textarea { min-height: 120px; }
+  .logo img { height: 46px; }
+  .logo.small img { height: 36px; }
 }
