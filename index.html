@@ -2,426 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KidStory — Make bedtime magical</title>
-  <meta name="description" content="Turn your chat with your child into a living bedtime story. Speak, generate, shape, and read—together." />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg: #fffdf9;
-      --ink: #2b2d42;
-      --muted: #596273;
-      --brand: #7c5cff; /* lavender */
-      --brand-2: #ff9f68; /* peach */
-      --brand-3: #61d6c6; /* mint */
-      --accent: #ffd166; /* sunny */
-      --card: #ffffff;
-      --ok: #2ec27e;
-      --warn: #f0ad4e;
-      --err: #e86868;
-      --shadow: 0 10px 30px rgba(44,35,67,.08);
-      --radius-xl: 18px;
-      --radius-lg: 14px;
-      --radius-md: 12px;
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;height:100%;background:var(--bg);color:var(--ink)}
-    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;line-height:1.6}
-    .wrap{max-width:1120px;margin:0 auto;padding:20px}
-    header.site{
-      position:sticky;top:0;z-index:20;background:linear-gradient(180deg,rgba(255,253,249,.9),rgba(255,253,249,.7));backdrop-filter:saturate(1.2) blur(8px);
-      border-bottom:1px solid rgba(0,0,0,.04)
-    }
-    .nav{display:flex;align-items:center;justify-content:space-between;gap:16px}
-    .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
-    .logo{width:36px;height:36px;border-radius:12px;background:conic-gradient(from 220deg at 50% 50%, var(--brand), var(--brand-2), var(--brand-3), var(--brand));box-shadow:var(--shadow)}
-    .brand b{font-family:Nunito,sans-serif;font-weight:800;font-size:20px;letter-spacing:.2px}
-    .nav a.btn{padding:10px 16px;border-radius:999px;background:var(--ink);color:white;text-decoration:none;font-weight:600;box-shadow:var(--shadow)}
-    .nav a.btn:hover{transform:translateY(-1px)}
-
-    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:32px;align-items:center;padding:42px 0}
-    @media (max-width:980px){.hero{grid-template-columns:1fr}}
-    .hero h1{font-family:Nunito,sans-serif;font-weight:800;font-size:clamp(28px,4.5vw,46px);line-height:1.1;margin:0}
-    .hero p.lede{font-size:18px;color:var(--muted);margin:14px 0 24px}
-    .hero .cta{display:flex;gap:12px;flex-wrap:wrap}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#fff;border:1px solid rgba(0,0,0,.06);box-shadow:var(--shadow);font-size:14px}
-
-    .eyebrow{display:inline-flex;gap:8px;align-items:center;background:rgba(124,92,255,.1);color:#5a45ca;padding:6px 10px;border-radius:999px;font-weight:600;font-size:12px}
-    .illus{
-      position:relative;background:radial-gradient(120% 120% at 100% 0%, #fff 0%, #f7f5ff 40%, #fffdf9 100%);
-      border-radius:var(--radius-xl);padding:18px;box-shadow:var(--shadow)
-    }
-    .illus .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
-    .illus .stack{display:grid;gap:14px}
-
-    .section{padding:24px 0 8px}
-    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-    @media (max-width:980px){.grid-3{grid-template-columns:1fr}}
-    .feature{background:var(--card);border-radius:var(--radius-lg);padding:18px;box-shadow:var(--shadow)}
-    .feature h3{margin:0 0 6px;font-family:Nunito,sans-serif}
-    .feature p{margin:0;color:var(--muted)}
-
-    .app{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:start}
-    @media (max-width:1024px){.app{grid-template-columns:1fr}}
-    .panel{background:#fff;border-radius:var(--radius-xl);box-shadow:var(--shadow);padding:16px}
-    .controls{display:grid;gap:12px}
-    label{font-weight:600;font-size:14px}
-    input[type="text"], textarea, select{
-      width:100%;padding:12px 14px;border-radius:12px;border:1px solid #eae7f5;background:#fff;font:inherit
-    }
-    textarea{min-height:100px;resize:vertical}
-
-    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s ease}
-    .btn.primary{background:var(--brand);color:white}
-    .btn.secondary{background:#fff;color:var(--ink);border:1px solid #e9e4ff}
-    .btn.ghost{background:transparent;border:1px dashed #cfc7ff}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .btn:hover{transform:translateY(-1px)}
-    .hint{font-size:12px;color:var(--muted)}
-
-    .rec{display:flex;align-items:center;gap:10px}
-    .dot{width:10px;height:10px;border-radius:50%;background:#bbb;box-shadow:0 0 0 0 rgba(231,76,60,0.7);transform:scale(1)}
-    .rec.active .dot{background:#e74c3c;animation:pulse 1.4s infinite}
-    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(231,76,60,0.7)}70%{box-shadow:0 0 0 10px rgba(231,76,60,0)}100%{box-shadow:0 0 0 0 rgba(231,76,60,0)}}
-
-    .reader{background:#fff;border-radius:var(--radius-xl);box-shadow:var(--shadow);padding:16px;display:grid;gap:12px}
-    .pages{background:#fffefb;border:1px solid #f1ece0;border-radius:16px;padding:16px;min-height:240px}
-    .page{font-size:18px;line-height:1.7}
-    .progress{height:8px;background:#eee;border-radius:999px;overflow:hidden}
-    .progress > span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),var(--brand-2));transition:width .3s ease}
-
-    .ratings{display:flex;gap:6px}
-    .star{font-size:22px;cursor:pointer;opacity:.35}
-    .star.active{opacity:1}
-
-    .testis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-    @media (max-width:980px){.testis{grid-template-columns:1fr}}
-    .testi{background:#fff;border-radius:16px;padding:14px;box-shadow:var(--shadow)}
-    .foot{padding:26px 0 42px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    .foot a{color:inherit;text-decoration:none}
-    .badge{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;background:#fff;border:1px solid #f0eef9}
-
-    .toast{position:fixed;right:16px;bottom:16px;z-index:50;background:#111;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);transition:all .2s ease}
-    .toast.show{opacity:1;transform:translateY(0)}
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>StoryBuds — Personalised Bedtime Stories</title>
+  <meta name="description" content="Show love and respect to your kid through personalised stories. Invest in your family bonds. Invest in you." />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="script.js"></script>
 </head>
-<body>
-  <header class="site">
-    <div class="wrap nav">
-      <a class="brand" href="#">
-        <div class="logo" aria-hidden="true"></div>
-        <b>KidStory</b>
-      </a>
-      <nav class="row">
-        <a href="#how" class="badge">How it works</a>
-        <a href="#app" class="badge">Create a story</a>
-        <a class="btn" href="#app">Try it free</a>
-      </nav>
-    </div>
+<body class="fade-in">
+
+  <header class="topbar">
+    <a href="index.html" class="logo">
+      <!-- Lightweight SVG logo -->
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="44" fill="none" stroke="#C59D5F" stroke-width="2.2" />
+        <path d="M30,55 C35,40 65,40 70,55 C75,70 25,70 30,55 Z" fill="none" stroke="#7A4EAB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="45" cy="50" r="2" fill="#7A4EAB"/>
+        <circle cx="55" cy="50" r="2" fill="#7A4EAB"/>
+        <path d="M43,60 C47,63 53,63 57,60" stroke="#C59D5F" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </a>
+    <button class="hamburger" id="menuBtn">☰</button>
+    <nav id="menu" class="menu hidden">
+      <a href="index.html">Home</a>
+      <a href="create.html">Create Stories</a>
+      <a href="#">My Profile</a>
+    </nav>
   </header>
 
-  <main>
-    <section class="wrap hero">
-      <div>
-        <span class="eyebrow">Bedtime stories, shaped by your child</span>
-        <h1>Turn tonight’s chit‑chat into a magical story.</h1>
-        <p class="lede">Talk with your child about characters and adventures. Tap <b>Generate</b>, and watch a cozy, age‑safe story appear—tailored to your little one.</p>
-        <div class="cta">
-          <a class="btn primary" href="#app">Start your first story</a>
-          <span class="pill">✅ No signup needed</span>
-          <span class="pill">🕒 5‑minute reads</span>
-          <span class="pill">🛡️ Kid‑safe content</span>
-        </div>
-      </div>
-      <div class="illus">
-        <div class="stack">
-          <div class="card" aria-hidden="true">
-            <div class="row" style="justify-content:space-between">
-              <div class="rec" id="recPreview">
-                <div class="dot"></div>
-                <strong>Listening</strong>
-              </div>
-              <div class="badge">Parent + Kid</div>
-            </div>
-            <p style="margin:10px 0 0;color:var(--muted)">“A purple T‑rex named Timo and a brave cat called Suna…”</p>
-          </div>
-          <div class="card" aria-hidden="true">
-            <div class="progress" aria-hidden="true"><span style="width:60%"></span></div>
-            <div style="font-weight:700">Page 1 • The Garden of Giggles</div>
-            <p style="color:var(--muted);margin:8px 0 0">Timo the T‑rex loved kind roars. Tonight, he learned a tiny roar can make a big friend…</p>
-          </div>
-        </div>
-      </div>
-    </section>
+  <section class="section center fade-up">
+    <h2>Choose your child’s age</h2>
+    <div class="age-options">
+      <div class="age-card" data-target="create.html">0–2 years 👶</div>
+      <div class="age-card" data-target="create.html">2–4 years 🧒</div>
+      <div class="age-card" data-target="create.html">4–6 years 🌱</div>
+    </div>
+  </section>
 
-    <section id="how" class="wrap section">
-      <div class="grid-3">
-        <div class="feature">
-          <h3>1) Chat together</h3>
-          <p>Ask your child about heroes, places, and silly twists. Use the built‑in voice note or type it in.</p>
-        </div>
-        <div class="feature">
-          <h3>2) Generate</h3>
-          <p>Press <b>Generate</b>. We turn your ideas into the first page—age‑appropriate and gentle.</p>
-        </div>
-        <div class="feature">
-          <h3>3) Shape the story</h3>
-          <p>When your kid adds new wishes, record again and tap <b>Regenerate</b> for the next page.</p>
-        </div>
-      </div>
-    </section>
+  <section class="section info fade-up delay-1">
+    <h1>MORE QUALITY TIME. STRONGER BONDS WITH YOUR KID.</h1>
+    <p>Show love and respect to your kid by personalised stories. Invest in your family bonds. Invest in you.</p>
+    <button class="btn" onclick="window.location.href='create.html'">YOUR FIRST FREE STORY</button>
+  </section>
 
-    <section id="app" class="wrap section app" aria-label="Create a story">
-      <div class="panel">
-        <h2 style="margin:4px 0 10px;font-family:Nunito,sans-serif">Create your story</h2>
-        <div class="controls">
-          <div>
-            <label for="childName">Child’s name (optional)</label>
-            <input id="childName" type="text" placeholder="e.g., Ada" />
-          </div>
-          <div>
-            <label for="age">Age (helps with tone)</label>
-            <select id="age">
-              <option value="3">3</option>
-              <option value="4" selected>4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-            </select>
-            <div class="hint">We keep language simple and cozy.</div>
-          </div>
-          <div>
-            <label>Parent + Kid conversation</label>
-            <div class="row">
-              <button class="btn secondary" id="recBtn" type="button">🎙️ Start voice note</button>
-              <div class="rec" id="recState"><div class="dot"></div> <span id="recText">Idle</span></div>
-            </div>
-            <textarea id="transcript" placeholder="Or type ideas here: characters, places, feelings, boundaries…"></textarea>
-            <div class="hint">Tip: mention names (e.g., “Timo the T‑rex and Suna the cat”), a place, and a tiny challenge.</div>
-          </div>
-          <div class="row">
-            <button class="btn primary" id="genBtn" type="button">Generate first page</button>
-            <button class="btn ghost" id="nextBtn" type="button" disabled>Regenerate next page</button>
-            <button class="btn secondary" id="clearBtn" type="button">Clear</button>
-          </div>
-          <div id="status" class="hint"></div>
-        </div>
-      </div>
-
-      <div class="reader" aria-live="polite">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <div class="row"><strong>Story Reader</strong><span class="pill" id="pageTag">Page 0</span></div>
-          <div class="ratings" aria-label="Rate this story">
-            <span class="star" role="button" aria-label="1 star">★</span>
-            <span class="star" role="button" aria-label="2 stars">★</span>
-            <span class="star" role="button" aria-label="3 stars">★</span>
-            <span class="star" role="button" aria-label="4 stars">★</span>
-            <span class="star" role="button" aria-label="5 stars">★</span>
-          </div>
-        </div>
-        <div class="progress" aria-hidden="true"><span id="prog"></span></div>
-        <div class="pages" id="pages">
-          <div class="page" id="page">Your story will appear here. Start with a quick chat and tap Generate.</div>
-        </div>
-        <div class="row">
-          <button class="btn secondary" id="prevPage" disabled>← Previous</button>
-          <button class="btn secondary" id="nextPage" disabled>Next →</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="wrap section">
-      <h2 style="font-family:Nunito,sans-serif;margin-bottom:12px">Loved by little listeners</h2>
-      <div class="testis">
-        <div class="testi">“Our 4‑year‑old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.” — <b>Elif</b></div>
-        <div class="testi">“Finally a screen‑free wind‑down that works. He loves hearing his own ideas show up.” — <b>James</b></div>
-        <div class="testi">“A calm five‑minute story that’s always gentle. Instant favourite.” — <b>Priya</b></div>
-      </div>
-    </section>
-
-    <section class="wrap section" aria-label="Trust & Safety">
-      <div class="grid-3">
-        <div class="feature"><h3>Age‑aware</h3><p>Language and themes adapt to your child’s age.</p></div>
-        <div class="feature"><h3>Privacy‑first</h3><p>Your voice note stays in your browser until you tap Generate.</p></div>
-        <div class="feature"><h3>Bedtime‑friendly</h3><p>Calm pacing, gentle endings, no scary surprises.</p></div>
-      </div>
-    </section>
-
-    <section class="wrap section" style="text-align:center">
-      <h2 style="font-family:Nunito,sans-serif">Ready to try with your child tonight?</h2>
-      <a class="btn primary" href="#app">Create a free story</a>
-      <div style="margin-top:10px" class="hint">Works on mobile and desktop. No signup required.</div>
-    </section>
-  </main>
+  <section class="section testimonials fade-up delay-2">
+    <div class="testimonial" id="testimonialText">
+      “Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.” — <b>Elif</b>
+    </div>
+  </section>
 
   <footer>
-    <div class="wrap foot">
-      <div>© <span id="year"></span> KidStory</div>
-      <div class="row">
-        <a href="#">Privacy</a>
-        <span>•</span>
-        <a href="#">Contact</a>
-      </div>
-    </div>
+    © <span id="year"></span> StoryBuds
   </footer>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <script>
-    // ——— Simple UX helpers ———
-    const $ = (q) => document.querySelector(q);
-    const $$ = (q) => Array.from(document.querySelectorAll(q));
-    const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2200); };
-
-    // Year
-    $('#year').textContent = new Date().getFullYear();
-
-    // Ratings UI (client-only demo; integrate with backend if desired)
-    $$('.star').forEach((el, i)=>{
-      el.addEventListener('click', ()=>{
-        $$('.star').forEach((s, j)=> s.classList.toggle('active', j<=i));
-        toast(`Thanks for rating ${i+1}★`);
-      });
-    });
-
-    // Reader state
-    const pageTag = $('#pageTag');
-    const pageEl = $('#page');
-    const prog = $('#prog');
-    let pages = [];
-    let current = 0;
-
-    function updateReader(){
-      const total = Math.max(1, pages.length);
-      pageEl.textContent = pages[current] || 'Your story will appear here. Start with a quick chat and tap Generate.';
-      pageTag.textContent = `Page ${pages.length? current+1: 0}`;
-      prog.style.width = `${(pages.length? (current+1)/total : 0)*100}%`;
-      $('#prevPage').disabled = current<=0;
-      $('#nextPage').disabled = current>=pages.length-1;
-      $('#nextBtn').disabled = pages.length===0; // enable regenerate when a first page exists
-    }
-
-    $('#prevPage').onclick = ()=>{ if(current>0){ current--; updateReader(); }};
-    $('#nextPage').onclick = ()=>{ if(current<pages.length-1){ current++; updateReader(); }};
-
-    // Recorder using Web Speech API (no server needed). Falls back to manual typing.
-    let recog, recOn = false;
-    const recBtn = $('#recBtn');
-    const recState = $('#recState');
-    const recText = $('#recText');
-
-    function toggleRecUI(on){
-      recOn = !!on;
-      recState.classList.toggle('active', on);
-      recText.textContent = on ? 'Listening…' : 'Idle';
-      $('#recPreview').classList.toggle('active', on);
-      recBtn.textContent = on ? '⏹️ Stop voice note' : '🎙️ Start voice note';
-    }
-
-    function startRec(){
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if(!SR){ toast('Voice note not supported on this browser. You can type instead.'); return; }
-      recog = new SR();
-      recog.lang = 'en-GB';
-      recog.interimResults = true;
-      recog.continuous = true;
-      const buf = [];
-      recog.onresult = (e)=>{
-        let last = '';
-        for(let i=e.resultIndex;i<e.results.length;i++){
-          const tr = e.results[i][0].transcript;
-          last = tr;
-          if(e.results[i].isFinal){ buf.push(tr.trim()); }
-        }
-        $('#transcript').value = (buf.join('. ') + ' ' + last).trim();
-      }
-      recog.onerror = ()=> toast('Mic error. You can keep typing.');
-      recog.onend = ()=> toggleRecUI(false);
-      recog.start();
-      toggleRecUI(true);
-    }
-
-    function stopRec(){ if(recog){ try{recog.stop();}catch{} } toggleRecUI(false); }
-    recBtn.onclick = ()=> recOn ? stopRec() : startRec();
-
-    // ——— API integration ———
-    const apiUrl = 'https://fairytale-api.vercel.app/api/generate-story'; // keep backend the same
-    const statusEl = $('#status');
-
-    async function generate(first=true){
-      try{
-        const transcript = $('#transcript').value.trim();
-        if(!transcript){ toast('Tell us a few ideas first.'); return; }
-        const childName = $('#childName').value.trim();
-        const age = $('#age').value;
-        const payload = {
-        action: first ? 'start' : 'next',
-        lang: 'EN',
-        tone: 'gentle',
-        pageIndex: pages.length,
-        pagesSoFar: pages.slice(),
-        transcript,
-        // keep aliases for maximum compatibility with the old API
-        prompt: transcript,
-        notes: transcript,
-        message: transcript,
-        input: transcript,
-        text: transcript,
-        // new optional hints (safe to ignore server-side)
-        childName: childName || undefined,
-        age: age ? Number(age) : undefined,
-        previousPage: pages.length ? pages[pages.length - 1] : undefined
-        }; 
-
-        $('#genBtn').disabled = true; $('#nextBtn').disabled = true; statusEl.textContent = 'Generating…';
-        const res = await fetch(apiUrl, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if(!res.ok){ const t = await res.text(); throw new Error(`API ${res.status}: ${t}`); }
-        const data = await res.json().catch(()=>({ page: null }));
-        // We expect either {page: string} or {pages: string[]} — be flexible.
-        let newPage = '';
-        if(Array.isArray(data.pages) && data.pages.length){ newPage = String(data.pages[0]); }
-        else if(typeof data.page === 'string'){ newPage = data.page; }
-        else if(typeof data.story === 'string'){ newPage = data.story; }
-        if(!newPage){ throw new Error('Empty story page returned'); }
-        pages.push(newPage.trim());
-        current = pages.length-1;
-        updateReader();
-        statusEl.textContent = '';
-        toast(first ? 'First page ready ✨' : 'Next page added ✨');
-      } catch(err){
-        console.error(err);
-        statusEl.textContent = 'There was a problem creating the story.';
-        toast(err.message || 'Something went wrong');
-      } finally {
-        $('#genBtn').disabled = false; $('#nextBtn').disabled = pages.length===0;
-      }
-    }
-
-    $('#genBtn').onclick = ()=> generate(true);
-    $('#nextBtn').onclick = ()=> generate(false);
-
-    $('#clearBtn').onclick = ()=>{
-      pages = []; current = 0; updateReader(); $('#transcript').value=''; toast('Cleared');
-    };
-
-    // Keyboard support
-    document.addEventListener('keydown', (e)=>{
-      if(e.key==='ArrowRight' && !$('#nextPage').disabled){ $('#nextPage').click(); }
-      if(e.key==='ArrowLeft' && !$('#prevPage').disabled){ $('#prevPage').click(); }
-      if((e.metaKey||e.ctrlKey) && e.key==='Enter'){ $('#genBtn').click(); }
-    });
-
-    // Initialize
-    updateReader();
-  </script>
 </body>
 </html>
