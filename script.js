@@ -41,52 +41,53 @@ if (tEl) {
 const stepper = document.querySelector('.stepper');
 const isCreatePage = !!document.getElementById('step1');
 
-if (isCreatePage) {
-  // Ensure stepper shows Step 1 as current and keeps it that way on this page
-  function lockStepperToStep1() {
-    if (!stepper) return;
-    stepper.querySelectorAll('.step-card').forEach(card => card.classList.remove('current'));
-    const s1 = stepper.querySelector('[data-step="1"]');
-    if (s1) s1.classList.add('current');
-  }
-  lockStepperToStep1();
+if (isCreatePage && stepper) {
+  // Visually lock to Step 1, no matter what other code tries to do
+  stepper.classList.add('lock-step1');
+  // Clean any stray .current on other steps
+  stepper.querySelectorAll('.step-card').forEach(card => card.classList.remove('current'));
+  stepper.querySelector('[data-step="1"]')?.classList.add('current');
 
-  // Radiogroup chips
-  function makeChipGroup(groupEl, onChange) {
-    groupEl.querySelectorAll('.chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        groupEl.querySelectorAll('.chip').forEach(c => {
-          c.classList.remove('selected');
-          c.setAttribute('aria-checked', 'false');
-        });
-        chip.classList.add('selected');
-        chip.setAttribute('aria-checked', 'true');
-        onChange?.(chip.dataset.value);
-        lockStepperToStep1(); // keep stepper on Step 1
-      });
+  // Last-resort guard: if something toggles classes, revert immediately
+  const guard = new MutationObserver(() => {
+    stepper.querySelectorAll('.step-card').forEach(card => {
+      if (card.dataset.step !== '1' && card.classList.contains('current')) {
+        card.classList.remove('current');
+      }
     });
-  }
+    stepper.querySelector('[data-step="1"]')?.classList.add('current');
+  });
+  guard.observe(stepper, { attributes: true, subtree: true, attributeFilter: ['class'] });
+}
 
-  // Inputs
+// Helpers for chip groups
+function makeChipGroup(groupEl, onChange) {
+  if (!groupEl) return;
+  groupEl.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      groupEl.querySelectorAll('.chip').forEach(c => {
+        c.classList.remove('selected');
+        c.setAttribute('aria-checked', 'false');
+      });
+      chip.classList.add('selected');
+      chip.setAttribute('aria-checked', 'true');
+      onChange?.(chip.dataset.value);
+    });
+  });
+}
+
+if (isCreatePage) {
   const kidName = document.getElementById('kidName');
   const ageGroup = document.getElementById('ageGroup');
   const gender = document.getElementById('gender');
   const kidDoneBtn = document.getElementById('kidDoneBtn');
 
-  let state = {
-    name: '',
-    age: '',
-    gender: '',
-    theme: '',
-    characters: []
-  };
+  let state = { name: '', age: '', gender: '', theme: '', characters: [] };
 
-  // Persist minimal state in sessionStorage
   function saveState() {
-    sessionStorage.setItem('storybuds_create', JSON.stringify(state));
+    try { sessionStorage.setItem('storybuds_create', JSON.stringify(state)); } catch {}
   }
 
-  // Enable/disable Done
   function validateKidInfo() {
     const ok = state.name.trim() && state.age && state.gender;
     kidDoneBtn.disabled = !ok;
@@ -96,21 +97,11 @@ if (isCreatePage) {
     state.name = e.target.value;
     validateKidInfo();
     saveState();
-    lockStepperToStep1();
   });
+  makeChipGroup(ageGroup, val => { state.age = val; validateKidInfo(); saveState(); });
+  makeChipGroup(gender, val => { state.gender = val; validateKidInfo(); saveState(); });
 
-  makeChipGroup(ageGroup, val => {
-    state.age = val;
-    validateKidInfo();
-    saveState();
-  });
-  makeChipGroup(gender, val => {
-    state.gender = val;
-    validateKidInfo();
-    saveState();
-  });
-
-  // Accordion toggles (programmatic open/close)
+  // Accordions
   const accKid = document.getElementById('step1');
   const accTheme = document.getElementById('theme');
   const accSupport = document.getElementById('supporting');
@@ -122,8 +113,6 @@ if (isCreatePage) {
       sec.classList.toggle('open', shouldOpen);
       sec.toggleAttribute('hidden', !shouldOpen);
     });
-    // Keep stepper visually on Step 1 throughout Step 1 page
-    lockStepperToStep1();
   }
 
   kidDoneBtn?.addEventListener('click', () => {
@@ -131,7 +120,7 @@ if (isCreatePage) {
     openAccordion(accTheme);
   });
 
-  // Theme selection
+  // Theme
   const themeGrid = document.getElementById('themeGrid');
   themeGrid?.querySelectorAll('.theme-card').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -165,7 +154,6 @@ if (isCreatePage) {
         state.characters[i] = e.target.value;
         saveState();
         validateCharacters();
-        lockStepperToStep1();
       });
     });
     charactersWrap.querySelectorAll('.char-remove').forEach((btn, i) => {
@@ -174,7 +162,6 @@ if (isCreatePage) {
         saveState();
         renderCharacters();
         validateCharacters();
-        lockStepperToStep1();
       });
     });
   }
@@ -185,14 +172,12 @@ if (isCreatePage) {
     saveState();
     renderCharacters();
     validateCharacters();
-    lockStepperToStep1();
   }
 
   function validateCharacters() {
     const hasAtLeastOne = state.characters.length >= 1;
     const anyEmpty = state.characters.some(c => !c.trim());
-    const ok = hasAtLeastOne && !anyEmpty;
-    createStoriesBtn.disabled = !ok;
+    createStoriesBtn.disabled = !(hasAtLeastOne && !anyEmpty);
   }
 
   addCharacterBtn?.addEventListener('click', addCharacter);
@@ -200,17 +185,14 @@ if (isCreatePage) {
   createStoriesBtn?.addEventListener('click', () => {
     validateCharacters();
     if (createStoriesBtn.disabled) return;
-    // All Step 1 sub-sections complete → proceed to Step 2 page
     window.location.href = 'create-step2.html';
   });
 
-  // On load, begin with Kid section open
+  // Start on Kid section
   openAccordion(accKid);
 }
 
-/* ===========================
-   (Legacy) Single-page generator guard — retained for compatibility
-   =========================== */
+/* Legacy generator (unchanged) */
 const generateBtn = document.getElementById('generateBtn');
 if (generateBtn) {
   const input = document.getElementById('storyInput');
