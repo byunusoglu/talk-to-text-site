@@ -8,13 +8,13 @@
   <!-- Favicon / App Icons -->
   <link rel="icon" type="image/png" href="logo.png?v=2" />
   <link rel="apple-touch-icon" href="logo.png?v=2" />
-  <!-- (Optional later: add real 32/16px favicons; this works fine for now) -->
 
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script defer src="script.js?v=lock1"></script>
 </head>
 <body class="fade-in" data-page="create">
+  <!-- Top layer (unchanged) -->
   <header class="topbar">
     <a href="index.html" class="logo">
       <span class="logo-badge">
@@ -30,7 +30,7 @@
   </header>
 
   <main class="section center fade-up">
-    <!-- Stepper locked to Step 1 on this page -->
+    <!-- Stepper: locked to Step 1 on this page -->
     <div class="stepper lock-step1" role="tablist" aria-label="Story creation steps">
       <button class="step-card current" data-step="1" role="tab" aria-selected="true" aria-controls="step1">
         <div class="step-number">1</div>
@@ -54,7 +54,7 @@
       </button>
     </div>
 
-    <!-- Accordion: Step 1 content -->
+    <!-- Accordion: Kid info -->
     <section id="step1" class="accordion open" aria-labelledby="step1-h">
       <h2 id="step1-h" class="acc-title">Kid’s information</h2>
       <div class="acc-body">
@@ -117,8 +117,6 @@
     </section>
   </main>
 
-  <footer>
-    © <span id="year"></span> StoryBuds
-  </footer>
+  <footer>© <span id="year"></span> StoryBuds</footer>
 </body>
 </html>
