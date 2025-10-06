@@ -1,11 +1,10 @@
 "use strict";
 
 /* =====================================================
-   Your World — Stable front-end interactions (no regex)
-   - Age group selection via data-age (0-2, 3-5, 5+)
-   - Persist age in localStorage
-   - Next/Generate → checkout.html
-   - Testimonial scroller (optional)
+   Your World — stable interactions (no regex)
+   - Age group pills (persist in localStorage)
+   - Create step: Next/Generate works (click or submit)
+   - Testimonial scroller
 ===================================================== */
 (() => {
   const AGE_KEY = "yw_age_group";
@@ -27,96 +26,118 @@
     window.setTimeout(cb, delay);
   };
 
-  const setAge = (val) => {
-    try { localStorage.setItem(AGE_KEY, String(val)); } catch (_) {}
-  };
+  // ---- Age value persistence ----
+  const setAge = (val) => { try { localStorage.setItem(AGE_KEY, String(val)); } catch (_) {} };
   const getAge = () => {
-    try {
-      const v = localStorage.getItem(AGE_KEY);
-      return v ? String(v) : DEFAULT_AGE;
-    } catch (_) {
-      return DEFAULT_AGE;
-    }
+    try { return localStorage.getItem(AGE_KEY) || DEFAULT_AGE; } catch (_) { return DEFAULT_AGE; }
   };
 
   const paintSelectedAge = () => {
     const current = getAge();
     const buttons = $$(".age-btn");
     if (!buttons.length) return;
-
     buttons.forEach((b) => b.classList.remove("selected"));
     const match = buttons.find((b) => (b.dataset.age || "").toLowerCase() === current.toLowerCase());
     (match || buttons[0]).classList.add("selected");
   };
 
-  onReady(() => {
-    // Ensure a default age exists
-    if (!getAge()) setAge(DEFAULT_AGE);
+  // ---- Detect if we are on the create page (best-effort) ----
+  const isCreatePage = () => {
+    // Any of these hints is enough:
+    return Boolean(
+      $('#generateStoryBtn') ||
+      $('[data-action="generate-story"]') ||
+      $('#nextButton') ||
+      $('.next-btn') ||
+      $('.create-step') ||
+      $('form#createForm') ||
+      $('form[data-flow="create-step"]')
+    );
+  };
 
-    // Paint selected pill on landing
+  // ---- Force create step to go to checkout ----
+  const goCheckout = () => fadeOutAnd(() => { window.location.href = "checkout.html"; });
+
+  onReady(() => {
+    // Ensure painted selection on landing (and default age set)
     paintSelectedAge();
 
-    // Sync radios on create page (if they exist) using their value attribute
+    // Sync radios on create page (if present)
     const createAgeRadios = $$('input[name="age-group"]');
     if (createAgeRadios.length) {
       const current = getAge().toLowerCase();
       let matched = false;
       createAgeRadios.forEach((r) => {
         const v = (r.value || "").toLowerCase();
-        if (v === current) {
-          r.checked = true;
-          matched = true;
-        }
+        if (v === current) { r.checked = true; matched = true; }
       });
       if (!matched) createAgeRadios[0].checked = true;
     }
 
-    // Global click delegation
+    // --------- GLOBAL CLICK DELEGATION ----------
     document.addEventListener("click", (e) => {
-      const target = e.target;
+      const t = e.target;
 
-      // Age pill
-      const ageBtn = target.closest(".age-btn");
+      // A) Age pill (landing)
+      const ageBtn = t.closest(".age-btn");
       if (ageBtn) {
-        // Read from data-age ONLY to avoid parsing issues (e.g., "5+")
         const raw = (ageBtn.dataset.age || "").trim();
-        // Allow only expected values; fallback to default
         const safe = raw === "0-2" || raw === "3-5" || raw === "5+" ? raw : DEFAULT_AGE;
-
         setAge(safe);
 
-        // Visual selection
         $$(".age-btn").forEach((b) => b.classList.remove("selected"));
         ageBtn.classList.add("selected");
 
-        // Navigate (landing → create)
         const next = ageBtn.dataset.target || "create.html";
         fadeOutAnd(() => { window.location.href = next; });
         return;
       }
 
-      // Next / Generate on create page
-      const nextBtn = target.closest("#generateStoryBtn, [data-action='generate-story'], #nextButton, .next-btn");
-      if (nextBtn) {
+      // B) NEXT / GENERATE (create step)
+      const nextBtn = t.closest(
+        "#generateStoryBtn, [data-action='generate-story'], #nextButton, .next-btn, " +
+        "button[type='submit'], a[href='checkout.html'], [data-next='checkout']"
+      );
+
+      if (nextBtn && isCreatePage()) {
         e.preventDefault();
-
-        // Optionally carry age to checkout via query:
-        // const url = new URL("checkout.html", window.location.href);
-        // url.searchParams.set("age", getAge());
-        // fadeOutAnd(() => (window.location.href = url.toString()));
-
-        fadeOutAnd(() => (window.location.href = "checkout.html"));
+        // If inside a form, neutralize native validation blocking for this step
+        const form = nextBtn.closest("form");
+        if (form) form.noValidate = true;
+        goCheckout();
         return;
       }
     }, { passive: false });
 
-    // Testimonials scroller (optional)
+    // --------- FORM SUBMIT INTERCEPT (create step) ----------
+    document.addEventListener("submit", (e) => {
+      const form = e.target;
+      // Heuristics: any of these marks the first create step form
+      if (form.matches("form#createForm, form[data-flow='create-step'], .create-step form, form[action*='create']")) {
+        e.preventDefault();
+        form.noValidate = true; // bypass HTML5 required for this step as per flow
+        goCheckout();
+      }
+    });
+
+    // --------- ENTER KEY (create step fields) ----------
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      if (!isCreatePage()) return;
+
+      // If focused inside a create form, treat Enter like Next
+      const el = document.activeElement;
+      if (el && (el.closest("form#createForm") || el.closest("form[data-flow='create-step']") || el.closest(".create-step"))) {
+        e.preventDefault();
+        goCheckout();
+      }
+    });
+
+    // --------- Testimonials scroller (optional) ----------
     const viewport = $(".testimonials-viewport");
     const track = $(".testimonials-track");
     if (viewport && track) {
-      let isDown = false;
-      let startX = 0;
-      let scrollLeft = 0;
+      let isDown = false, startX = 0, scrollLeft = 0;
 
       viewport.style.overflow = "hidden";
       track.style.display = "flex";
@@ -128,35 +149,24 @@
       if (!track.style.padding) track.style.padding = "0 32px";
 
       track.addEventListener("mousedown", (ev) => {
-        isDown = true;
-        startX = ev.pageX - track.offsetLeft;
-        scrollLeft = track.scrollLeft;
+        isDown = true; startX = ev.pageX - track.offsetLeft; scrollLeft = track.scrollLeft;
       });
-
       ["mouseleave", "mouseup"].forEach((evt) =>
         track.addEventListener(evt, () => { isDown = false; })
       );
-
       track.addEventListener("mousemove", (ev) => {
-        if (!isDown) return;
-        ev.preventDefault();
-        const x = ev.pageX - track.offsetLeft;
-        const walk = (x - startX) * 1.2;
+        if (!isDown) return; ev.preventDefault();
+        const x = ev.pageX - track.offsetLeft; const walk = (x - startX) * 1.2;
         track.scrollLeft = scrollLeft - walk;
       });
 
       // Touch
-      let touchStartX = 0;
-      let touchStartScroll = 0;
+      let touchStartX = 0, touchStartScroll = 0;
       track.addEventListener("touchstart", (t) => {
-        const e = t.touches[0];
-        touchStartX = e.clientX;
-        touchStartScroll = track.scrollLeft;
+        const e = t.touches[0]; touchStartX = e.clientX; touchStartScroll = track.scrollLeft;
       }, { passive: true });
-
       track.addEventListener("touchmove", (t) => {
-        const e = t.touches[0];
-        const dx = e.clientX - touchStartX;
+        const e = t.touches[0]; const dx = e.clientX - touchStartX;
         track.scrollLeft = touchStartScroll - dx;
       }, { passive: true });
 
@@ -169,16 +179,5 @@
         }
       }, { passive: false });
     }
-
-    // Smooth anchors (if used)
-    $$("a[data-smooth][href^='#']").forEach((a) => {
-      a.addEventListener("click", (ev) => {
-        const id = a.getAttribute("href");
-        const el = $(id);
-        if (!el) return;
-        ev.preventDefault();
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    });
   });
 })();
