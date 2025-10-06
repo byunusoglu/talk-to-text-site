@@ -89,8 +89,15 @@
   }
 
   // ---------- page guards ----------
-  const isCreateStepperPage = () => Boolean($('#createForm'));
-  const isCreateSimplePage  = () => Boolean($('#storyInput') && $('#generateBtn'));
+const isCreateStepperPage = () => {
+  const f = $('#createForm');
+  return !!(f && !f.classList.contains('hidden'));
+};
+
+const isCreateSimplePage = () => {
+  const i = $('#storyInput'), g = $('#generateBtn');
+  return !!(i && g && !i.classList.contains('hidden') && !g.classList.contains('hidden'));
+};
   const isCheckoutPage      = () => Boolean($('#storyContent') && $('#productsTrack'));
   const goCheckout          = () => fadeOutAnd(() => { window.location.href = "checkout.html"; });
 
@@ -542,10 +549,15 @@ onReady(() => {
   initAgeButtons();
   initAgePreview();
   initMobileCta();
-  if (isCreateChatPage())      initCreateChatWizard(); // ← NEW conversational create
-  if (isCreateStepperPage())   initCreateStepper();     // (hidden by default but harmless)
-  if (isCreateSimplePage())    initCreateSimple();
-  if (isCheckoutPage())        initCheckout();
+
+  if (isCreateChatPage()) {
+    initCreateChatWizard();          // NEW chat flow
+  } else {
+    if (isCreateStepperPage()) initCreateStepper(); // will NOT run if form is hidden
+    if (isCreateSimplePage())  initCreateSimple();
+  }
+
+  if (isCheckoutPage()) initCheckout();
   initTestimonials();
 });
 
