@@ -500,7 +500,7 @@ label input, label textarea { margin-top: 6px; }
   position: relative;
   width: 100%;
   min-height: 520px;
-  background: url('momdaugterbanner.png') center/cover no-repeat;
+  background: url('momdaughterbanner.png') center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
