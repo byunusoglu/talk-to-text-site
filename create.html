@@ -39,12 +39,32 @@
   <main class="section center fade-up">
     <h1>Create Your Personalised Story</h1>
 
+<section id="chatWizard" class="chat-wizard">
+  <div class="chat-stream" id="chatStream" aria-live="polite">
+    <!-- System greeter -->
+    <div class="chat-row bot">
+      <div class="bubble">👋 Hey! Let’s craft a bedtime story together. I’ll ask a few tiny questions.</div>
+    </div>
+  </div>
+
+  <form id="chatForm" class="chat-form" autocomplete="off">
+    <input id="chatInput" type="text" placeholder="Type your answer…" aria-label="Your answer" />
+    <button class="btn" id="chatNext" type="submit">Next →</button>
+    <button class="btn primary hidden" id="chatGenerate" type="button">✨ Generate Story</button>
+  </form>
+  <p class="chat-hint muted">Tip: keep it simple — you can refine after the first draft.</p>
+</section>
+    
     <!-- Stepper -->
-    <ol class="stepper" id="stepper">
+
+    <form id="createForm" class="wizard hidden">
+  <!-- ... your existing stepper panels remain here unchanged ... -->
+          <ol class="stepper" id="stepper">
       <li class="step active" data-step="0"><span class="dot">1</span><span>About the kid</span></li>
       <li class="step" data-step="1"><span class="dot">2</span><span>Theme</span></li>
       <li class="step" data-step="2"><span class="dot">3</span><span>Supporting characters</span></li>
     </ol>
+</form>
 
     <!-- Panels -->
     <form id="createForm" class="wizard">
