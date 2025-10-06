@@ -412,25 +412,28 @@ function initScrollMorph() {
     stage.style.setProperty('--parallax', String(parallax));
   }
 
-  // center-based reveal ∈ [0..1]
-  function computeReveal() {
-    const s = stage.getBoundingClientRect();
-    const vh = window.innerHeight || 1;
-    const center = vh / 2;
-    const stageCenter = s.top + s.height / 2;
+function computeReveal() {
+  const s = stage.getBoundingClientRect();
+  const vh = window.innerHeight || 1;
+  const center = vh / 2;
+  const stageCenter = s.top + s.height / 2;
 
-    // distance from center, normalized by half viewport → 0..1
-    const dist = Math.abs(stageCenter - center);
-    let r = 1 - Math.min(1, dist / (vh * 0.5)); // 1 at center, 0 far away
+  const dist = Math.abs(stageCenter - center);
 
-    // keep a little grace so it starts fading a bit earlier/later if you like:
-    // r = Math.max(0, Math.min(1, (r - 0.05) / 0.95));
+  // WIDER radius → fade spans more scroll distance
+  // was vh * 0.5; now vh * 0.9 for a slower, longer transition
+  const R = vh * 0.9;
 
-    // subtle counter-parallax based on how close we are to center
-    const parallax = 12 * (1 - r);
-    setVars(r, parallax);
-    return { reveal: r, vh };
-  }
+  // linear map: 1 at center → 0 at/beyond radius
+  let r = 1 - Math.min(1, dist / R);
+
+  // optional tiny easing for smoothness (uncomment to taste)
+  // r = Math.pow(r, 0.9);
+
+  const parallax = 12 * (1 - r);
+  setVars(r, parallax);
+  return { reveal: r, vh };
+}
 
   // ---------- lock mechanics (unchanged: single soft stop per pass) ----------
   function lockScrollAt(y) {
