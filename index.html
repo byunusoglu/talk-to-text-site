@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>StoryBuds — Personalised Bedtime Stories</title>
+  <meta name="description" content="Show love and respect to your kid through personalised stories. Invest in your family bonds. Invest in you." />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="script.js"></script>
+</head>
+<body class="fade-in">
+
+  <header class="topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-badge">
+        <img src="logo.png" alt="StoryBuds logo" />
+      </span>
+    </a>
+
+    <div class="top-actions">
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">
+        🛒 <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
+    </div>
+
+    <nav id="menu" class="menu hidden">
+      <a href="index.html">Home</a>
+      <a href="create.html">Create Stories</a>
+      <a href="#">My Profile</a>
+    </nav>
+  </header>
+
+  <section class="age-strip">
+  <div class="age-buttons" role="group" aria-label="Choose age group">
+    <button class="age-btn selected" data-age="0-2" data-target="create.html">0–2 years</button>
+    <button class="age-btn" data-age="3-5" data-target="create.html">3–5 years</button>
+    <button class="age-btn" data-age="5+" data-target="create.html">5+</button>
+  </div>
+</section>
+
+
+  <!-- 🌟 Banner Section -->
+<section class="hero-banner fade-up">
+  <div class="hero-overlay">
+    <div class="hero-text">
+      <h1>Create magical bedtime stories together</h1>
+      <p>Turn your child’s imagination into their favourite storytime moment — every night.</p>
+      <button class="btn" onclick="window.location.href='create.html'">Start Free</button>
+    </div>
+  </div>
+</section>
+
+
+  <section class="section info fade-up delay-1">
+    <h1>MORE QUALITY TIME. STRONGER BONDS WITH YOUR KID.</h1>
+    <p>Show love and respect to your kid by personalised stories. Invest in your family bonds. Invest in you.</p>
+    <button class="btn" onclick="window.location.href='create.html'">YOUR FIRST FREE STORY</button>
+  </section>
+
+  <section class="section testimonials fade-up delay-2">
+    <div class="testimonial" id="testimonialText">
+      “Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.” — <b>Elif</b>
+    </div>
+  </section>
+
+  <footer>
+    © <span id="year"></span> StoryBuds
+  </footer>
+</body>
+</html>
