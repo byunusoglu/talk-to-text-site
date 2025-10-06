@@ -422,7 +422,7 @@ function computeReveal() {
 
   // WIDER radius → fade spans more scroll distance
   // was vh * 0.5; now vh * 0.9 for a slower, longer transition
-  const R = vh * 0.9;
+const R = vh * 1.2;
 
   // linear map: 1 at center → 0 at/beyond radius
   let r = 1 - Math.min(1, dist / R);
