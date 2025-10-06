@@ -899,6 +899,85 @@ label input, label textarea { margin-top: 6px; }
 .t-fade-exit { opacity: 1; transform: translateY(0); }
 .t-fade-exit.t-fade-exit-active { opacity: 0; transform: translateY(6px); transition: all .4s ease; }
 
+/* ===========================
+   Real → Animated (scroll morph)
+   =========================== */
+.convert { padding-top: 36px; }
+.convert h2 { margin-bottom: 6px; }
+
+.morph-wrap {
+  /* tall container so scrolling can drive the effect */
+  height: 160vh;
+  position: relative;
+  --reveal: 0;         /* 0 → 1 as user scrolls (set by JS) */
+  --parallax: 10;      /* px offset; JS tweaks for subtle motion */
+}
+
+.morph-stage {
+  position: sticky;
+  top: 12vh;
+  height: 64vh;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid #eee9fb;
+  background: #fff;
+}
+
+.morph-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+  will-change: opacity, transform;
+}
+
+/* base photo: slight opposite parallax */
+.morph-img.base {
+  opacity: 1;
+  transform: translateY(calc(var(--parallax, 10) * 1px));
+}
+
+/* animated overlay: fades in + slight counter-parallax */
+.morph-img.overlay {
+  opacity: var(--reveal);
+  transform: translateY(calc(var(--parallax, 10) * -1px));
+}
+
+/* corner label */
+.morph-label {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.82);
+  border: 1px solid #e6dcfa;
+  color: var(--plum-dark);
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+.morph-label .arrow { opacity: .7 }
+
+/* CTA spacing */
+.convert .convert-cta { margin-top: 16px; }
+
+/* Reduced motion: show final state immediately */
+@media (prefers-reduced-motion: reduce) {
+  .morph-wrap { height: auto; }
+  .morph-stage { position: relative; height: auto; }
+  .morph-img.base { position: relative; transform: none; }
+  .morph-img.overlay { position: relative; opacity: 1; transform: none; }
+  .morph-label { position: static; margin-top: 10px; }
+}
+
+
 /* ==============================
    Conversational Wizard styling
    ============================== */
