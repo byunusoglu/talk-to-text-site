@@ -26,7 +26,16 @@
     </nav>
   </header>
 
-  <!-- ====== New HERO / Banner carousel (4 slides, auto every 3s) ====== -->
+  <!-- ===== Age group strip (3 separate buttons, default 0–2 selected) ===== -->
+  <section class="age-strip section fade-up" aria-label="Select age">
+    <div class="age-strip-inner">
+      <button class="age-chip is-active" data-age="0-2" aria-selected="true" onclick="window.location.href='create.html?age=0-2'">0–2 years</button>
+      <button class="age-chip" data-age="3-5" aria-selected="false" onclick="window.location.href='create.html?age=3-5'">3–5 years</button>
+      <button class="age-chip" data-age="5-plus" aria-selected="false" onclick="window.location.href='create.html?age=5-plus'">5+</button>
+    </div>
+  </section>
+
+  <!-- ===== New HERO / Banner carousel (4 slides, auto every 3s, smooth loop) ===== -->
   <section class="hero-carousel section fade-up" aria-label="Highlights">
     <div class="carousel-track" id="heroTrack">
       <!-- Slide 1 -->
@@ -57,7 +66,7 @@
       <article class="hero-slide hero-4">
         <div class="hero-inner">
           <h1>From first smile to first stories</h1>
-          <p>Age-smart prompts and guidance for 0–2, 3–5, and 5+ so every story fits just right.</p>
+          <p>Age-smart prompts for 0–2, 3–5, and 5+ so every story fits just right.</p>
           <button class="btn" onclick="window.location.href='create.html'">Create together</button>
         </div>
       </article>
@@ -71,51 +80,7 @@
     </div>
   </section>
 
-  <!-- ====== Child’s Age (tab experience; default 0–2) ====== -->
-  <section class="age-tabs section fade-up delay-1" aria-label="Select age">
-    <div class="tabs-header">
-      <button class="tab is-active" role="tab" aria-selected="true" data-age="0-2">0–2 years</button>
-      <button class="tab" role="tab" aria-selected="false" data-age="3-5">3–5 years</button>
-      <button class="tab" role="tab" aria-selected="false" data-age="5-plus">5+</button>
-    </div>
-
-    <div class="tabs-panels">
-      <div class="tab-panel is-active" id="panel-0-2" role="tabpanel">
-        <div class="tab-grid">
-          <div class="tab-copy">
-            <h2>Start with tiny, soothing moments</h2>
-            <p>For little listeners 0–2, we keep sentences short, rhythms calm, and sounds gentle—just enough magic before sleep.</p>
-            <button class="btn" onclick="window.location.href='create.html?age=0-2'">Generate a 0–2 story</button>
-          </div>
-          <div class="tab-visual soft-blob a"></div>
-        </div>
-      </div>
-
-      <div class="tab-panel" id="panel-3-5" role="tabpanel">
-        <div class="tab-grid">
-          <div class="tab-copy">
-            <h2>Playful stories that follow their lead</h2>
-            <p>For 3–5, we weave their names, ideas, and silly wishes into charming five-minute adventures.</p>
-            <button class="btn" onclick="window.location.href='create.html?age=3-5'">Generate a 3–5 story</button>
-          </div>
-          <div class="tab-visual soft-blob b"></div>
-        </div>
-      </div>
-
-      <div class="tab-panel" id="panel-5-plus" role="tabpanel">
-        <div class="tab-grid">
-          <div class="tab-copy">
-            <h2>Curious minds, bigger journeys</h2>
-            <p>For 5+, we add gentle puzzles, kinder morals, and a touch more plot—still calm, still bedtime-friendly.</p>
-            <button class="btn" onclick="window.location.href='create.html?age=5-plus'">Generate a 5+ story</button>
-          </div>
-          <div class="tab-visual soft-blob c"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Existing testimonial block (kept) -->
+  <!-- Testimonial block (kept) -->
   <section class="section testimonials fade-up delay-2">
     <div class="testimonial" id="testimonialText">
       “Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.” — <b>Elif</b>
