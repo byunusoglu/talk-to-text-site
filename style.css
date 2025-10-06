@@ -932,18 +932,24 @@ label input, label textarea { margin-top: 6px; }
   object-fit: cover;
   transform: translateZ(0);
   will-change: opacity, transform;
+    transition: opacity 1.8s ease-in-out, transform 1.8s ease-in-out;
 }
 
 /* base photo: slight opposite parallax */
 .morph-img.base {
   opacity: 1;
   transform: translateY(calc(var(--parallax, 10) * 1px));
+    /* fade out slower */
+  opacity: calc(1 - var(--reveal));
+  transition: opacity 2.4s ease-in-out, transform 1.8s ease-in-out;
 }
 
 /* animated overlay: fades in + slight counter-parallax */
 .morph-img.overlay {
   opacity: var(--reveal);
   transform: translateY(calc(var(--parallax, 10) * -1px));
+    /* fade in smoother */
+  transition: opacity 2.4s ease-in-out, transform 1.8s ease-in-out;
 }
 
 /* corner label */
