@@ -429,6 +429,111 @@
       }, 180);
     }, 6000);
   }
+// ---------- Create: Conversational Wizard ----------
+function isCreateChatPage() {
+  return Boolean(document.getElementById('chatWizard'));
+}
+
+function initCreateChatWizard() {
+  const elStream = document.getElementById('chatStream');
+  const elForm   = document.getElementById('chatForm');
+  const elInput  = document.getElementById('chatInput');
+  const btnNext  = document.getElementById('chatNext');
+  const btnGen   = document.getElementById('chatGenerate');
+  if (!elStream || !elForm || !elInput) return;
+
+  // Conversation state
+  const answers = {
+    name: "",
+    age: "",
+    likes: "",
+    theme: "",
+    moments: "",
+    chars: "",
+    extras: ""
+  };
+
+  // The question script (edit freely)
+  const steps = [
+    { key: "name",    ask: "What’s your child’s name?" },
+    { key: "age",     ask: "How old are they?" },
+    { key: "likes",   ask: "What do they love these days? (toys, colours, places…)" },
+    { key: "theme",   ask: "Pick a theme or setting you’d like." },
+    { key: "moments", ask: "Any tiny moment to include? (e.g., sharing snacks, finding a shell)" },
+    { key: "chars",   ask: "Who else should appear? (e.g., Mom Isabel, Dad Bob)" },
+    { key: "extras",  ask: "Anything else? Bedtime tone, gentle humor, onomatopoeia…" }
+  ];
+
+  let idx = -1;
+
+  const scrollToBottom = () => { elStream.scrollTop = elStream.scrollHeight; };
+
+  const pushBot = (text) => {
+    const row = document.createElement('div');
+    row.className = 'chat-row bot';
+    row.innerHTML = `<div class="bubble">${text}</div>`;
+    elStream.appendChild(row);
+    scrollToBottom();
+  };
+
+  const pushUser = (text) => {
+    const row = document.createElement('div');
+    row.className = 'chat-row user';
+    row.innerHTML = `<div class="bubble">${text}</div>`;
+    elStream.appendChild(row);
+    scrollToBottom();
+  };
+
+  const nextStep = () => {
+    idx++;
+    if (idx < steps.length) {
+      pushBot(steps[idx].ask);
+      elInput.value = "";
+      elInput.placeholder = "Type your answer…";
+      elInput.focus();
+      btnNext.classList.remove('hidden');
+      btnGen.classList.add('hidden');
+    } else {
+      // Ready to generate
+      pushBot("All set! Ready to create your story?");
+      btnNext.classList.add('hidden');
+      btnGen.classList.remove('hidden');
+      elInput.blur();
+    }
+  };
+
+  // First prompt
+  setTimeout(nextStep, 350);
+
+  elForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = elInput.value.trim();
+    if (!val) return;
+    // record + show
+    const key = steps[idx]?.key;
+    if (key) answers[key] = val;
+    pushUser(val);
+    nextStep();
+  });
+
+  btnGen.addEventListener('click', async () => {
+    // Build transcript compatible with your API prompt format
+    const transcript = [
+      `Child name: ${answers.name || "Unknown"}`,
+      `Child age: ${answers.age || "—"}`,
+      `Likes: ${answers.likes || "—"}`,
+      `Theme: ${answers.theme || "—"}`,
+      `Special moments: ${answers.moments || "—"}`,
+      `Characters: ${answers.chars || "—"}`,
+      `Extras: ${answers.extras || "—"}`
+    ].join("\n");
+
+    // Optional: show a tiny "thinking" bubble
+    pushBot("✨ Creating your story...");
+    // Reuse your existing API flow → stores to sessionStorage → navigates to checkout
+    await generateStoryAndNavigate(transcript);
+  });
+}
 
   // ---------- boot ----------
   onReady(() => {
