@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Create Your Story — StoryBuds</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script defer src="script.js"></script>
 </head>
@@ -15,7 +15,14 @@
         <img src="logo.png" alt="StoryBuds logo" />
       </span>
     </a>
-    <button class="hamburger" id="menuBtn">☰</button>
+
+    <div class="top-actions">
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">
+        🛒 <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
+    </div>
+
     <nav id="menu" class="menu hidden">
       <a href="index.html">Home</a>
       <a href="create.html">Create Stories</a>
@@ -36,7 +43,7 @@
     <!-- Panels -->
     <form id="createForm" class="wizard">
 
-      <!-- Step 1: About the kid -->
+      <!-- Step 1 -->
       <section class="step-panel" data-step="0">
         <div class="field-grid">
           <label>
@@ -45,7 +52,7 @@
           </label>
           <label>
             Age
-            <input id="kidAge" type="number" min="0" max="8" step="1" placeholder="e.g., 3" />
+            <input id="kidAge" type="number" min="0" max="10" step="1" placeholder="e.g., 3" />
           </label>
         </div>
         <label>
@@ -54,7 +61,7 @@
         </label>
       </section>
 
-      <!-- Step 2: Theme -->
+      <!-- Step 2 -->
       <section class="step-panel hidden" data-step="1">
         <label>
           Story theme / setting
@@ -66,7 +73,7 @@
         </label>
       </section>
 
-      <!-- Step 3: Supporting characters -->
+      <!-- Step 3 -->
       <section class="step-panel hidden" data-step="2">
         <div class="field-grid">
           <label>
@@ -92,9 +99,10 @@
       </div>
     </form>
 
-    <!-- Loading + Output (unchanged behaviour) -->
+    <!-- Loading (we still use it during the API call before redirect) -->
     <div id="loading" class="hidden">✨ Generating your story...</div>
-    <div id="storyOutput" class="story-box"></div>
+    <!-- Note: no on-page output; we redirect to checkout after generation -->
+    <div id="storyOutput" class="story-box hidden"></div>
   </main>
 
   <footer>
