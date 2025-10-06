@@ -535,15 +535,18 @@ function initCreateChatWizard() {
   });
 }
 
+   
   // ---------- boot ----------
-  onReady(() => {
-    initChrome();
-    initAgeButtons();
-    initAgePreview();       // NEW: hover preview for hero
-    initMobileCta();        // NEW: sticky mobile CTA
-    if (isCreateStepperPage()) initCreateStepper();   // stepper create
-    if (isCreateSimplePage())  initCreateSimple();    // simple create
-    if (isCheckoutPage())      initCheckout();        // checkout rendering
-    initTestimonials();       // NEW: landing quotes rotator
-  });
+onReady(() => {
+  initChrome();
+  initAgeButtons();
+  initAgePreview();
+  initMobileCta();
+  if (isCreateChatPage())      initCreateChatWizard(); // ← NEW conversational create
+  if (isCreateStepperPage())   initCreateStepper();     // (hidden by default but harmless)
+  if (isCreateSimplePage())    initCreateSimple();
+  if (isCheckoutPage())        initCheckout();
+  initTestimonials();
+});
+
 })();
