@@ -13,9 +13,7 @@
   --shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
 }
 
-/* Prevent border/padding from changing widths */
 *, *::before, *::after { box-sizing: border-box; }
-
 html, body { width: 100%; }
 
 @keyframes gradientShift {
@@ -24,7 +22,6 @@ html, body { width: 100%; }
   100% { background-position: 0% 50%; }
 }
 
-/* Background + base typography (as before) */
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
@@ -35,17 +32,14 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  overflow-x: hidden; /* avoid accidental horizontal expansion */
+  overflow-x: hidden;
 }
 
 h1, h2 { font-family: 'Nunito', sans-serif; color: var(--plum); }
-
-.section { padding: 60px 20px; text-align: center; } /* center for landing */
+.section { padding: 60px 20px; text-align: center; }
 .center { max-width: 600px; margin: 0 auto; }
 
-/* =========================================================
-   HEADER / TOPBAR + LOGO (same as your previously working styles)
-   ========================================================= */
+/* HEADER / LOGO */
 .topbar {
   position: sticky; top: 0;
   background: rgba(255,255,255,0.85);
@@ -55,11 +49,7 @@ h1, h2 { font-family: 'Nunito', sans-serif; color: var(--plum); }
   border-bottom: 1px solid rgba(0,0,0,0.05);
   z-index: 100;
 }
-
-/* Circular logo structure */
 .logo { display:flex; align-items:center; text-decoration:none; }
-
-/* Circle clip wrapper */
 .logo .logo-badge {
   width: 56px; height: 56px;
   border-radius: 50%;
@@ -68,29 +58,19 @@ h1, h2 { font-family: 'Nunito', sans-serif; color: var(--plum); }
   box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
   background: transparent;
 }
-
-/* Optional small variant */
 .logo.small .logo-badge { width: 44px; height: 44px; }
-
-/* The image inside the circle */
 .logo .logo-badge > img {
   width: 100% !important; height: 100% !important;
   object-fit: cover; object-position: center;
   display: block; background: transparent; border-radius: 50%;
 }
-
-/* Safe fallback on the <img> itself */
 .logo img {
   height: 56px; width: 56px; max-width: none;
   border-radius: 50%; object-fit: cover; object-position: center;
   background-color: white; box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
 }
-.logo.small img {
-  height: 44px; width: 44px; border-radius: 50%;
-  object-fit: cover; object-position: center;
-}
+.logo.small img { height: 44px; width: 44px; }
 
-/* Nav */
 .hamburger { font-size:24px; background:none; border:none; cursor:pointer; color:var(--plum); }
 .menu {
   position: absolute; top: 56px; right: 16px;
@@ -101,26 +81,19 @@ h1, h2 { font-family: 'Nunito', sans-serif; color: var(--plum); }
 .menu a:hover { background:#f8f5ff; }
 .hidden { display:none; }
 
-/* =========================================================
-   LANDING PAGE UI (as before)
-   ========================================================= */
+/* LANDING UI */
 .age-options {
   display: flex; justify-content: center; flex-wrap: wrap;
   gap: 16px; margin-top: 20px;
 }
-
 .age-card {
   background: white; border-radius: var(--radius); padding: 20px 30px;
   box-shadow: var(--shadow); cursor: pointer; font-size: 18px;
   transition: transform 0.2s, background 0.3s;
 }
 .age-card:hover { transform: translateY(-3px); background: #fff7fa; }
+.info p { max-width: 500px; margin: 10px auto 20px; color: var(--muted); }
 
-.info p {
-  max-width: 500px; margin: 10px auto 20px; color: var(--muted);
-}
-
-/* Global landing button (kept) */
 .btn {
   background: var(--plum); color: white; border: none;
   padding: 14px 28px; border-radius: 999px; cursor: pointer;
@@ -135,7 +108,6 @@ h1, h2 { font-family: 'Nunito', sans-serif; color: var(--plum); }
   font-style: italic; transition: opacity 0.5s ease;
 }
 
-/* Input & story box used on simple create flow */
 textarea {
   width: 100%; border-radius: var(--radius); border: 1px solid #e0dcec;
   padding: 14px; font-family: inherit; font-size: 16px; box-shadow: var(--shadow);
@@ -147,59 +119,47 @@ textarea {
   line-height: 1.6; white-space: pre-wrap;
 }
 
-/* Footer */
 footer { margin-top: auto; text-align: center; padding: 20px; color: var(--muted); font-size: 14px; }
 
-/* Animations */
 .fade-in { animation: fadeIn 0.8s ease both; }
 .fade-up { opacity: 0; transform: translateY(20px); animation: fadeUp 0.9s ease forwards; }
 .delay-1 { animation-delay: 0.3s; }
 .delay-2 { animation-delay: 0.6s; }
-
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Responsive */
 @media (max-width: 600px) {
   h1 { font-size: 24px; }
   h2 { font-size: 20px; }
   .age-card { font-size: 16px; padding: 16px 24px; }
   .btn { width: 100%; }
   textarea { min-height: 120px; }
-  .logo img { height: 46px; }
-  .logo.small img { height: 36px; }
+  .logo img { height: 46px; width: 46px; }
+  .logo.small img { height: 36px; width: 36px; }
 }
 
-/* =========================================================
-   CREATE PAGE (SCOPED) — latest snippet applied safely
-   ========================================================= */
-
-/* Only create pages should be left-aligned */
+/* CREATE PAGE (SCOPED) */
 body[data-page="create"] .section { text-align: left; }
 
-/* Stepper: lock width and prevent content from forcing expansion */
 body[data-page="create"] .stepper {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)); /* stops tracks from growing due to content */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   width: 100%;
   max-width: 100%;
   margin-bottom: 24px;
-  overflow: hidden; /* visual safety */
+  overflow: hidden;
 }
-body[data-page="create"] .stepper > .step-card { min-width: 0; } /* grid item can shrink */
+body[data-page="create"] .stepper > .step-card { min-width: 0; }
 body[data-page="create"] .step-card .step-text { min-width: 0; }
 body[data-page="create"] .step-card .step-title,
 body[data-page="create"] .step-card .step-desc { overflow-wrap: anywhere; }
 
-/* Current step visual (scale does not affect layout width) */
 body[data-page="create"] .step-card.current {
   transform: scale(1.03);
   border-color: var(--plum);
   box-shadow: 0 10px 28px rgba(122,78,171,0.12);
 }
-
-/* Force Step 1 look while on the create page (do not influence homepage) */
 body[data-page="create"] .stepper.lock-step1 .step-card {
   pointer-events: none;
   transform: scale(0.98) !important;
@@ -212,7 +172,6 @@ body[data-page="create"] .stepper.lock-step1 .step-card[data-step="1"] {
   box-shadow: 0 10px 28px rgba(122,78,171,0.12) !important;
 }
 
-/* Accordions (scoped) */
 body[data-page="create"] .accordion {
   background:#fff; border-radius:16px; box-shadow:var(--shadow);
   margin-bottom:16px; overflow:hidden;
@@ -224,7 +183,6 @@ body[data-page="create"] .accordion[hidden] { display:none; }
 body[data-page="create"] .accordion:not(.open) .acc-body,
 body[data-page="create"] .accordion:not(.open) .acc-sub { display:none; }
 
-/* Inputs & chips (scoped) */
 body[data-page="create"] input[type="text"] {
   width:100%; border-radius:12px; border:1px solid #e0dcec; padding:12px 14px; font-size:16px;
 }
@@ -236,7 +194,6 @@ body[data-page="create"] .chip {
 body[data-page="create"] .chip:hover { transform: translateY(-1px); }
 body[data-page="create"] .chip.selected { background: #efe6ff; color: #4b2c86; border-color:#cfb7ff; }
 
-/* Theme cards (scoped) */
 body[data-page="create"] .theme-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
 body[data-page="create"] .theme-card {
   padding:18px; border-radius:14px; border:2px dashed #e0dcec; background:#fff; font-weight:800; color:#4b2c86;
@@ -245,7 +202,6 @@ body[data-page="create"] .theme-card {
 body[data-page="create"] .theme-card:hover { transform: translateY(-1px); }
 body[data-page="create"] .theme-card.selected { border-style: solid; border-color: var(--plum); box-shadow: 0 8px 20px rgba(122,78,171,0.12); }
 
-/* Supporting characters (scoped) */
 body[data-page="create"] #characters { display:grid; gap:10px; }
 body[data-page="create"] .char-row { display:flex; gap:10px; align-items:center; }
 body[data-page="create"] .char-row input { flex:1; border-radius:12px; border:1px solid #e0dcec; padding:12px 14px; }
@@ -254,7 +210,6 @@ body[data-page="create"] .char-remove {
 }
 body[data-page="create"] .char-remove:hover { background:#ffd9de; }
 
-/* Buttons on create page only (won't touch landing page buttons) */
 body[data-page="create"] .btn {
   background: var(--plum); color: white; border: none;
   padding: 12px 20px; border-radius: 12px; cursor: pointer;
@@ -263,15 +218,11 @@ body[data-page="create"] .btn {
 }
 body[data-page="create"] .btn:hover { transform: translateY(-1px); }
 body[data-page="create"] .btn:disabled { opacity: .45; cursor: not-allowed; }
-body[data-page="create"] .btn-outline {
-  background: #fff; color: var(--plum); border: 2px solid #e0dcec;
-}
+body[data-page="create"] .btn-outline { background: #fff; color: var(--plum); border: 2px solid #e0dcec; }
 body[data-page="create"] .btn-primary { background: var(--plum); }
 
-/* Placeholder (Step 2) */
 body[data-page="create"] .placeholder { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:18px; }
 
-/* Mobile (create page) */
 @media (max-width: 800px) {
   body[data-page="create"] .stepper { grid-template-columns: 1fr; }
   body[data-page="create"] .step-card.current { transform: scale(1.01); }
@@ -281,9 +232,7 @@ body[data-page="create"] .placeholder { background:#fff; border-radius:16px; box
   body[data-page="create"] .actions.stack-mobile { flex-direction: column; }
 }
 
-/* =========================================================
-   FINAL SAFETY CLAMP (ensures logo never scales up)
-   ========================================================= */
+/* FINAL SAFETY CLAMP: logo never scales up */
 .topbar .logo .logo-badge { width:56px; height:56px; }
 .topbar .logo .logo-badge > img {
   width:100% !important; height:100% !important;
