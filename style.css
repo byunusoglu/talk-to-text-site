@@ -169,6 +169,11 @@ h1, h2 {
   color: #a37cd3;
 }
 
+/* Triggered by JS when item added */
+.cart-btn.shake .cart-icon {
+  animation: cartWiggle 0.6s ease;
+}
+
 /* Hide cart count if empty */
 .cart-count.hidden {
   display: none;
@@ -221,6 +226,7 @@ h1, h2 {
   cursor: pointer;
   transition: transform .15s ease, background .25s ease, color .25s ease, border-color .25s ease;
   white-space: nowrap;
+  position: relative; /* for preview tooltip */
 }
 
 .age-btn:hover { transform: translateY(-1px); }
@@ -228,6 +234,24 @@ h1, h2 {
   background: var(--plum);
   color: #fff;
   border-color: var(--plum);
+  box-shadow: 0 6px 18px rgba(122,78,171,0.22);
+}
+
+/* Hover preview badge */
+.age-btn:hover::after {
+  content: "Preview";
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  color: var(--plum);
+  border: 1px solid #eee9fb;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
 }
 
 @media (max-width: 600px) {
@@ -259,7 +283,7 @@ h1, h2 {
   background: #8757c7;
 }
 
-/* 💬 Testimonials */
+/* 💬 Testimonials (base) */
 .testimonials {
   background: white;
   border-radius: var(--radius);
@@ -520,7 +544,7 @@ label input, label textarea { margin-top: 6px; }
 
 .carousel-controls { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
 
-/* 🌟 Hero Banner */
+/* 🌟 Hero Banner (landing) */
 .hero-banner {
   position: relative;
   width: 100%;
@@ -533,28 +557,51 @@ label input, label textarea { margin-top: 6px; }
   margin-top: 0;
 }
 
-/* Slight soft overlay for readability */
+/* --- HERO: dynamic overlay + better hierarchy (improved) --- */
 .hero-overlay {
-  background: rgba(255, 255, 255, 0.4);
+  background: linear-gradient(to bottom, rgba(255,255,255,0.12), rgba(255,255,255,0.85));
   backdrop-filter: blur(6px);
-  padding: 60px 20px;
+  padding: 44px 22px;
   border-radius: 16px;
-  max-width: 650px;
+  max-width: 640px;
   text-align: center;
   box-shadow: var(--shadow);
+}
+
+.hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .hero-text h1 {
   font-family: 'Nunito', sans-serif;
   color: var(--plum);
-  font-size: 42px;
-  margin-bottom: 16px;
+  font-size: clamp(2.1rem, 4.2vw, 3.5rem);
+  font-weight: 800;
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
 }
 
 .hero-text p {
   color: var(--muted);
-  font-size: 18px;
-  margin-bottom: 24px;
+  font-size: clamp(1rem, 1.6vw, 1.125rem);
+  margin-top: 8px;
+}
+
+/* CTA clearly separated above badges */
+.hero-text #heroCta {
+  margin-top: 12px;
+  margin-bottom: 22px;
+  align-self: center;
+  font-weight: 700;
+  animation: pulseUp 8s ease-in-out infinite;
+}
+
+@keyframes pulseUp {
+  0%,100% { transform: translateY(0); box-shadow: var(--shadow); }
+  50% { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(122,78,171,0.32); }
 }
 
 /* Responsive behavior */
@@ -571,7 +618,14 @@ label input, label textarea { margin-top: 6px; }
   }
 }
 
+/* On small screens, lighten overlay so the image shines more */
 @media (max-width: 600px) {
+  .hero-overlay {
+    background: rgba(255,255,255,0.28);
+    backdrop-filter: blur(3px);
+    width: 92%;
+  }
+  .hero-text { display: grid; gap: 8px; }
   .story-reader { margin: 20px 12px; padding: 18px 16px; }
   .story-content { font-size: 17px; }
 }
@@ -611,6 +665,11 @@ label input, label textarea { margin-top: 6px; }
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
+  position: relative;
+  opacity: 0;                 /* start hidden */
+  transform: translateY(8px); /* start slightly lowered */
+  animation: fadeUpHeroBadges 0.8s ease forwards;
+  animation-delay: 0.5s;      /* requested delay */
 }
 
 .product-badge {
@@ -635,6 +694,48 @@ label input, label textarea { margin-top: 6px; }
 .product-badge .badge-icon {
   width: 18px; height: 18px;
   display: block;
+}
+
+/* Divider line separating CTA and badges on desktop */
+@media (min-width: 768px) {
+  .product-badges::before {
+    content: "";
+    display: block;
+    width: 60%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(122,78,171,0.25), transparent);
+    margin: 0 auto 12px;
+  }
+}
+
+/* Slightly smaller badges on desktop to keep hierarchy */
+.product-badge {
+  font-size: 13px;
+  padding: 6px 10px;
+  transform: scale(0.96);
+}
+
+/* Fade-up animation for badges */
+@keyframes fadeUpHeroBadges {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile: instant appearance, wrap nicely */
+@media (max-width: 700px) {
+  .hero-text #heroCta { margin-bottom: 14px; }
+  .product-badges {
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 1;
+    transform: none;
+    animation: none; /* no delay on mobile */
+  }
+  .product-badge {
+    transform: none;
+    font-size: 14px;
+    padding: 8px 12px;
+  }
 }
 
 /* =========================
@@ -735,56 +836,43 @@ label input, label textarea { margin-top: 6px; }
   align-self: center;
 }
 
-/* Badges: lighter, delayed appearance, non-competing scale */
-.product-badges {
-  position: relative;
-  margin-top: 6px;
-  gap: 14px;
-  flex-wrap: nowrap;
-  opacity: 0;                 /* start hidden */
-  transform: translateY(8px); /* start slightly lowered */
-  animation: fadeUpHeroBadges 0.8s ease forwards;
-  animation-delay: 0.5s;      /* requested delay */
+/* --- Sticky Mobile CTA --- */
+.mobile-cta {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 14px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--plum);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 28px rgba(122,78,171,0.35);
+  z-index: 999;
 }
+.mobile-cta.show { display: flex; }
+@media (min-width: 768px) { .mobile-cta { display: none !important; } }
 
-/* Divider line separating CTA and badges on desktop */
-@media (min-width: 768px) {
-  .product-badges::before {
-    content: "";
-    display: block;
-    width: 60%;
-    height: 1px;
-    background: linear-gradient(to right, transparent, rgba(122,78,171,0.25), transparent);
-    margin: 0 auto 12px;
-  }
+/* --- Testimonials: improved card + rotator fades --- */
+.testimonials {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  max-width: 560px;
+  margin: 40px auto;
+  padding: 24px;
+  text-align: left;
+  font-style: normal;
 }
+.testimonial { margin: 0; }
+.t-quote { font-style: italic; line-height: 1.6; color: #3a3450; }
+.t-by { margin-top: 8px; color: var(--muted); }
 
-/* Slightly smaller badges on desktop to keep hierarchy */
-.product-badge {
-  font-size: 13px;
-  padding: 6px 10px;
-  transform: scale(0.96);
-}
-
-/* Fade-up animation for badges */
-@keyframes fadeUpHeroBadges {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Mobile: instant appearance, wrap nicely */
-@media (max-width: 700px) {
-  .hero-text #heroCta { margin-bottom: 14px; }
-  .product-badges {
-    flex-wrap: wrap;
-    justify-content: center;
-    opacity: 1;
-    transform: none;
-    animation: none; /* no delay on mobile */
-  }
-  .product-badge {
-    transform: none;
-    font-size: 14px;
-    padding: 8px 12px;
-  }
-}
+.t-fade-enter { opacity: 0; transform: translateY(6px); }
+.t-fade-enter.t-fade-enter-active { opacity: 1; transform: translateY(0); transition: all .4s ease; }
+.t-fade-exit { opacity: 1; transform: translateY(0); }
+.t-fade-exit.t-fade-exit-active { opacity: 0; transform: translateY(6px); transition: all .4s ease; }
