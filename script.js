@@ -1,24 +1,13 @@
-// Toggle menu
+// ===== Topbar menu =====
 const menuBtn = document.getElementById('menuBtn');
 const menu = document.getElementById('menu');
-if (menuBtn) {
-  menuBtn.addEventListener('click', () => menu.classList.toggle('hidden'));
-}
+if (menuBtn) menuBtn.addEventListener('click', () => menu.classList.toggle('hidden'));
 
-// (Legacy) Age-card navigation (safe if not present on page)
-document.querySelectorAll('.age-card').forEach(card => {
-  card.addEventListener('click', () => {
-    const target = card.dataset.target;
-    document.body.classList.add('fade-out');
-    setTimeout(() => (window.location.href = target), 200);
-  });
-});
-
-// Footer year
+// ===== Footer year =====
 const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-// Testimonials fade (existing)
+// ===== Testimonials fade (home only if present) =====
 const testimonials = [
   "“Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.” — Elif",
   "“Finally a screen-free wind-down that works. He loves hearing his own ideas show up.” — James",
@@ -37,7 +26,9 @@ if (tEl) {
   }, 6000);
 }
 
-// Story creation logic (create.html)
+/* =========================================================================
+   Create page logic — kept as before (no changes to behavior) :contentReference[oaicite:5]{index=5}
+   ========================================================================= */
 const generateBtn = document.getElementById('generateBtn');
 if (generateBtn) {
   const input = document.getElementById('storyInput');
@@ -68,61 +59,85 @@ if (generateBtn) {
   });
 }
 
-/* ===== HERO auto slider (4 slides, 3s, loops) ===== */
+/* =========================================================================
+   HERO CAROUSEL — robust, jitter-free, consistent 3s loop
+   - No setInterval drift: uses a single setTimeout scheduled per step
+   - Seamless loop from last->first using a no-transition jump then resume
+   - Pauses on hover; dots clickable; guards so it only runs on index
+   ========================================================================= */
 (() => {
   const track = document.getElementById('heroTrack');
   const dotsWrap = document.getElementById('heroDots');
-  if (!track || !dotsWrap) return;
+  if (!track || !dotsWrap) return; // only on homepage
 
+  const slides = Array.from(track.children);
   const dots = Array.from(dotsWrap.querySelectorAll('.dot'));
-  const total = dots.length; // 4
-  let idx = 0;
-  let timer;
+  const total = slides.length;
 
-  function go(i, user = false) {
-    idx = (i + total) % total;
-    track.style.transform = `translateX(-${idx * 100}%)`;
-    dots.forEach((d, k) => d.classList.toggle('is-active', k === idx));
-    if (user) restart();
-  }
+  // Ensure each slide occupies 100% width (prevents layout jumps)
+  slides.forEach(s => (s.style.flex = '0 0 100%'));
 
-  function next() { go(idx + 1); }
-  function start() { timer = setInterval(next, 3000); }
-  function stop() { clearInterval(timer); }
-  function restart() { stop(); start(); }
+  let idx = 0;         // current visible index
+  let timer = null;    // single timer (no stacking)
 
-  dots.forEach(d => d.addEventListener('click', () => go(+d.dataset.index, true)));
-  track.addEventListener('mouseenter', stop);
-  track.addEventListener('mouseleave', start);
-  dotsWrap.addEventListener('mouseenter', stop);
-  dotsWrap.addEventListener('mouseleave', start);
-
-  start();
-})();
-
-/* ===== Age tabs (default 0–2 selected) ===== */
-(() => {
-  const container = document.querySelector('.age-tabs');
-  if (!container) return;
-
-  const tabs = Array.from(container.querySelectorAll('.tab'));
-  const panels = {
-    '0-2': document.getElementById('panel-0-2'),
-    '3-5': document.getElementById('panel-3-5'),
-    '5-plus': document.getElementById('panel-5-plus')
+  const setDot = (i) => {
+    const n = ((i % total) + total) % total;
+    dots.forEach((d, k) => d.classList.toggle('is-active', k === n));
   };
 
-  function activate(key) {
-    tabs.forEach(t => {
-      const active = t.dataset.age === key;
-      t.classList.toggle('is-active', active);
-      t.setAttribute('aria-selected', active ? 'true' : 'false');
-    });
-    Object.entries(panels).forEach(([k, el]) => el.classList.toggle('is-active', k === key));
-  }
+  const apply = () => {
+    track.style.transform = `translateX(-${idx * 100}%)`;
+    setDot(idx);
+  };
 
-  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.age)));
+  const stop = () => { if (timer) { clearTimeout(timer); timer = null; } };
+  const schedule = () => { timer = setTimeout(next, 3000); };
 
-  // Default: 0–2 (selected)
-  activate('0-2');
+  const next = () => {
+    // normal step
+    if (idx < total - 1) {
+      idx += 1;
+      apply();
+      schedule();
+      return;
+    }
+
+    // seamless loop: jump to 0 without transition, then animate to 1
+    stop();
+    track.classList.add('no-trans');
+    idx = 0;
+    apply();                   // instant jump to first
+    // force reflow so browser applies the no-transition state
+    void track.offsetWidth;
+    track.classList.remove('no-trans');
+
+    idx = 1;                   // move to second as the next visible slide
+    apply();
+    schedule();
+  };
+
+  const go = (i) => {
+    stop();
+    idx = ((i % total) + total) % total;
+    apply();
+    schedule();
+  };
+
+  dots.forEach(d => d.addEventListener('click', () => go(+d.dataset.index)));
+
+  // Pause on hover
+  ['mouseenter', 'mouseleave'].forEach(evt => {
+    [track, dotsWrap].forEach(el => el.addEventListener(evt, () => {
+      if (evt === 'mouseenter') stop(); else schedule();
+    }));
+  });
+
+  // Start
+  apply();
+  schedule();
+
+  // Optional: pause when tab hidden, resume when visible (keeps 3s feel)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop(); else schedule();
+  });
 })();
