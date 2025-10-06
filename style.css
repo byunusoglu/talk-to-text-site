@@ -573,3 +573,7 @@ label input, label textarea { margin-top: 6px; }
 }
 
 .hero-overlay { transition: none !important; }
+
+/* Class used by JS to hard-disable overlay transitions during image swap */
+.no-overlay-anim .hero-overlay { transition: none !important; }
+
