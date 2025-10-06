@@ -968,6 +968,33 @@ label input, label textarea { margin-top: 6px; }
 /* CTA spacing */
 .convert .convert-cta { margin-top: 16px; }
 
+/* Hold hint */
+.morph-hint {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(10,7,20,0.75);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: .2px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .25s ease, transform .25s ease;
+  pointer-events: none;
+}
+
+/* During hold: show hint */
+.morph-wrap.hold .morph-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Optional: dim the label a touch during hold so focus is on the scene */
+.morph-wrap.hold .morph-label { opacity: .85; }
+
 /* Reduced motion: show final state immediately */
 @media (prefers-reduced-motion: reduce) {
   .morph-wrap { height: auto; }
