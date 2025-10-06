@@ -696,18 +696,6 @@ label input, label textarea { margin-top: 6px; }
   display: block;
 }
 
-/* Divider line separating CTA and badges on desktop */
-@media (min-width: 768px) {
-  .product-badges::before {
-    content: "";
-    display: block;
-    width: 60%;
-    height: 1px;
-    background: linear-gradient(to right, transparent, rgba(122,78,171,0.25), transparent);
-    margin: 0 auto 12px;
-  }
-}
-
 /* Slightly smaller badges on desktop to keep hierarchy */
 .product-badge {
   font-size: 13px;
@@ -875,16 +863,6 @@ label input, label textarea { margin-top: 6px; }
 .product-badge span {
   display: inline-block;
   line-height: 1;         /* avoids baseline variance across fonts/sizes */
-}
-
-/* Ensure the decorative divider above badges doesn't nudge layout */
-@media (min-width: 768px) {
-  .product-badges::before {
-    display: block;
-    height: 1px;
-    /* No margin-collapsing weirdness: keep it independent of row alignment */
-    margin: 0 auto 12px;
-  }
 }
 
 
