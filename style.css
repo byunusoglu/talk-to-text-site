@@ -169,6 +169,12 @@ h1, h2 {
   color: #a37cd3;
 }
 
+/* Hide cart count if empty */
+.cart-count.hidden {
+  display: none;
+}
+
+
 /* 🍔 Dropdown menu */
 .menu {
   position: absolute;
