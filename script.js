@@ -44,6 +44,9 @@
       (b.dataset.age || "").toLowerCase() === current));
   };
 
+      ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
+  .forEach(src => { const img = new Image(); img.src = src; });
+
   // ---------- Hero per age (live-swap on landing) ----------
   const HERO_BY_AGE = {
     "0-2": {
@@ -65,6 +68,7 @@
       cta:   "Create story"
     }
   };
+
 
   function updateHeroForAge(ageRaw) {
     try {
