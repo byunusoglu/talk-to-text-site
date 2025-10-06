@@ -44,6 +44,46 @@
       (b.dataset.age || "").toLowerCase() === current));
   };
 
+  // ---------- Hero per age (live-swap on landing) ----------
+  const HERO_BY_AGE = {
+    "0-2": {
+      image: "momdaughterbanner.png",
+      title: "Create magical fairytales together.",
+      desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
+      cta:   "Create story"
+    },
+    "3-5": {
+      image: "childsdreambanner.png",
+      title: "Create magical bedtime stories together.",
+      desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
+      cta:   "Create story"
+    },
+    "5+": {
+      image: "grownbanner.png",
+      title: "Create superhero stories together.",
+      desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
+      cta:   "Create story"
+    }
+  };
+
+  function updateHeroForAge(ageRaw) {
+    try {
+      const age = (ageRaw || DEFAULT_AGE).trim();
+      const cfg = HERO_BY_AGE[age] || HERO_BY_AGE[DEFAULT_AGE];
+      const banner = document.querySelector(".hero-banner");
+      const title  = document.getElementById("heroTitle");
+      const desc   = document.getElementById("heroDesc");
+      const cta    = document.getElementById("heroCta");
+      if (banner && cfg.image) banner.style.backgroundImage = `url('${cfg.image}')`;
+      if (title) title.textContent = cfg.title;
+      if (desc)  desc.textContent  = cfg.desc;
+      if (cta) {
+        cta.textContent = cfg.cta;
+        cta.onclick = () => fadeOutAnd(() => { window.location.href = "create.html"; });
+      }
+    } catch (_) {}
+  }
+
   // ---------- page guards ----------
   const isCreateStepperPage = () => Boolean($('#createForm'));                 // :contentReference[oaicite:4]{index=4}
   const isCreateSimplePage  = () => Boolean($('#storyInput') && $('#generateBtn')); // :contentReference[oaicite:5]{index=5}
@@ -65,14 +105,18 @@
   // ---------- Landing: age buttons ----------
   function initAgeButtons() {
     paintSelectedAge();
+    // Ensure hero matches current selection on load
+    updateHeroForAge(getAge());
     document.addEventListener("click", (e) => {
       const btn = e.target.closest(".age-btn");
       if (!btn) return;
       const raw = (btn.dataset.age || "").trim();
-      setAge(raw === "0-2" || raw === "3-5" || raw === "5+" ? raw : DEFAULT_AGE);
+      const val = (raw === "0-2" || raw === "3-5" || raw === "5+") ? raw : DEFAULT_AGE;
+      setAge(val);
       $$(".age-btn").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
-      fadeOutAnd(() => { window.location.href = "create.html"; });
+      // Live update hero (image + overlay + CTA label). No navigation here.
+      updateHeroForAge(val);
     }, { passive: false });
   }
 
@@ -94,15 +138,61 @@
       `Child age: ${fields.age || "—"}`,
       `Likes: ${fields.likes || "—"}`,
       `Theme: ${fields.theme || "—"}`,
-      `Key moments: ${fields.moments || "—"}`,
-      `Characters: ${[fields.char1, fields.char2].filter(Boolean).join(", ") || "—"}`,
+      `Special moments: ${fields.moments || "—"}`,
+      `Characters: ${fields.char1 || "—"} ${fields.char2 ? " & " + fields.char2 : ""}`,
       `Extras: ${fields.extras || "—"}`
     ].join("\n");
   }
 
-  // ---------- Create: Stepper flow + API call ----------
+  // ---------- Create: collect transcript (Simple UI) ----------
+  function collectTranscriptFromSimple() {
+    const txt = $('#storyInput')?.value?.trim() || "";
+    return txt || "No parent–child conversation transcript provided.";
+  }
+
+  // ---------- API call + stash story + go checkout ----------
+  async function generateStoryAndNavigate(transcript) {
+    if (!transcript) throw new Error("Missing transcript");
+    const body = {
+      transcript,
+      ageGroup: getAge(),
+      childName: ($('#kidName')?.value || "").trim()
+    };
+    // optimistic UI
+    const btn = $('#generateBtn');
+    const spinner = $('#genSpinner');
+    try {
+      btn && (btn.disabled = true);
+      spinner && spinner.classList.remove('hidden');
+
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`API ${res.status}`);
+
+      const data = await res.json();
+      const md   = data?.markdown || "";
+      const html = mdToHtml(md);
+
+      try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
+      try { SS.setItem(K_STORY_MD, md); } catch (_) {}
+      try { SS.setItem(K_STORY_HTML, html); } catch (_) {}
+
+      goCheckout();
+    } catch (err) {
+      console.error(err);
+      alert("Sorry, we couldn't generate the story. Please try again.");
+    } finally {
+      btn && (btn.disabled = false);
+      spinner && spinner.classList.add('hidden');
+    }
+  }
+
+  // ---------- Create: Stepper UI wiring ----------
   function initCreateStepper() {
-    const form    = $('#createForm');
+    const form = $('#createForm');
     if (!form) return;
 
     const panels  = $$('.step-panel', form);
@@ -119,174 +209,104 @@
       panels.forEach((p, i) => p.classList.toggle('hidden', i !== current));
       steps.forEach((s, i) => {
         s.classList.toggle('active', i === current);
-        s.classList.toggle('done',   i < current);
+        s.classList.toggle('done', i < current);
       });
-      btnPrev.classList.toggle('hidden', current === 0);
-      btnNext.classList.toggle('hidden', current === last);
-      btnGen .classList.toggle('hidden', current !== last);
+      btnPrev?.classList.toggle('hidden', current === 0);
+      btnNext?.classList.toggle('hidden', current === last);
+      btnGen?.classList.toggle('hidden', current !== last);
     };
 
-    btnPrev.addEventListener('click', (e) => { e.preventDefault(); if (current > 0) { current--; render(); } });
-    btnNext.addEventListener('click', (e) => { e.preventDefault(); if (current < last) { current++; render(); } });
-
-    // Generate → CALL API → stash → checkout
-    btnGen.addEventListener('click', async (e) => {
+    btnPrev?.addEventListener('click', () => { if (current > 0) { current--; render(); }});
+    btnNext?.addEventListener('click', () => { if (current < last) { current++; render(); }});
+    btnGen?.addEventListener('click', async (e) => {
       e.preventDefault();
-      const loading = $('#loading'); // exists under the form  :contentReference[oaicite:8]{index=8}
       const transcript = collectTranscriptFromStepper();
-      try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
-
-      btnGen.disabled = true; if (loading) loading.classList.remove('hidden');
-      try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript })
-        });
-        const data = await res.json();
-        const md = data.story || "";
-        const html = mdToHtml(md);
-        try { SS.setItem(K_STORY_MD, md); SS.setItem(K_STORY_HTML, html); } catch (_) {}
-        goCheckout();
-      } catch (err) {
-        alert("Couldn’t generate the story right now. Please try again.");
-      } finally {
-        btnGen.disabled = false; if (loading) loading.classList.add('hidden');
-      }
-    });
-
-    // Enter key: next, final → generate
-    form.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter') return;
-      const active = document.activeElement;
-      if (active && active.tagName === 'TEXTAREA') return;
-      e.preventDefault();
-      if (current < last) { current++; render(); } else { btnGen.click(); }
+      await generateStoryAndNavigate(transcript);
     });
 
     render();
   }
 
-  // ---------- Create: Simple textarea UI (legacy) ----------
+  // ---------- Create: Simple UI wiring ----------
   function initCreateSimple() {
-    const input   = $('#storyInput');    // textarea  :contentReference[oaicite:9]{index=9}
-    const button  = $('#generateBtn');
-    const loading = $('#loading');
-    if (!(input && button)) return;
+    const input = $('#storyInput');
+    const btn   = $('#generateBtn');
+    if (!input || !btn) return;
 
-    button.addEventListener('click', async () => {
-      const transcript = (input.value || "").trim();
-      if (!transcript) { alert("Please describe your story idea first!"); return; }
-      try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
-
-      button.disabled = true; loading?.classList.remove('hidden');
-      try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript })
-        });
-        const data = await res.json();
-        const md = data.story || "";
-        const html = mdToHtml(md);
-        try { SS.setItem(K_STORY_MD, md); SS.setItem(K_STORY_HTML, html); } catch (_) {}
-        goCheckout();
-      } catch {
-        alert("Error connecting to the story generator.");
-      } finally {
-        button.disabled = false; loading?.classList.add('hidden');
-      }
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const transcript = collectTranscriptFromSimple();
+      await generateStoryAndNavigate(transcript);
     });
   }
 
-  // ---------- Checkout: show story + products ----------
+  // ---------- Checkout: render story + products ----------
   function initCheckout() {
-    const storyEl = $('#storyContent');                                       // :contentReference[oaicite:10]{index=10}
-    const hero    = $('#storyHero');                                          // :contentReference[oaicite:11]{index=11}
-    const track   = $('#productsTrack');
-    if (!storyEl || !track) return;
+    const storyEl = $('#storyContent');
+    if (!storyEl) return;
 
-    // Age-based hero background (matches your CSS .bg-0-2 / .bg-3-5 / .bg-5-plus) :contentReference[oaicite:12]{index=12}
-    if (hero) {
+    const html = SS.getItem(K_STORY_HTML);
+    const md   = SS.getItem(K_STORY_MD);
+    storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
+
+    // Optional: show raw markdown if needed
+    const rawMdEl = $('#storyMarkdown');
+    if (rawMdEl && md) rawMdEl.textContent = md;
+
+    // Products carousel (age-based)
+    const productsTrack = $('#productsTrack');
+    if (productsTrack) {
       const age = getAge();
-      hero.classList.remove('bg-0-2','bg-3-5','bg-5-plus');
-      hero.classList.add(age === '0-2' ? 'bg-0-2' : age === '3-5' ? 'bg-3-5' : 'bg-5-plus');
+      const products = getProductsForAge(age);
+      renderProducts(productsTrack, products);
     }
-
-    // Prefer the real story generated by API (saved on create)
-    let html = "";
-    try { html = SS.getItem(K_STORY_HTML) || ""; } catch (_) {}
-    if (!html) {
-      // Fallback: try to render markdown if present
-      try {
-        const md = SS.getItem(K_STORY_MD) || "";
-        if (md) html = mdToHtml(md);
-      } catch (_) {}
-    }
-    if (!html) {
-      // Last resort sample (should be rare)
-      html = mdToHtml(
-        "# A Cozy First Story\n\nOnce upon a time, a small explorer and their family took a gentle walk where the leaves went *whoosh* and puddles went *plip-plop*. They helped each other and felt safe. **Sleep tight.**"
-      );
-    }
-    storyEl.innerHTML = html;
-
-    // Products: age-tailored (more relevant than generic)
-    const age = getAge();
-    const base = [
-      { id:"starter",  title:"Starter Pack", desc:"3 personalised bedtime stories", price:"£3.99", old:"£5.99", cta:"Add to cart" },
-      { id:"monthly",  title:"Monthly Plan", desc:"Unlimited stories + voice mode", price:"£6.99/mo", old:"",     cta:"Start 7-day trial" },
-    ];
-    const byAge = {
-      "0-2": [
-        { id:"picture",  title:"Picture-Book Mode", desc:"Fewer words, bigger images",    price:"£1.49", old:"", cta:"Add to cart" },
-        { id:"lullaby",  title:"Calm Sounds Pack",  desc:"Soft lullaby background",       price:"£1.29", old:"", cta:"Add to cart" },
-      ],
-      "3-5": [
-        { id:"adventure",title:"Adventure Add-ons", desc:"Extra playful scenes",          price:"£1.99", old:"£2.49", cta:"Add to cart" },
-        { id:"bilingual",title:"TR/EN Bilingual",   desc:"English & Turkish versions",     price:"£1.99", old:"",     cta:"Add to cart" },
-      ],
-      "5+": [
-        { id:"reader",   title:"Early Reader Pack", desc:"Bigger paragraphs + phonics tips", price:"£2.49", old:"",  cta:"Add to cart" },
-        { id:"stem",     title:"Curious Minds",     desc:"Gentle STEM-flavoured mini facts", price:"£1.99", old:"",  cta:"Add to cart" },
-      ]
-    };
-    const products = [...base, ...(byAge[age] || byAge["3-5"])];
-
-    track.innerHTML = products.map(p => `
-      <article class="product-card">
-        <div class="product-body">
-          <h3>${p.title}</h3>
-          <p class="muted">${p.desc}</p>
-          <div class="price-row">
-            <span class="price">${p.price}</span>
-            ${p.old ? `<span class="price-old">${p.old}</span>` : ""}
-          </div>
-          <button class="btn add-btn" data-add="${p.id}">${p.cta}</button>
-        </div>
-      </article>
-    `).join("");
-
-    // Carousel controls (prev/next)  :contentReference[oaicite:13]{index=13}
-    const prev = $('#prevCarousel');
-    const next = $('#nextCarousel');
-    const scrollByPx = () => Math.max(track.clientWidth * 0.8, 240);
-    prev?.addEventListener('click', () => track.scrollBy({ left: -scrollByPx(), behavior: 'smooth' }));
-    next?.addEventListener('click', () => track.scrollBy({ left:  scrollByPx(), behavior: 'smooth' }));
-
-    // Tiny cart count bump (top bar)
-    const cartCount = $('#cartCount');
-    track.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-add]');
-      if (!btn) return;
-      const n = Number(cartCount?.textContent || '0') + 1;
-      if (cartCount) cartCount.textContent = String(n);
-      btn.textContent = 'Added ✓';
-      setTimeout(() => (btn.textContent = 'Added ✓'), 600);
-    });
   }
 
-  // ---------- Topbar + footer year (shared) ----------
+  // ---------- Products data per age ----------
+  function getProductsForAge(age) {
+    const base = [
+      { id: "bk1", name: "Bedtime Book", price: "£9.99" },
+      { id: "st1", name: "Sticker Pack", price: "£3.50" },
+      { id: "lt1", name: "Night Light", price: "£12.00" },
+    ];
+    if (age === "0-2") {
+      return [
+        { id: "bb1", name: "Soft Plush Toy", price: "£8.00" },
+        ...base
+      ];
+    } else if (age === "3-5") {
+      return [
+        { id: "pb1", name: "Picture Book (A3)", price: "£11.00" },
+        ...base
+      ];
+    } else {
+      return [
+        { id: "ac1", name: "Activity Cards", price: "£7.00" },
+        ...base
+      ];
+    }
+  }
+
+  function renderProducts(track, items) {
+    track.innerHTML = "";
+    for (const it of items) {
+      const card = document.createElement("div");
+      card.className = "product-card";
+      card.innerHTML = `
+        <div class="product-name">${it.name}</div>
+        <div class="product-price">${it.price}</div>
+        <button class="btn product-cta" data-id="${it.id}">Add</button>
+      `;
+      track.appendChild(card);
+    }
+    track.addEventListener("click", (e) => {
+      const btn = e.target.closest(".product-cta");
+      if (!btn) return;
+      alert("Added to cart: " + btn.dataset.id);
+    }, { passive: false });
+  }
+
+  // ---------- minor chrome ----------
   function initChrome() {
     const menuBtn = $('#menuBtn');
     const menu = $('#menu');
