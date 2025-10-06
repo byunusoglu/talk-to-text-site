@@ -2,9 +2,9 @@
 
 /* =====================================================
    Your World — stable interactions (no regex)
-   - Age group pills (persist in localStorage)
-   - Create step: Next/Generate works (click or submit)
-   - Testimonial scroller
+   - Landing: age pills (persist in localStorage)
+   - Create: stepper (Next/Back) + Generate → checkout
+   - Testimonials scroller (if present)
 ===================================================== */
 (() => {
   const AGE_KEY = "yw_age_group";
@@ -26,7 +26,7 @@
     window.setTimeout(cb, delay);
   };
 
-  // ---- Age value persistence ----
+  // -------- Age persistence --------
   const setAge = (val) => { try { localStorage.setItem(AGE_KEY, String(val)); } catch (_) {} };
   const getAge = () => {
     try { return localStorage.getItem(AGE_KEY) || DEFAULT_AGE; } catch (_) { return DEFAULT_AGE; }
@@ -41,28 +41,78 @@
     (match || buttons[0]).classList.add("selected");
   };
 
-  // ---- Detect if we are on the create page (best-effort) ----
-  const isCreatePage = () => {
-    return Boolean(
-      $('#generateBtn') ||                         // <-- added
-      $('#generateStoryBtn') ||
-      $('[data-action="generate-story"]') ||
-      $('#nextButton') ||
-      $('.next-btn') ||
-      $('.create-step') ||
-      $('form#createForm') ||
-      $('form[data-flow="create-step"]')
-    );
-  };
+  const isCreatePage = () =>
+    Boolean($('#generateBtn') || $('#nextStep') || $('#prevStep') || $('form#createForm'));
 
-  // ---- Force create step to go to checkout ----
   const goCheckout = () => fadeOutAnd(() => { window.location.href = "checkout.html"; });
 
+  // -------- Create page stepper --------
+  function initStepper() {
+    const form = $('#createForm');
+    if (!form) return;
+
+    const panels = $$('.step-panel', form);       // sections with data-step
+    const steps  = $$('.stepper .step');          // dots
+    const btnPrev = $('#prevStep');
+    const btnNext = $('#nextStep');
+    const btnGen  = $('#generateBtn');
+
+    if (!panels.length || !steps.length || !btnPrev || !btnNext || !btnGen) return;
+
+    let current = 0;
+    const last = panels.length - 1;
+
+    const render = () => {
+      panels.forEach((p, i) => p.classList.toggle('hidden', i !== current));
+      steps.forEach((s, i) => {
+        s.classList.toggle('active', i === current);
+        s.classList.toggle('done',   i < current);
+      });
+      // Nav button visibility
+      btnPrev.disabled = current === 0;
+      btnPrev.classList.toggle('hidden', current === 0);     // optional UX
+      btnNext.classList.toggle('hidden', current === last);
+      btnGen.classList.toggle('hidden',  current !== last);
+    };
+
+    // Click handlers
+    btnPrev.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (current > 0) current -= 1;
+      render();
+    });
+
+    btnNext.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (current < last) current += 1;
+      render();
+    });
+
+    // Optional: click on step dots to jump
+    steps.forEach((s) => {
+      s.addEventListener('click', () => {
+        const idx = Number(s.getAttribute('data-step') || '0');
+        if (!Number.isNaN(idx)) {
+          current = Math.min(Math.max(idx, 0), last);
+          render();
+        }
+      });
+    });
+
+    // Generate → checkout
+    btnGen.addEventListener('click', (e) => {
+      e.preventDefault();
+      goCheckout();
+    });
+
+    render(); // initial
+  }
+
   onReady(() => {
-    // Ensure painted selection on landing (and default age set)
+    // Landing age pills
     paintSelectedAge();
 
-    // Sync radios on create page (if present)
+    // Sync any age radios (if you add them later)
     const createAgeRadios = $$('input[name="age-group"]');
     if (createAgeRadios.length) {
       const current = getAge().toLowerCase();
@@ -74,68 +124,32 @@
       if (!matched) createAgeRadios[0].checked = true;
     }
 
-    // --------- GLOBAL CLICK DELEGATION ----------
+    // Age pill selection + navigate to create
     document.addEventListener("click", (e) => {
       const t = e.target;
-
-      // A) Age pill (landing)
       const ageBtn = t.closest(".age-btn");
       if (ageBtn) {
         const raw = (ageBtn.dataset.age || "").trim();
         const safe = raw === "0-2" || raw === "3-5" || raw === "5+" ? raw : DEFAULT_AGE;
         setAge(safe);
-
         $$(".age-btn").forEach((b) => b.classList.remove("selected"));
         ageBtn.classList.add("selected");
-
         const next = ageBtn.dataset.target || "create.html";
         fadeOutAnd(() => { window.location.href = next; });
         return;
       }
-
-      // B) NEXT / GENERATE (create step)
-      const nextSel =
-        "#generateBtn, #generateStoryBtn, [data-action='generate-story'], " + // <-- #generateBtn added
-        "#nextButton, .next-btn, button[type='submit'], a[href='checkout.html'], [data-next='checkout']";
-
-      const nextBtn = t.closest(nextSel);
-      if (nextBtn && isCreatePage()) {
-        e.preventDefault();
-        // If inside a form, neutralize native validation blocking for this step
-        const form = nextBtn.closest("form");
-        if (form) form.noValidate = true;
-        goCheckout();
-        return;
-      }
     }, { passive: false });
 
-    // --------- FORM SUBMIT INTERCEPT (create step) ----------
-    document.addEventListener("submit", (e) => {
-      const form = e.target;
-      if (form.matches("form#createForm, form[data-flow='create-step'], .create-step form, form[action*='create']")) {
-        e.preventDefault();
-        form.noValidate = true;
-        goCheckout();
-      }
-    });
+    // Create page features
+    if (isCreatePage()) {
+      initStepper();
+    }
 
-    // --------- ENTER KEY (create step fields) ----------
-    document.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter") return;
-      if (!isCreatePage()) return;
-      const el = document.activeElement;
-      if (el && (el.closest("form#createForm") || el.closest("form[data-flow='create-step']") || el.closest(".create-step"))) {
-        e.preventDefault();
-        goCheckout();
-      }
-    });
-
-    // --------- Testimonials scroller (optional) ----------
+    // Testimonials scroller (if present)
     const viewport = $(".testimonials-viewport");
     const track = $(".testimonials-track");
     if (viewport && track) {
       let isDown = false, startX = 0, scrollLeft = 0;
-
       viewport.style.overflow = "hidden";
       track.style.display = "flex";
       track.style.overflowX = "auto";
@@ -157,7 +171,6 @@
         track.scrollLeft = scrollLeft - walk;
       });
 
-      // Touch
       let touchStartX = 0, touchStartScroll = 0;
       track.addEventListener("touchstart", (t) => {
         const e = t.touches[0]; touchStartX = e.clientX; touchStartScroll = track.scrollLeft;
@@ -167,7 +180,6 @@
         track.scrollLeft = touchStartScroll - dx;
       }, { passive: true });
 
-      // Wheel: vertical → horizontal
       track.addEventListener("wheel", (ev) => {
         if (ev.shiftKey) return;
         if (Math.abs(ev.deltaY) > Math.abs(ev.deltaX)) {
