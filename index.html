@@ -143,11 +143,30 @@
     <button class="btn" onclick="window.location.href='create.html'">YOUR FIRST FREE STORY</button>
   </section>
 
-  <section class="section testimonials fade-up delay-2">
-    <div class="testimonial" id="testimonialText">
-      “Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.” — <b>Elif</b>
-    </div>
-  </section>
+  
+
+  <section class="section testimonials fade-up delay-2" id="testimonials">
+  <figure class="testimonial">
+    <blockquote class="t-quote">“Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.”</blockquote>
+    <figcaption class="t-by">— <b>Elif</b></figcaption>
+  </figure>
+
+  <!-- Hidden pool (JS rotates these) -->
+  <template id="t-pool">
+    <figure>
+      <blockquote>“Bedtime became our favourite 10 minutes. She laughs at the whooosh and plip-plop bits.”</blockquote>
+      <figcaption>— <b>James</b></figcaption>
+    </figure>
+    <figure>
+      <blockquote>“Personalised names make him light up. We finally look forward to the routine.”</blockquote>
+      <figcaption>— <b>Zeynep</b></figcaption>
+    </figure>
+    <figure>
+      <blockquote>“It feels like co-creating. The app listens while we talk, then the story appears. Magic.”</blockquote>
+      <figcaption>— <b>Ana</b></figcaption>
+    </figure>
+  </template>
+</section>
 
   <footer>
     © <span id="year"></span> StoryBuds
