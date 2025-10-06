@@ -495,22 +495,30 @@ label input, label textarea { margin-top: 6px; }
 
 .carousel-controls { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
 
-/* 🌟 Hero Banner */
+/* 🌟 Hero Banner — static image, no scaling */
 .hero-banner {
   position: relative;
   width: 100%;
-  min-height: 520px;
-  background: url('momdaugterbanner.png') center/cover no-repeat;
+  height: 520px; /* fixed visual crop; adjust as needed */
+  background-image: url('momdaugterbanner.png');
+  background-repeat: no-repeat;
+  background-position: center top; /* keep the same focal point */
+  background-size: auto;           /* <-- no scaling/cover/contain */
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 0;
   margin-top: 0;
 
-  /* NEW: allow overlap & spacing to next section */
-  overflow: visible;                      /* allow the overlay to hang below */
-  --hero-overlap: 28px;                   /* how much the card dips below the banner */
-  margin-bottom: calc(var(--hero-overlap) + 8px); /* spacing after overlap */
+  /* Allow the overlay to extend below the banner */
+  overflow: visible;
+  --hero-overlap: 36px; /* how far the card dips under the banner */
+  margin-bottom: calc(var(--hero-overlap) + 12px);
+}
+
+/* keep a shorter fixed crop on small screens */
+@media (max-width: 768px) {
+  .hero-banner { height: 420px; background-position: center top; }
 }
 
 /* Gentle vignette to reduce busy background contrast near center */
