@@ -18,20 +18,14 @@
 
     <div class="top-actions">
       <button class="cart-btn" id="cartBtn" aria-label="Cart">
-        <svg class="cart-icon" viewBox="0 0 24 24" fill="none">
-  <path d="M3 3h2l3.6 9.59a1 1 0 0 0 .92.65H17a1 1 0 0 0 .96-.74L20 6H6" 
-        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="9" cy="20" r="1" fill="currentColor"/>
-  <circle cx="17" cy="20" r="1" fill="currentColor"/>
-</svg>
-<span class="cart-count" id="cartCount">0</span>
+        🛒 <span class="cart-count" id="cartCount">0</span>
       </button>
       <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
     </div>
 
     <nav id="menu" class="menu hidden">
       <a href="index.html">Home</a>
-      <a href="create.html">Create Stories</a>
+      <a href="create.html" aria-current="page">Create Stories</a>
       <a href="#">My Profile</a>
     </nav>
   </header>
@@ -39,94 +33,21 @@
   <main class="section fade-up">
     <h1>Create Your Personalised Story</h1>
 
-<section id="chatWizard" class="chat-wizard">
-  <div class="chat-stream" id="chatStream" aria-live="polite">
-    <!-- System greeter -->
-    <div class="chat-row bot">
-      <div class="bubble">👋 Hey! Let’s craft a bedtime story together. I’ll ask a few tiny questions.</div>
-    </div>
-  </div>
-
-  <form id="chatForm" class="chat-form" autocomplete="off">
-    <input id="chatInput" type="text" placeholder="Type your answer…" aria-label="Your answer" />
-    <button class="btn" id="chatNext" type="submit">Next →</button>
-    <button class="btn primary hidden" id="chatGenerate" type="button">✨ Generate Story</button>
-  </form>
-  <p class="chat-hint muted">Tip: keep it simple — you can refine after the first draft.</p>
-</section>
-    
-    <!-- Stepper -->
-
-    <form id="createForm" class="wizard hidden">
-  <!-- ... your existing stepper panels remain here unchanged ... -->
-          <ol class="stepper" id="stepper">
-      <li class="step active" data-step="0"><span class="dot">1</span><span>About the kid</span></li>
-      <li class="step" data-step="1"><span class="dot">2</span><span>Theme</span></li>
-      <li class="step" data-step="2"><span class="dot">3</span><span>Supporting characters</span></li>
-    </ol>
-</form>
-
-    <!-- Panels -->
-    <form id="createForm" class="wizard">
-
-      <!-- Step 1 -->
-      <section class="step-panel" data-step="0">
-        <div class="field-grid">
-          <label>
-            Child’s name
-            <input id="kidName" type="text" placeholder="e.g., Arthur" />
-          </label>
-          <label>
-            Age
-            <input id="kidAge" type="number" min="0" max="10" step="1" placeholder="e.g., 3" />
-          </label>
+    <!-- Conversational Wizard (only UI on this page) -->
+    <section id="chatWizard" class="chat-wizard">
+      <div class="chat-stream" id="chatStream" aria-live="polite">
+        <div class="chat-row bot">
+          <div class="bubble">👋 Hey! Let’s craft a bedtime story together. I’ll ask a few tiny questions.</div>
         </div>
-        <label>
-          What do they like? (toys, colors, places…)
-          <textarea id="kidLikes" placeholder="e.g., trains, purple, rainbows, the park"></textarea>
-        </label>
-      </section>
-
-      <!-- Step 2 -->
-      <section class="step-panel hidden" data-step="1">
-        <label>
-          Story theme / setting
-          <input id="theme" type="text" placeholder="e.g., friendly dinosaurs at the beach" />
-        </label>
-        <label>
-          Any key moments to include?
-          <textarea id="moments" placeholder="e.g., building a sandcastle, sharing snacks, finding a tiny shell"></textarea>
-        </label>
-      </section>
-
-      <!-- Step 3 -->
-      <section class="step-panel hidden" data-step="2">
-        <div class="field-grid">
-          <label>
-            Character 1 (name + who)
-            <input id="char1" type="text" placeholder="e.g., Mom Isabel" />
-          </label>
-          <label>
-            Character 2 (optional)
-            <input id="char2" type="text" placeholder="e.g., Dad Bob" />
-          </label>
-        </div>
-        <label>
-          Anything else to weave in?
-          <textarea id="extras" placeholder="e.g., bedtime tone, gentle humor, ‘plip-plop’ rain sounds"></textarea>
-        </label>
-      </section>
-
-      <!-- Nav buttons -->
-      <div class="wizard-nav">
-        <button type="button" class="btn ghost" id="prevStep">Back</button>
-        <button type="button" class="btn" id="nextStep">Next</button>
-        <button type="button" class="btn primary hidden" id="generateBtn">Generate Story</button>
       </div>
-    </form>
 
-    <div id="loading" class="hidden">✨ Generating your story...</div>
-    <div id="storyOutput" class="story-box hidden"></div>
+      <form id="chatForm" class="chat-form" autocomplete="off">
+        <input id="chatInput" type="text" placeholder="Type your answer…" aria-label="Your answer" />
+        <button class="btn" id="chatNext" type="submit">Next →</button>
+        <button class="btn primary hidden" id="chatGenerate" type="button">✨ Generate Story</button>
+      </form>
+      <p class="chat-hint muted">Tip: keep it simple — you can refine after the first draft.</p>
+    </section>
   </main>
 
   <footer>
