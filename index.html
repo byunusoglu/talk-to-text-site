@@ -52,11 +52,16 @@
   <div class="hero-overlay">
     <div class="hero-text">
       <!-- inside .hero-text (only this block) -->
+
+      <!-- inside .hero-text -->
 <h1 id="heroTitle">Create magical fairytales together.</h1>
-<p id="heroDesc">Turn your child’s imagination into their favourite storytime moment — every night.</p>
+
+<!-- Move CTA before the subtext on small screens (CSS will handle order visually) -->
 <button class="btn" id="heroCta" onclick="window.location.href='create.html'">Create story</button>
-      <div class="product-badges" aria-label="Available formats">
-  <div class="product-badge" role="img" aria-label="Digital Story">
+
+<p id="heroDesc">Turn your child’s imagination into their favourite storytime moment — every night.</p>
+
+<div class="product-badges" aria-label="Available formats">
     <!-- Tablet / digital icon -->
     <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
       <rect x="4" y="3" width="16" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -147,5 +152,9 @@
   <footer>
     © <span id="year"></span> StoryBuds
   </footer>
+  <!-- Sticky CTA for mobile -->
+<a class="mobile-cta" id="mobileCta" href="create.html" aria-label="Create your story">
+  ✨ Create your story
+</a>
 </body>
 </html>
