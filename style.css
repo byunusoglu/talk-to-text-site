@@ -907,7 +907,7 @@ label input, label textarea { margin-top: 6px; }
 
 .morph-wrap {
   /* tall container so scrolling can drive the effect */
-  height: 160vh;
+  height: 240vh;
   position: relative;
   --reveal: 0;         /* 0 → 1 as user scrolls (set by JS) */
   --parallax: 10;      /* px offset; JS tweaks for subtle motion */
