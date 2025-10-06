@@ -239,21 +239,8 @@ h1, h2 {
   box-shadow: 0 6px 18px rgba(142,68,236,0.22);
 }
 
-/* Hover preview badge */
 .age-btn:hover::after {
-  content: "Preview";
-  position: absolute;
-  bottom: -22px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #fff;
-  color: var(--plum-dark);
-  border: 1px solid #eee9fb;
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 11px;
-  white-space: nowrap;
-  box-shadow: var(--shadow);
+  content: "";
 }
 
 @media (max-width: 600px) {
