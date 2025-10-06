@@ -306,7 +306,32 @@
     track.addEventListener("click", (e) => {
       const btn = e.target.closest(".product-cta");
       if (!btn) return;
-      alert("Added to cart: " + btn.dataset.id);
+      let cartCount = 0;
+const cartCountEl = document.getElementById("cartCount");
+
+function updateCartCountDisplay() {
+  if (!cartCountEl) return;
+  if (cartCount > 0) {
+    cartCountEl.textContent = cartCount;
+    cartCountEl.classList.remove("hidden");
+  } else {
+    cartCountEl.classList.add("hidden");
+  }
+}
+
+track.addEventListener("click", (e) => {
+  const btn = e.target.closest(".product-cta");
+  if (!btn) return;
+  cartCount++;
+  updateCartCountDisplay();
+
+  // Optional subtle feedback
+  const cartBtn = document.getElementById("cartBtn");
+  if (cartBtn) {
+    cartBtn.classList.add("shake");
+    setTimeout(() => cartBtn.classList.remove("shake"), 500);
+  }
+});
     }, { passive: false });
   }
 
