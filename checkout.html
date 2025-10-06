@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Checkout — StoryBuds</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="script.js"></script>
+</head>
+<body class="fade-in">
+  <!-- Top layer stays consistent -->
+  <header class="topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-badge">
+        <img src="logo.png" alt="StoryBuds logo" />
+      </span>
+    </a>
+
+    <div class="top-actions">
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">
+        🛒 <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
+    </div>
+
+    <nav id="menu" class="menu hidden">
+      <a href="index.html">Home</a>
+      <a href="create.html">Create Stories</a>
+      <a href="#">My Profile</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- Story hero with age-based background -->
+    <section id="storyHero" class="story-hero fade-up">
+      <div class="story-hero-overlay"></div>
+      <article class="story-reader">
+        <h2 id="storyTitle" class="sr-only">Your story</h2>
+        <div id="storyContent" class="story-content"></div>
+      </article>
+    </section>
+
+    <!-- Products carousel -->
+    <section class="section fade-up">
+      <h2>Unlock more magic</h2>
+
+      <!-- Matching LEGO viewport class as requested -->
+      <div class="Carousel_carouselViewport__ykrK3 sk-scrollbar-horizontal--light carousel-viewport">
+        <div id="productsTrack" class="carousel-track" aria-label="Products"></div>
+      </div>
+
+      <div class="carousel-controls">
+        <button class="btn ghost" id="prevCarousel" aria-label="Previous">‹</button>
+        <button class="btn ghost" id="nextCarousel" aria-label="Next">›</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    © <span id="year"></span> StoryBuds
+  </footer>
+</body>
+</html>
