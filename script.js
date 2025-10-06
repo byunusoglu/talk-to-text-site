@@ -4,11 +4,11 @@
    Your World — unified interactions (API story on checkout)
    - Landing: age pills → create
    - Create (both UIs supported):
-       A) Stepper form (#createForm + #generateBtn)  :contentReference[oaicite:0]{index=0}
-       B) Simple textarea (#storyInput + #generateBtn) :contentReference[oaicite:1]{index=1}
+       A) Stepper form (#createForm + #generateBtn)
+       B) Simple textarea (#storyInput + #generateBtn)
      -> Calls your API, stashes story in sessionStorage, then goes to checkout
-   - Checkout: reads story from sessionStorage and renders into #storyContent  :contentReference[oaicite:2]{index=2}
-   - Products: age-tailored carousel rendered into #productsTrack  :contentReference[oaicite:3]{index=3}
+   - Checkout: reads story from sessionStorage and renders into #storyContent
+   - Products: age-tailored carousel rendered into #productsTrack
 ===================================================== */
 (() => {
   const AGE_KEY = "yw_age_group";          // '0-2' | '3-5' | '5+'
@@ -44,8 +44,9 @@
       (b.dataset.age || "").toLowerCase() === current));
   };
 
-      ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
-  .forEach(src => { const img = new Image(); img.src = src; });
+  // Preload hero images for fast swaps
+  ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
+    .forEach(src => { const img = new Image(); img.src = src; });
 
   // ---------- Hero per age (live-swap on landing) ----------
   const HERO_BY_AGE = {
@@ -69,7 +70,6 @@
     }
   };
 
-
   function updateHeroForAge(ageRaw) {
     try {
       const age = (ageRaw || DEFAULT_AGE).trim();
@@ -89,9 +89,9 @@
   }
 
   // ---------- page guards ----------
-  const isCreateStepperPage = () => Boolean($('#createForm'));                 // :contentReference[oaicite:4]{index=4}
-  const isCreateSimplePage  = () => Boolean($('#storyInput') && $('#generateBtn')); // :contentReference[oaicite:5]{index=5}
-  const isCheckoutPage      = () => Boolean($('#storyContent') && $('#productsTrack')); // :contentReference[oaicite:6]{index=6}
+  const isCreateStepperPage = () => Boolean($('#createForm'));
+  const isCreateSimplePage  = () => Boolean($('#storyInput') && $('#generateBtn'));
+  const isCheckoutPage      = () => Boolean($('#storyContent') && $('#productsTrack'));
   const goCheckout          = () => fadeOutAnd(() => { window.location.href = "checkout.html"; });
 
   // ---------- markdown → minimal HTML (safe-ish) ----------
@@ -124,9 +124,28 @@
     }, { passive: false });
   }
 
+  // NEW: hover preview for hero (desktop UX sugar)
+  function initAgePreview() {
+    const isPointerFine = window.matchMedia("(pointer: fine)").matches;
+    if (!isPointerFine) return; // skip on touch devices
+    let restoreTimer = null;
+
+    $$(".age-btn").forEach(btn => {
+      btn.addEventListener("mouseenter", () => {
+        const hoverAge = (btn.dataset.age || "").trim();
+        if (!hoverAge) return;
+        updateHeroForAge(hoverAge);
+        if (restoreTimer) { clearTimeout(restoreTimer); restoreTimer = null; }
+      });
+
+      btn.addEventListener("mouseleave", () => {
+        restoreTimer = setTimeout(() => updateHeroForAge(getAge()), 120);
+      });
+    });
+  }
+
   // ---------- Create: collect transcript (Stepper UI) ----------
   function collectTranscriptFromStepper() {
-    // IDs from your stepper create.html  :contentReference[oaicite:7]{index=7}
     const fields = {
       name:   $('#kidName')?.value?.trim(),
       age:    $('#kidAge')?.value?.trim(),
@@ -143,7 +162,7 @@
       `Likes: ${fields.likes || "—"}`,
       `Theme: ${fields.theme || "—"}`,
       `Special moments: ${fields.moments || "—"}`,
-      `Characters: ${fields.char1 || "—"} ${fields.char2 ? " & " + fields.char2 : ""}`,
+      `Characters: ${fields.char1 || "—"}${fields.char2 ? " & " + fields.char2 : ""}`,
       `Extras: ${fields.extras || "—"}`
     ].join("\n");
   }
@@ -177,7 +196,8 @@
       if (!res.ok) throw new Error(`API ${res.status}`);
 
       const data = await res.json();
-      const md   = data?.markdown || "";
+      // Support both shapes: {story} or {markdown}
+      const md   = data?.markdown || data?.story || "";
       const html = mdToHtml(md);
 
       try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
@@ -245,6 +265,7 @@
   }
 
   // ---------- Checkout: render story + products ----------
+  let cartCount = 0; // shared across page
   function initCheckout() {
     const storyEl = $('#storyContent');
     if (!storyEl) return;
@@ -297,42 +318,44 @@
       const card = document.createElement("div");
       card.className = "product-card";
       card.innerHTML = `
-        <div class="product-name">${it.name}</div>
-        <div class="product-price">${it.price}</div>
-        <button class="btn product-cta" data-id="${it.id}">Add</button>
+        <div class="product-body">
+          <h3>${it.name}</h3>
+          <p class="muted">Perfect for storytime</p>
+          <div class="price-row">
+            <span class="price">${it.price}</span>
+          </div>
+          <button class="btn product-cta" data-id="${it.id}">Add</button>
+        </div>
       `;
       track.appendChild(card);
     }
+
+    // single delegated listener (fixes accidental nested listeners)
     track.addEventListener("click", (e) => {
       const btn = e.target.closest(".product-cta");
       if (!btn) return;
-      let cartCount = 0;
-const cartCountEl = document.getElementById("cartCount");
+      cartCount++;
+      updateCartCountDisplay();
 
-function updateCartCountDisplay() {
-  if (!cartCountEl) return;
-  if (cartCount > 0) {
-    cartCountEl.textContent = cartCount;
-    cartCountEl.classList.remove("hidden");
-  } else {
-    cartCountEl.classList.add("hidden");
-  }
-}
-
-track.addEventListener("click", (e) => {
-  const btn = e.target.closest(".product-cta");
-  if (!btn) return;
-  cartCount++;
-  updateCartCountDisplay();
-
-  // Optional subtle feedback
-  const cartBtn = document.getElementById("cartBtn");
-  if (cartBtn) {
-    cartBtn.classList.add("shake");
-    setTimeout(() => cartBtn.classList.remove("shake"), 500);
-  }
-});
+      // Optional subtle feedback
+      const cartBtn = document.getElementById("cartBtn");
+      if (cartBtn) {
+        cartBtn.classList.add("shake");
+        setTimeout(() => cartBtn.classList.remove("shake"), 500);
+      }
     }, { passive: false });
+  }
+
+  // ---------- cart count badge ----------
+  function updateCartCountDisplay() {
+    const cartCountEl = document.getElementById("cartCount");
+    if (!cartCountEl) return;
+    if (cartCount > 0) {
+      cartCountEl.textContent = String(cartCount);
+      cartCountEl.classList.remove("hidden");
+    } else {
+      cartCountEl.classList.add("hidden");
+    }
   }
 
   // ---------- minor chrome ----------
@@ -341,16 +364,81 @@ track.addEventListener("click", (e) => {
     const menu = $('#menu');
     menuBtn?.addEventListener('click', () => menu?.classList.toggle('hidden'));
     const yearEl = $('#year'); if (yearEl) yearEl.textContent = new Date().getFullYear();
-     const cartCountEl = document.getElementById("cartCount");
-if (cartCountEl) cartCountEl.classList.add("hidden");
+
+    // Hide cart count (0) by default
+    const cartCountEl = document.getElementById("cartCount");
+    if (cartCountEl) cartCountEl.classList.add("hidden");
+  }
+
+  // NEW: Sticky CTA for mobile — appears after scrolling past half the hero
+  function initMobileCta() {
+    const cta = $("#mobileCta");
+    const hero = $(".hero-banner");
+    if (!cta || !hero) return;
+
+    function onScroll() {
+      const rect = hero.getBoundingClientRect();
+      if (window.scrollY > rect.height * 0.5) {
+        cta.classList.add("show");
+      } else {
+        cta.classList.remove("show");
+      }
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  }
+
+  // NEW: Testimonials rotator (soft fade)
+  function initTestimonials() {
+    const wrap = $("#testimonials");
+    if (!wrap) return;
+
+    const tpl = $("#t-pool");
+    if (!tpl) return;
+
+    const pool = Array.from(tpl.content.querySelectorAll("figure")).map(el => ({
+      quote: el.querySelector("blockquote")?.textContent || "",
+      by: el.querySelector("figcaption")?.innerHTML || ""
+    }));
+    if (!pool.length) return;
+
+    const quoteEl = wrap.querySelector(".t-quote");
+    const byEl = wrap.querySelector(".t-by");
+    if (!quoteEl || !byEl) return;
+
+    let idx = 0;
+    setInterval(() => {
+      idx = (idx + 1) % pool.length;
+
+      wrap.classList.add("t-fade-exit");
+      wrap.classList.add("t-fade-exit-active");
+
+      setTimeout(() => {
+        quoteEl.textContent = pool[idx].quote;
+        byEl.innerHTML = pool[idx].by;
+
+        wrap.classList.remove("t-fade-exit", "t-fade-exit-active");
+        wrap.classList.add("t-fade-enter");
+
+        requestAnimationFrame(() => {
+          wrap.classList.add("t-fade-enter-active");
+          setTimeout(() => {
+            wrap.classList.remove("t-fade-enter", "t-fade-enter-active");
+          }, 420);
+        });
+      }, 180);
+    }, 6000);
   }
 
   // ---------- boot ----------
   onReady(() => {
     initChrome();
     initAgeButtons();
+    initAgePreview();       // NEW: hover preview for hero
+    initMobileCta();        // NEW: sticky mobile CTA
     if (isCreateStepperPage()) initCreateStepper();   // stepper create
     if (isCreateSimplePage())  initCreateSimple();    // simple create
     if (isCheckoutPage())      initCheckout();        // checkout rendering
+    initTestimonials();       // NEW: landing quotes rotator
   });
 })();
