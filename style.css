@@ -551,3 +551,24 @@ label input, label textarea { margin-top: 6px; }
   .story-reader { margin: 20px 12px; padding: 18px 16px; }
   .story-content { font-size: 17px; }
 }
+
+/* Checkout hero — gradients (no external images) */
+.story-hero.bg-0-2 { 
+  background-image: none !important;
+  background: linear-gradient(135deg, #fff7ec, #fde8ff, #eef4ff) !important;
+  background-size: cover;
+  background-position: center;
+}
+.story-hero.bg-3-5 { 
+  background-image: none !important;
+  background: linear-gradient(135deg, #f9f0ff, #ffe8ef, #f1fff5) !important;
+  background-size: cover;
+  background-position: center;
+}
+.story-hero.bg-5-plus { 
+  background-image: none !important;
+  background: linear-gradient(135deg, #efe9ff, #e7f2ff, #fff2e6) !important;
+  background-size: cover;
+  background-position: center;
+}
+
