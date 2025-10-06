@@ -604,3 +604,117 @@ label input, label textarea { margin-top: 6px; }
 /* Class used by JS to hard-disable overlay transitions during image swap */
 .no-overlay-anim .hero-overlay { transition: none !important; }
 
+/* =========================
+   Formats awareness (hero)
+   ========================= */
+.product-badges {
+  margin-top: 14px;
+  display: inline-flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.product-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid #ece8f9;
+  box-shadow: var(--shadow);
+  color: var(--plum);
+  font-weight: 600;
+  font-size: 14px;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  will-change: transform;
+}
+.product-badge:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.9);
+}
+.product-badge .badge-icon {
+  width: 18px; height: 18px;
+  display: block;
+}
+
+/* =========================
+   Formats band (below hero)
+   ========================= */
+.formats { 
+  padding-top: 36px; 
+}
+.formats h2 { margin-bottom: 6px; }
+.formats-sub {
+  color: var(--muted);
+  margin: 0 auto 18px;
+  max-width: 720px;
+}
+
+.formats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.format-card {
+  background: rgba(255,255,255,0.78);
+  border: 1px solid #eee9fb;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  text-align: left;
+  padding: 18px;
+  transition: transform .18s ease, box-shadow .25s ease, background .25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.format-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+}
+
+.format-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: #f4eeff;
+  color: var(--plum);
+  display: grid; place-items: center;
+  margin-bottom: 10px;
+}
+.format-icon svg { width: 22px; height: 22px; }
+
+.format-card h3 {
+  margin: 4px 0 6px;
+  color: var(--plum);
+  font-size: 18px;
+}
+
+.formats .muted { margin: 0 0 12px; }
+
+.pill {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f2f9f3;
+  color: #0b5d3c;
+  border: 1px solid #e2f4e6;
+}
+.pill.hint {
+  background: #fbf9ff;
+  color: var(--plum);
+  border: 1px solid #eee9fb;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .formats-grid { grid-template-columns: 1fr; }
+  .format-card { padding: 16px; }
+  .product-badges { gap: 10px; }
+}
