@@ -995,6 +995,11 @@ label input, label textarea { margin-top: 6px; }
 /* Optional: dim the label a touch during hold so focus is on the scene */
 .morph-wrap.hold .morph-label { opacity: .85; }
 
+/* Prevent overscroll effects while locked (no bounce) */
+html.scroll-locked {
+  overscroll-behavior: contain;
+}
+
 /* Reduced motion: show final state immediately */
 @media (prefers-reduced-motion: reduce) {
   .morph-wrap { height: auto; }
