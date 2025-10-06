@@ -174,7 +174,6 @@ h1, h2 {
   display: none;
 }
 
-
 /* 🍔 Dropdown menu */
 .menu {
   position: absolute;
@@ -235,7 +234,6 @@ h1, h2 {
   .age-buttons { gap: 8px; }
   .age-btn { font-size: 14px; padding: 9px 14px; }
 }
-
 
 /* 💬 Info section */
 .info p {
@@ -573,7 +571,6 @@ label input, label textarea { margin-top: 6px; }
   }
 }
 
-
 @media (max-width: 600px) {
   .story-reader { margin: 20px 12px; padding: 18px 16px; }
   .story-content { font-size: 17px; }
@@ -719,51 +716,75 @@ label input, label textarea { margin-top: 6px; }
   .product-badges { gap: 10px; }
 }
 
-/* --- Adjust hierarchy & alignment in hero --- */
+/* ===========================================
+   🪄 Hero alignment & badges fade-in (final)
+   =========================================== */
+
+/* Center the hero stack and keep CTA dominant */
 .hero-text {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
+/* CTA clearly separated above badges */
 .hero-text #heroCta {
-  margin-top: 16px;
-  margin-bottom: 20px; /* creates clear separation above badges */
+  margin-top: 18px;
+  margin-bottom: 28px;
+  align-self: center;
 }
 
-/* badges visual refinement */
+/* Badges: lighter, delayed appearance, non-competing scale */
 .product-badges {
+  position: relative;
   margin-top: 6px;
-  opacity: 0.9;
+  gap: 14px;
   flex-wrap: nowrap;
+  opacity: 0;                 /* start hidden */
+  transform: translateY(8px); /* start slightly lowered */
+  animation: fadeUpHeroBadges 0.8s ease forwards;
+  animation-delay: 0.5s;      /* requested delay */
 }
 
+/* Divider line separating CTA and badges on desktop */
+@media (min-width: 768px) {
+  .product-badges::before {
+    content: "";
+    display: block;
+    width: 60%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(122,78,171,0.25), transparent);
+    margin: 0 auto 12px;
+  }
+}
+
+/* Slightly smaller badges on desktop to keep hierarchy */
 .product-badge {
   font-size: 13px;
   padding: 6px 10px;
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
+/* Fade-up animation for badges */
+@keyframes fadeUpHeroBadges {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile: instant appearance, wrap nicely */
 @media (max-width: 700px) {
-  .hero-text #heroCta {
-    margin-bottom: 12px;
-  }
+  .hero-text #heroCta { margin-bottom: 14px; }
   .product-badges {
     flex-wrap: wrap;
     justify-content: center;
+    opacity: 1;
+    transform: none;
+    animation: none; /* no delay on mobile */
   }
   .product-badge {
-    transform: scale(1);
+    transform: none;
     font-size: 14px;
     padding: 8px 12px;
   }
-}
-
-.product-badges::before {
-  content: "";
-  display: block;
-  width: 60%;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(122,78,171,0.25), transparent);
-  margin: 0 auto 12px;
 }
