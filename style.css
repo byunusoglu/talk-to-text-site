@@ -508,15 +508,22 @@ label input, label textarea { margin-top: 6px; }
   margin-top: 0;
 }
 
-/* Slight soft overlay for readability */
+/* Slight soft overlay for readability + responsive gutters */
 .hero-overlay {
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(6px);
-  padding: 60px 20px;
-  border-radius: 16px;
+  /* layout */
+  --hero-gutter: clamp(12px, 4vw, 24px);
   max-width: 650px;
+  width: min(650px, calc(100% - (var(--hero-gutter) * 2)));
+  margin-inline: var(--hero-gutter);
+
+  /* visuals */
+  background: rgba(255, 255, 255, 0.60);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: clamp(28px, 5vw, 60px) 20px;
+  border-radius: 16px;
   text-align: center;
-  box-shadow: var(--shadow);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.12);
 }
 
 .hero-text h1 {
