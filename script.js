@@ -388,65 +388,108 @@
 
    // --- Scroll morph: Real → Animated
 // --- Scroll morph: Real → Animated (with gentle center hold)
+// --- Scroll morph: Real → Animated (HARD lock at center)
 function initScrollMorph() {
   const wrap = document.getElementById('morph');
   if (!wrap) return;
 
-  // Respect reduced motion
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduce) return;
 
-  let holdActive = false;      // currently preventing scroll
-  let holdArmed  = true;       // allow only once per visit window
-  let holdStart  = 0;
+  let holdActive = false;
+  let holdArmed  = true;   // avoid re-triggering immediately
+  let lockedY    = 0;
+  let prevBodyTop = '';
 
-  // Blockers: prevent wheel/touch while holding; release on user's next gesture post 300ms
-  const releaseAfterReengage = (e) => {
+  // ---------- Scroll lock helpers ----------
+  function lockScrollAt(y) {
+    if (holdActive) return;
+    holdActive = true;
+    lockedY = Math.max(0, Math.round(y));
+
+    // snap to target immediately (kill momentum)
+    window.scrollTo(0, lockedY);
+
+    // lock document
+    document.documentElement.classList.add('scroll-locked');
+    prevBodyTop = document.body.style.top || '';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${lockedY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+
+    wrap.classList.add('hold');
+  }
+
+  function unlockScroll() {
+    if (!holdActive) return;
+    wrap.classList.remove('hold');
+    document.documentElement.classList.remove('scroll-locked');
+
+    // restore flow and scroll
+    document.body.style.position = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.top = prevBodyTop;
+
+    window.scrollTo(0, lockedY);
+    holdActive = false;
+
+    // brief grace so user can pass the section without being re-caught
+    holdArmed = false;
+    setTimeout(() => { holdArmed = true; }, 1200);
+  }
+
+  // Block gestures fully while locked; release on first deliberate one after 250ms
+  let holdStart = 0;
+  const reengageRelease = (e) => {
     if (!holdActive) return;
     e.preventDefault();
-    const elapsed = Date.now() - holdStart;
-    if (elapsed > 300) stopHold(); // user "reengaged" — continue scrolling
+    if (Date.now() - holdStart > 250) unlockScroll();
   };
-  const onKey = (e) => { if (e.key === 'Escape' && holdActive) stopHold(); };
-
-  function startHold() {
-    if (holdActive || !holdArmed) return;
-    holdActive = true;
-    holdStart  = Date.now();
-    wrap.classList.add('hold');
-
-    // Center the stage precisely once (no smooth behavior to avoid rubber-banding)
-    const stage = wrap.querySelector('.morph-stage');
-    if (stage) {
-      const rect = stage.getBoundingClientRect();
-      const target = window.scrollY + rect.top + rect.height / 2 - (window.innerHeight / 2);
-      window.scrollTo(0, Math.max(0, target));
+  const onKey = (e) => {
+    if (!holdActive) return;
+    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      unlockScroll();
+    } else if (['ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(e.key)) {
+      e.preventDefault();
+      unlockScroll();
     }
+  };
 
-    // Lock by intercepting gestures; release on the next one after 300ms
-    window.addEventListener('wheel', releaseAfterReengage, { passive: false });
-    window.addEventListener('touchmove', releaseAfterReengage, { passive: false });
+  function startHoldAtCenter(stageRect, vh) {
+    const targetY = window.scrollY + stageRect.top + stageRect.height / 2 - (vh / 2);
+    lockScrollAt(targetY);
+    holdStart = Date.now();
+
+    // intercept inputs while locked
+    window.addEventListener('wheel', reengageRelease, { passive: false });
+    window.addEventListener('touchmove', reengageRelease, { passive: false });
     window.addEventListener('keydown', onKey);
+
+    // clean up listeners on unlock
+    const cleanupOnUnlock = () => {
+      if (!holdActive) {
+        window.removeEventListener('wheel', reengageRelease, { passive: false });
+        window.removeEventListener('touchmove', reengageRelease, { passive: false });
+        window.removeEventListener('keydown', onKey);
+        document.removeEventListener('visibilitychange', onVis);
+      }
+    };
+    const onVis = () => { if (document.visibilityState === 'hidden') unlockScroll(); };
+    document.addEventListener('visibilitychange', onVis);
+    // poll unlock state for cleanup
+    const id = setInterval(() => { if (!holdActive) { clearInterval(id); cleanupOnUnlock(); } }, 200);
   }
 
-  function stopHold() {
-    holdActive = false;
-    holdArmed  = false;                  // avoid re-holding immediately
-    wrap.classList.remove('hold');
-
-    window.removeEventListener('wheel', releaseAfterReengage, { passive: false });
-    window.removeEventListener('touchmove', releaseAfterReengage, { passive: false });
-    window.removeEventListener('keydown', onKey);
-
-    // Re-arm after a short grace so the user can scroll past naturally
-    setTimeout(() => { holdArmed = true; }, 1500);
-  }
-
+  // ---------- Reveal math ----------
   const update = () => {
     const rect = wrap.getBoundingClientRect();
     const vh = window.innerHeight || 1;
 
-    // Scroll-driven reveal
     const start = vh * 0.15;
     const totalScrollable = rect.height - vh * 0.30;
     let t = (start - rect.top) / totalScrollable;
@@ -454,23 +497,31 @@ function initScrollMorph() {
     wrap.style.setProperty('--reveal', String(t));
     wrap.style.setProperty('--parallax', String(12 * (1 - t)));
 
-    // Detect when the sticky stage is centered
+    // center detection
     const stage = wrap.querySelector('.morph-stage');
     if (!stage) return;
-
     const s = stage.getBoundingClientRect();
     const centerDist = Math.abs((s.top + s.height / 2) - (vh / 2));
 
-    // If the stage is very close to center and user hasn't just been held, apply a brief hold
+    // If near center and allowed, hard stop and lock
     if (!holdActive && holdArmed && centerDist < Math.min(60, s.height * 0.08)) {
-      startHold();
+      startHoldAtCenter(s, vh);
     }
+  };
+
+  // Ensure we don’t drift while locked (kill inertial “fling” on mobile)
+  const clampWhileLocked = () => {
+    if (!holdActive) return;
+    // keep exactly at lockedY
+    if (Math.abs(window.scrollY - lockedY) > 0) window.scrollTo(0, lockedY);
   };
 
   update();
   window.addEventListener('scroll', update, { passive: true });
   window.addEventListener('resize', update);
+  window.addEventListener('scroll', clampWhileLocked, { passive: true });
 }
+
 
 
   // ---------- boot ----------
