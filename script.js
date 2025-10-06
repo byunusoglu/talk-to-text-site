@@ -341,6 +341,8 @@ track.addEventListener("click", (e) => {
     const menu = $('#menu');
     menuBtn?.addEventListener('click', () => menu?.classList.toggle('hidden'));
     const yearEl = $('#year'); if (yearEl) yearEl.textContent = new Date().getFullYear();
+     const cartCountEl = document.getElementById("cartCount");
+if (cartCountEl) cartCountEl.classList.add("hidden");
   }
 
   // ---------- boot ----------
