@@ -506,6 +506,24 @@ label input, label textarea { margin-top: 6px; }
   justify-content: center;
   border-radius: 0;
   margin-top: 0;
+
+  /* NEW: allow overlap & spacing to next section */
+  overflow: visible;                      /* allow the overlay to hang below */
+  --hero-overlap: 28px;                   /* how much the card dips below the banner */
+  margin-bottom: calc(var(--hero-overlap) + 8px); /* spacing after overlap */
+}
+
+/* Gentle vignette to reduce busy background contrast near center */
+.hero-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(80% 60% at 50% 45%,
+              rgba(0,0,0,0.10) 0%,
+              rgba(0,0,0,0.08) 40%,
+              rgba(0,0,0,0.00) 70%);
+  z-index: 0;
 }
 
 /* Slight soft overlay for readability + responsive gutters */
@@ -524,19 +542,30 @@ label input, label textarea { margin-top: 6px; }
   border-radius: 16px;
   text-align: center;
   box-shadow: 0 10px 28px rgba(0,0,0,0.12);
+
+  /* stacking above vignette */
+  position: relative;
+  z-index: 1;
+}
+
+/* NEW: nudge the overlay downward so it finishes slightly beneath the banner */
+.hero-banner .hero-overlay {
+  transform: translateY(var(--hero-overlap));
 }
 
 .hero-text h1 {
   font-family: 'Nunito', sans-serif;
   color: var(--plum);
-  font-size: 42px;
+  font-size: clamp(28px, 4.2vw, 42px);
   margin-bottom: 16px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.18); /* improves legibility on any image */
 }
 
 .hero-text p {
-  color: var(--muted);
-  font-size: 18px;
+  color: #43385a; /* slightly darker for contrast vs. var(--muted) */
+  font-size: clamp(16px, 2.5vw, 18px);
   margin-bottom: 24px;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.12);
 }
 
 /* Responsive behavior */
@@ -553,6 +582,12 @@ label input, label textarea { margin-top: 6px; }
   }
 }
 
+/* On very small screens, increase overlay opacity for extra clarity */
+@media (max-width: 480px) {
+  .hero-overlay {
+    background: rgba(255, 255, 255, 0.72);
+  }
+}
 
 @media (max-width: 600px) {
   .story-reader { margin: 20px 12px; padding: 18px 16px; }
@@ -578,4 +613,3 @@ label input, label textarea { margin-top: 6px; }
   background-size: cover;
   background-position: center;
 }
-
