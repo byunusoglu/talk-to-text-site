@@ -5,25 +5,20 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>StoryBuds — Personalised Bedtime Stories</title>
   <meta name="description" content="Show love and respect to your kid through personalised stories. Invest in your family bonds. Invest in you." />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script defer src="script.js"></script>
 </head>
 <body class="fade-in">
+
+  <!-- Top layer (unchanged) -->
   <header class="topbar">
     <a href="index.html" class="logo">
       <span class="logo-badge">
         <img src="logo.png" alt="StoryBuds logo" />
       </span>
     </a>
-
-    <div class="top-actions">
-      <button class="cart-btn" id="cartBtn" aria-label="Cart">
-        🛒 <span class="cart-count" id="cartCount">0</span>
-      </button>
-      <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
-    </div>
-
+    <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
     <nav id="menu" class="menu hidden">
       <a href="index.html">Home</a>
       <a href="create.html">Create Stories</a>
@@ -31,21 +26,96 @@
     </nav>
   </header>
 
-  <section class="section center fade-up">
-    <h2>Choose your child’s age</h2>
-    <div class="age-options">
-      <div class="age-card" data-target="create.html">0–2 years 👶</div>
-      <div class="age-card" data-target="create.html">2–4 years 🧒</div>
-      <div class="age-card" data-target="create.html">4–6 years 🌱</div>
+  <!-- ====== New HERO / Banner carousel (4 slides, auto every 3s) ====== -->
+  <section class="hero-carousel section fade-up" aria-label="Highlights">
+    <div class="carousel-track" id="heroTrack">
+      <!-- Slide 1 -->
+      <article class="hero-slide hero-1">
+        <div class="hero-inner">
+          <h1>More quality time. Stronger bonds.</h1>
+          <p>Show love and respect to your kid by personalised stories. Invest in your family bonds. Invest in you.</p>
+          <button class="btn" onclick="window.location.href='create.html'">Your first free story</button>
+        </div>
+      </article>
+      <!-- Slide 2 -->
+      <article class="hero-slide hero-2">
+        <div class="hero-inner">
+          <h1>Stories shaped by your child</h1>
+          <p>Turn your chat into calm, funny bedtime tales—crafted from your child’s ideas and feelings.</p>
+          <button class="btn" onclick="window.location.href='create.html'">Start in 30 seconds</button>
+        </div>
+      </article>
+      <!-- Slide 3 -->
+      <article class="hero-slide hero-3">
+        <div class="hero-inner">
+          <h1>Gentle, screen-light evenings</h1>
+          <p>Five-minute reads with soft onomatopoeia and soothing endings—perfect for wind-down.</p>
+          <button class="btn" onclick="window.location.href='create.html'">Try the calm mode</button>
+        </div>
+      </article>
+      <!-- Slide 4 -->
+      <article class="hero-slide hero-4">
+        <div class="hero-inner">
+          <h1>From first smile to first stories</h1>
+          <p>Age-smart prompts and guidance for 0–2, 3–5, and 5+ so every story fits just right.</p>
+          <button class="btn" onclick="window.location.href='create.html'">Create together</button>
+        </div>
+      </article>
+    </div>
+
+    <div class="hero-dots" id="heroDots" aria-hidden="true">
+      <button class="dot is-active" data-index="0" aria-label="Slide 1"></button>
+      <button class="dot" data-index="1" aria-label="Slide 2"></button>
+      <button class="dot" data-index="2" aria-label="Slide 3"></button>
+      <button class="dot" data-index="3" aria-label="Slide 4"></button>
     </div>
   </section>
 
-  <section class="section info fade-up delay-1">
-    <h1>MORE QUALITY TIME. STRONGER BONDS WITH YOUR KID.</h1>
-    <p>Show love and respect to your kid by personalised stories. Invest in your family bonds. Invest in you.</p>
-    <button class="btn" onclick="window.location.href='create.html'">YOUR FIRST FREE STORY</button>
+  <!-- ====== Child’s Age (tab experience; default 0–2) ====== -->
+  <section class="age-tabs section fade-up delay-1" aria-label="Select age">
+    <div class="tabs-header">
+      <button class="tab is-active" role="tab" aria-selected="true" data-age="0-2">0–2 years</button>
+      <button class="tab" role="tab" aria-selected="false" data-age="3-5">3–5 years</button>
+      <button class="tab" role="tab" aria-selected="false" data-age="5-plus">5+</button>
+    </div>
+
+    <div class="tabs-panels">
+      <div class="tab-panel is-active" id="panel-0-2" role="tabpanel">
+        <div class="tab-grid">
+          <div class="tab-copy">
+            <h2>Start with tiny, soothing moments</h2>
+            <p>For little listeners 0–2, we keep sentences short, rhythms calm, and sounds gentle—just enough magic before sleep.</p>
+            <button class="btn" onclick="window.location.href='create.html?age=0-2'">Generate a 0–2 story</button>
+          </div>
+          <div class="tab-visual soft-blob a"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-3-5" role="tabpanel">
+        <div class="tab-grid">
+          <div class="tab-copy">
+            <h2>Playful stories that follow their lead</h2>
+            <p>For 3–5, we weave their names, ideas, and silly wishes into charming five-minute adventures.</p>
+            <button class="btn" onclick="window.location.href='create.html?age=3-5'">Generate a 3–5 story</button>
+          </div>
+          <div class="tab-visual soft-blob b"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-5-plus" role="tabpanel">
+        <div class="tab-grid">
+          <div class="tab-copy">
+            <h2>Curious minds, bigger journeys</h2>
+            <p>For 5+, we add gentle puzzles, kinder morals, and a touch more plot—still calm, still bedtime-friendly.</p>
+            <button class="btn" onclick="window.location.href='create.html?age=5-plus'">Generate a 5+ story</button>
+          </div>
+          <div class="tab-visual soft-blob c"></div>
+        </div>
+      </div>
+    </div>
   </section>
 
+  <!-- Existing testimonial block (kept) -->
   <section class="section testimonials fade-up delay-2">
     <div class="testimonial" id="testimonialText">
       “Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.” — <b>Elif</b>
