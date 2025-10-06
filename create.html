@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Create Your Story — StoryBuds</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="script.js"></script>
+</head>
+<body class="fade-in">
+  <header class="topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-badge">
+        <img src="logo.png" alt="StoryBuds logo" />
+      </span>
+    </a>
+
+    <div class="top-actions">
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">
+        🛒 <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
+    </div>
+
+    <nav id="menu" class="menu hidden">
+      <a href="index.html">Home</a>
+      <a href="create.html">Create Stories</a>
+      <a href="#">My Profile</a>
+    </nav>
+  </header>
+
+  <main class="section center fade-up">
+    <h1>Create Your Personalised Story</h1>
+
+    <!-- Stepper -->
+    <ol class="stepper" id="stepper">
+      <li class="step active" data-step="0"><span class="dot">1</span><span>About the kid</span></li>
+      <li class="step" data-step="1"><span class="dot">2</span><span>Theme</span></li>
+      <li class="step" data-step="2"><span class="dot">3</span><span>Supporting characters</span></li>
+    </ol>
+
+    <!-- Panels -->
+    <form id="createForm" class="wizard">
+
+      <!-- Step 1 -->
+      <section class="step-panel" data-step="0">
+        <div class="field-grid">
+          <label>
+            Child’s name
+            <input id="kidName" type="text" placeholder="e.g., Arthur" />
+          </label>
+          <label>
+            Age
+            <input id="kidAge" type="number" min="0" max="10" step="1" placeholder="e.g., 3" />
+          </label>
+        </div>
+        <label>
+          What do they like? (toys, colors, places…)
+          <textarea id="kidLikes" placeholder="e.g., trains, purple, rainbows, the park"></textarea>
+        </label>
+      </section>
+
+      <!-- Step 2 -->
+      <section class="step-panel hidden" data-step="1">
+        <label>
+          Story theme / setting
+          <input id="theme" type="text" placeholder="e.g., friendly dinosaurs at the beach" />
+        </label>
+        <label>
+          Any key moments to include?
+          <textarea id="moments" placeholder="e.g., building a sandcastle, sharing snacks, finding a tiny shell"></textarea>
+        </label>
+      </section>
+
+      <!-- Step 3 -->
+      <section class="step-panel hidden" data-step="2">
+        <div class="field-grid">
+          <label>
+            Character 1 (name + who)
+            <input id="char1" type="text" placeholder="e.g., Mom Isabel" />
+          </label>
+          <label>
+            Character 2 (optional)
+            <input id="char2" type="text" placeholder="e.g., Dad Bob" />
+          </label>
+        </div>
+        <label>
+          Anything else to weave in?
+          <textarea id="extras" placeholder="e.g., bedtime tone, gentle humor, ‘plip-plop’ rain sounds"></textarea>
+        </label>
+      </section>
+
+      <!-- Nav buttons -->
+      <div class="wizard-nav">
+        <button type="button" class="btn ghost" id="prevStep">Back</button>
+        <button type="button" class="btn" id="nextStep">Next</button>
+        <button type="button" class="btn primary hidden" id="generateBtn">Generate Story</button>
+      </div>
+    </form>
+
+    <div id="loading" class="hidden">✨ Generating your story...</div>
+    <div id="storyOutput" class="story-box hidden"></div>
+  </main>
+
+  <footer>
+    © <span id="year"></span> StoryBuds
+  </footer>
+</body>
+</html>
