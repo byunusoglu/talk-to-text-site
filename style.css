@@ -534,16 +534,16 @@ label input, label textarea { margin-top: 6px; }
   z-index: 0;
 }
 
-/* Slight soft overlay for readability + responsive gutters */
+/* Overlay card with guaranteed side padding and readability */
 .hero-overlay {
-  /* layout */
+  /* responsive side gutters */
   --hero-gutter: clamp(12px, 4vw, 24px);
   max-width: 650px;
   width: min(650px, calc(100% - (var(--hero-gutter) * 2)));
   margin-inline: var(--hero-gutter);
 
-  /* visuals */
-  background: rgba(255, 255, 255, 0.60);
+  /* visual treatment for text readability */
+  background: rgba(255, 255, 255, 0.68);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   padding: clamp(28px, 5vw, 60px) 20px;
@@ -551,12 +551,11 @@ label input, label textarea { margin-top: 6px; }
   text-align: center;
   box-shadow: 0 10px 28px rgba(0,0,0,0.12);
 
-  /* stacking above vignette */
   position: relative;
   z-index: 1;
 }
 
-/* NEW: nudge the overlay downward so it finishes slightly beneath the banner */
+/* Dip the card so it ends below the banner */
 .hero-banner .hero-overlay {
   transform: translateY(var(--hero-overlap));
 }
@@ -566,11 +565,10 @@ label input, label textarea { margin-top: 6px; }
   color: var(--plum);
   font-size: clamp(28px, 4.2vw, 42px);
   margin-bottom: 16px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.18); /* improves legibility on any image */
+  text-shadow: 0 1px 2px rgba(0,0,0,0.18);
 }
-
 .hero-text p {
-  color: #43385a; /* slightly darker for contrast vs. var(--muted) */
+  color: #43385a;
   font-size: clamp(16px, 2.5vw, 18px);
   margin-bottom: 24px;
   text-shadow: 0 1px 1px rgba(0,0,0,0.12);
@@ -590,11 +588,9 @@ label input, label textarea { margin-top: 6px; }
   }
 }
 
-/* On very small screens, increase overlay opacity for extra clarity */
+/* On very small screens, boost overlay opacity for maximum clarity */
 @media (max-width: 480px) {
-  .hero-overlay {
-    background: rgba(255, 255, 255, 0.72);
-  }
+  .hero-overlay { background: rgba(255, 255, 255, 0.76); }
 }
 
 @media (max-width: 600px) {
