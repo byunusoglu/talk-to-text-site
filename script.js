@@ -386,14 +386,45 @@
     }, 6000);
   }
 
+   // --- Scroll morph: Real → Animated
+function initScrollMorph() {
+  const wrap = document.getElementById('morph');
+  if (!wrap) return;
+
+  // Respect reduced motion — bail early
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return;
+
+  const update = () => {
+    const rect = wrap.getBoundingClientRect();
+    const vh = window.innerHeight || 1;
+
+    // Start revealing when the section enters; finish before it leaves
+    const start = vh * 0.15;                  // when top of wrap nears top
+    const totalScrollable = rect.height - vh * 0.30; // playable span
+    let t = (start - rect.top) / totalScrollable;    // 0 → 1
+    t = Math.max(0, Math.min(1, t));
+
+    // Set CSS vars that control opacity & subtle parallax
+    wrap.style.setProperty('--reveal', String(t));
+    wrap.style.setProperty('--parallax', String(12 * (1 - t)));
+  };
+
+  // Run and bind
+  update();
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+}
+
   // ---------- boot ----------
-  onReady(() => {
-    initChrome();
-    initAgeButtons();
-    initAgePreview();
-    initMobileCta();
-    if (isCreateChatPage()) initCreateChatWizard();  // ← only create UI now
-    if (isCheckoutPage())   initCheckout();
-    initTestimonials();
-  });
+onReady(() => {
+  initChrome();
+  initAgeButtons();
+  initAgePreview();
+  initMobileCta();
+  if (isCreateChatPage()) initCreateChatWizard();
+  if (isCheckoutPage())   initCheckout();
+  initTestimonials();
+  initScrollMorph(); // 👈 add this here
+});
 })();
