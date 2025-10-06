@@ -571,3 +571,5 @@ label input, label textarea { margin-top: 6px; }
   background-size: cover;
   background-position: center;
 }
+
+.hero-overlay { transition: none !important; }
