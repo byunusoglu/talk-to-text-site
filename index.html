@@ -5,13 +5,25 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>StoryBuds — Personalised Bedtime Stories</title>
   <meta name="description" content="Show love and respect to your kid through personalised stories. Invest in your family bonds. Invest in you." />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-  <script defer src="script.js"></script>
-</head>
-<body class="fade-in">
 
-  <!-- Top layer (unchanged) -->
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Core site styles (used by ALL pages) -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Homepage-only styles -->
+  <link rel="stylesheet" href="home.css" />
+
+  <!-- Core logic (used by ALL pages) -->
+  <script defer src="script.js"></script>
+
+  <!-- Homepage-only logic -->
+  <script defer src="home.js"></script>
+</head>
+
+<body class="fade-in">
+  <!-- ===== Topbar (shared across site) ===== -->
   <header class="topbar">
     <a href="index.html" class="logo">
       <span class="logo-badge">
@@ -26,16 +38,31 @@
     </nav>
   </header>
 
-  <!-- ===== Age group strip (3 separate buttons, default 0–2 selected) ===== -->
+  <!-- ===== Age group strip (Twinscience-like 3 chips) ===== -->
   <section class="age-strip section fade-up" aria-label="Select age">
     <div class="age-strip-inner">
-      <button class="age-chip is-active" data-age="0-2" aria-selected="true" onclick="window.location.href='create.html?age=0-2'">0–2 years</button>
-      <button class="age-chip" data-age="3-5" aria-selected="false" onclick="window.location.href='create.html?age=3-5'">3–5 years</button>
-      <button class="age-chip" data-age="5-plus" aria-selected="false" onclick="window.location.href='create.html?age=5-plus'">5+</button>
+      <button class="age-chip is-active"
+              data-age="0-2"
+              aria-selected="true"
+              onclick="window.location.href='create.html?age=0-2'">
+        0–2 years
+      </button>
+      <button class="age-chip"
+              data-age="3-5"
+              aria-selected="false"
+              onclick="window.location.href='create.html?age=3-5'">
+        3–5 years
+      </button>
+      <button class="age-chip"
+              data-age="5-plus"
+              aria-selected="false"
+              onclick="window.location.href='create.html?age=5-plus'">
+        5+
+      </button>
     </div>
   </section>
 
-  <!-- ===== New HERO / Banner carousel (4 slides, auto every 3s, smooth loop) ===== -->
+  <!-- ===== Hero / Banner carousel (4 slides, smooth auto loop) ===== -->
   <section class="hero-carousel section fade-up" aria-label="Highlights">
     <div class="carousel-track" id="heroTrack">
       <!-- Slide 1 -->
@@ -46,6 +73,7 @@
           <button class="btn" onclick="window.location.href='create.html'">Your first free story</button>
         </div>
       </article>
+
       <!-- Slide 2 -->
       <article class="hero-slide hero-2">
         <div class="hero-inner">
@@ -54,6 +82,7 @@
           <button class="btn" onclick="window.location.href='create.html'">Start in 30 seconds</button>
         </div>
       </article>
+
       <!-- Slide 3 -->
       <article class="hero-slide hero-3">
         <div class="hero-inner">
@@ -62,6 +91,7 @@
           <button class="btn" onclick="window.location.href='create.html'">Try the calm mode</button>
         </div>
       </article>
+
       <!-- Slide 4 -->
       <article class="hero-slide hero-4">
         <div class="hero-inner">
@@ -72,6 +102,7 @@
       </article>
     </div>
 
+    <!-- Dots -->
     <div class="hero-dots" id="heroDots" aria-hidden="true">
       <button class="dot is-active" data-index="0" aria-label="Slide 1"></button>
       <button class="dot" data-index="1" aria-label="Slide 2"></button>
@@ -80,13 +111,14 @@
     </div>
   </section>
 
-  <!-- Testimonial block (kept) -->
+  <!-- ===== Testimonials (kept same as before) ===== -->
   <section class="section testimonials fade-up delay-2">
     <div class="testimonial" id="testimonialText">
       “Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.” — <b>Elif</b>
     </div>
   </section>
 
+  <!-- ===== Footer ===== -->
   <footer>
     © <span id="year"></span> StoryBuds
   </footer>
