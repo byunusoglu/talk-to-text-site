@@ -387,34 +387,91 @@
   }
 
    // --- Scroll morph: Real → Animated
+// --- Scroll morph: Real → Animated (with gentle center hold)
 function initScrollMorph() {
   const wrap = document.getElementById('morph');
   if (!wrap) return;
 
-  // Respect reduced motion — bail early
+  // Respect reduced motion
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduce) return;
+
+  let holdActive = false;      // currently preventing scroll
+  let holdArmed  = true;       // allow only once per visit window
+  let holdStart  = 0;
+
+  // Blockers: prevent wheel/touch while holding; release on user's next gesture post 300ms
+  const releaseAfterReengage = (e) => {
+    if (!holdActive) return;
+    e.preventDefault();
+    const elapsed = Date.now() - holdStart;
+    if (elapsed > 300) stopHold(); // user "reengaged" — continue scrolling
+  };
+  const onKey = (e) => { if (e.key === 'Escape' && holdActive) stopHold(); };
+
+  function startHold() {
+    if (holdActive || !holdArmed) return;
+    holdActive = true;
+    holdStart  = Date.now();
+    wrap.classList.add('hold');
+
+    // Center the stage precisely once (no smooth behavior to avoid rubber-banding)
+    const stage = wrap.querySelector('.morph-stage');
+    if (stage) {
+      const rect = stage.getBoundingClientRect();
+      const target = window.scrollY + rect.top + rect.height / 2 - (window.innerHeight / 2);
+      window.scrollTo(0, Math.max(0, target));
+    }
+
+    // Lock by intercepting gestures; release on the next one after 300ms
+    window.addEventListener('wheel', releaseAfterReengage, { passive: false });
+    window.addEventListener('touchmove', releaseAfterReengage, { passive: false });
+    window.addEventListener('keydown', onKey);
+  }
+
+  function stopHold() {
+    holdActive = false;
+    holdArmed  = false;                  // avoid re-holding immediately
+    wrap.classList.remove('hold');
+
+    window.removeEventListener('wheel', releaseAfterReengage, { passive: false });
+    window.removeEventListener('touchmove', releaseAfterReengage, { passive: false });
+    window.removeEventListener('keydown', onKey);
+
+    // Re-arm after a short grace so the user can scroll past naturally
+    setTimeout(() => { holdArmed = true; }, 1500);
+  }
 
   const update = () => {
     const rect = wrap.getBoundingClientRect();
     const vh = window.innerHeight || 1;
 
-    // Start revealing when the section enters; finish before it leaves
-    const start = vh * 0.15;                  // when top of wrap nears top
-    const totalScrollable = rect.height - vh * 0.30; // playable span
-    let t = (start - rect.top) / totalScrollable;    // 0 → 1
+    // Scroll-driven reveal
+    const start = vh * 0.15;
+    const totalScrollable = rect.height - vh * 0.30;
+    let t = (start - rect.top) / totalScrollable;
     t = Math.max(0, Math.min(1, t));
-
-    // Set CSS vars that control opacity & subtle parallax
     wrap.style.setProperty('--reveal', String(t));
     wrap.style.setProperty('--parallax', String(12 * (1 - t)));
+
+    // Detect when the sticky stage is centered
+    const stage = wrap.querySelector('.morph-stage');
+    if (!stage) return;
+
+    const s = stage.getBoundingClientRect();
+    const centerDist = Math.abs((s.top + s.height / 2) - (vh / 2));
+
+    // If the stage is very close to center and user hasn't just been held, apply a brief hold
+    if (!holdActive && holdArmed && centerDist < Math.min(60, s.height * 0.08)) {
+      startHold();
+    }
   };
 
-  // Run and bind
   update();
   window.addEventListener('scroll', update, { passive: true });
   window.addEventListener('resize', update);
 }
+
 
   // ---------- boot ----------
 onReady(() => {
