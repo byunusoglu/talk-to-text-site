@@ -43,8 +43,8 @@
 
   // ---- Detect if we are on the create page (best-effort) ----
   const isCreatePage = () => {
-    // Any of these hints is enough:
     return Boolean(
+      $('#generateBtn') ||                         // <-- added
       $('#generateStoryBtn') ||
       $('[data-action="generate-story"]') ||
       $('#nextButton') ||
@@ -94,11 +94,11 @@
       }
 
       // B) NEXT / GENERATE (create step)
-      const nextBtn = t.closest(
-        "#generateStoryBtn, [data-action='generate-story'], #nextButton, .next-btn, " +
-        "button[type='submit'], a[href='checkout.html'], [data-next='checkout']"
-      );
+      const nextSel =
+        "#generateBtn, #generateStoryBtn, [data-action='generate-story'], " + // <-- #generateBtn added
+        "#nextButton, .next-btn, button[type='submit'], a[href='checkout.html'], [data-next='checkout']";
 
+      const nextBtn = t.closest(nextSel);
       if (nextBtn && isCreatePage()) {
         e.preventDefault();
         // If inside a form, neutralize native validation blocking for this step
@@ -112,10 +112,9 @@
     // --------- FORM SUBMIT INTERCEPT (create step) ----------
     document.addEventListener("submit", (e) => {
       const form = e.target;
-      // Heuristics: any of these marks the first create step form
       if (form.matches("form#createForm, form[data-flow='create-step'], .create-step form, form[action*='create']")) {
         e.preventDefault();
-        form.noValidate = true; // bypass HTML5 required for this step as per flow
+        form.noValidate = true;
         goCheckout();
       }
     });
@@ -124,8 +123,6 @@
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       if (!isCreatePage()) return;
-
-      // If focused inside a create form, treat Enter like Next
       const el = document.activeElement;
       if (el && (el.closest("form#createForm") || el.closest("form[data-flow='create-step']") || el.closest(".create-step"))) {
         e.preventDefault();
