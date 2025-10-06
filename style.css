@@ -47,10 +47,7 @@ h1, h2 {
   text-align: center;
 }
 
-.center {
-  max-width: 600px;
-  margin: 0 auto;
-}
+.center { max-width: 600px; margin: 0 auto; }
 
 /* 🧭 Header / Topbar */
 .topbar {
@@ -66,155 +63,77 @@ h1, h2 {
   z-index: 100;
 }
 
-/* --- Circular logo that works on mobile + desktop --- */
+/* --- Circular logo --- */
 .logo { display:flex; align-items:center; text-decoration:none; }
-
-/* The circular clip container */
 .logo .logo-badge {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  overflow: hidden;                 /* clips the image perfectly circular */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
-  background: transparent;          /* no gray/square background */
+  width: 56px; height: 56px; border-radius: 50%; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.06); background: transparent;
 }
-
-/* Smaller variant */
-.logo.small .logo-badge {
-  width: 44px;
-  height: 44px;
-}
-
-/* The image itself (strong selector to beat previous rules) */
+.logo.small .logo-badge { width: 44px; height: 44px; }
 .logo .logo-badge > img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;                /* fills the circle */
-  object-position: center;
-  display: block;                   /* removes inline gaps */
-  background: transparent;
-  border-radius: 50%;               /* belt & suspenders for Safari */
+  width: 100% !important; height: 100% !important; object-fit: cover;
+  object-position: center; display: block; background: transparent; border-radius: 50%;
 }
-
-/* Fallback sizing if badge wrapper isn't used somewhere */
 .logo img {
-  height: 56px;
-  width: 56px;
-  max-width: none;
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: center;
-  background-color: white;
+  height: 56px; width: 56px; max-width: none; border-radius: 50%;
+  object-fit: cover; object-position: center; background-color: white;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
 }
-.logo.small img {
-  height: 44px;
-  width: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: center;
-}
+.logo.small img { height: 44px; width: 44px; border-radius: 50%; object-fit: cover; object-position: center; }
 
 .hamburger {
-  font-size: 24px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--plum);
+  font-size: 24px; background: none; border: none; cursor: pointer; color: var(--plum);
 }
 
 /* 🍔 Dropdown menu */
 .menu {
-  position: absolute;
-  top: 56px;
-  right: 16px;
-  background: white;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
+  position: absolute; top: 56px; right: 16px; background: white;
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; padding: 10px;
 }
-.menu a {
-  color: var(--plum);
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-}
+.menu a { color: var(--plum); text-decoration: none; padding: 8px 16px; border-radius: 8px; }
 .menu a:hover { background: #f8f5ff; }
 .hidden { display: none; }
 
 /* ☁️ Button */
 .btn {
-  background: var(--plum);
-  color: white;
-  border: none;
-  padding: 14px 28px;
-  border-radius: 999px;
-  cursor: pointer;
-  font-weight: 600;
-  box-shadow: var(--shadow);
+  background: var(--plum); color: white; border: none; padding: 14px 28px;
+  border-radius: 999px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow);
   transition: transform 0.2s ease, background 0.3s ease;
 }
-.btn:hover {
-  transform: translateY(-2px);
-  background: #8757c7;
-}
-.btn.ghost {
-  background: #fff;
-  color: var(--plum);
-  border: 1px solid #e5ddff;
-}
+.btn:hover { transform: translateY(-2px); background: #8757c7; }
+.btn.ghost { background: #fff; color: var(--plum); border: 1px solid #e5ddff; }
 
-/* ===== HERO / Banner carousel (Hape-style: full-bleed, soft, looping) ===== */
+/* ===== Age strip (3 buttons, like a clean top tab/segment control) ===== */
+.age-strip { padding-top: 20px; padding-bottom: 20px; }
+.age-strip-inner {
+  max-width: 1100px; margin: 0 auto; display: flex; gap: 10px; flex-wrap: wrap;
+  align-items: center; justify-content: center; background: rgba(255,255,255,.8);
+  padding: 8px; border-radius: 999px; box-shadow: var(--shadow);
+}
+.age-chip {
+  appearance: none; border: 0; background: transparent; color: var(--plum);
+  padding: 10px 16px; border-radius: 999px; font-weight: 700; cursor: pointer;
+}
+.age-chip.is-active { background: #f3effb; }
+
+/* ===== HERO / Banner carousel ===== */
 .hero-carousel {
-  padding: 0;
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius);
-  max-width: 1200px;
-  margin: 24px auto 8px;
-  box-shadow: var(--shadow);
-  background: #ffffff;
+  padding: 0; position: relative; overflow: hidden; border-radius: var(--radius);
+  max-width: 1200px; margin: 8px auto; box-shadow: var(--shadow); background: #ffffff;
 }
-
 .hero-carousel .carousel-track {
-  display: flex;
-  width: 400%;
-  transition: transform 600ms ease;
+  display: flex; transition: transform 600ms ease; will-change: transform;
 }
+.hero-carousel .no-trans { transition: none !important; }
 
-.hero-slide {
-  position: relative;
-  width: 100%;
-  min-height: 420px;
-  display: grid;
-  place-items: center;
-}
+.hero-slide { position: relative; width: 100%; min-height: 420px; display: grid; place-items: center; flex: 0 0 100%; }
+.hero-inner { text-align: center; max-width: 740px; padding: 36px 20px 56px; }
+.hero-inner h1 { font-family: 'Nunito', sans-serif; font-size: 36px; line-height: 1.2; margin: 0 0 10px; color: var(--plum); }
+.hero-inner p { color: var(--muted); margin: 0 0 18px; font-size: 18px; }
 
-.hero-inner {
-  text-align: center;
-  max-width: 740px;
-  padding: 36px 20px 56px;
-}
-
-.hero-inner h1 {
-  font-family: 'Nunito', sans-serif;
-  font-size: 36px;
-  line-height: 1.2;
-  margin: 0 0 10px;
-  color: var(--plum);
-}
-.hero-inner p {
-  color: var(--muted);
-  margin: 0 0 18px;
-  font-size: 18px;
-}
-
-/* Slide visuals — pastel gradients reminiscent of premium toy/parent brands */
+/* Slide backgrounds */
 .hero-1 { background: linear-gradient(135deg, #fff7e8, #f3f0fa); }
 .hero-2 { background: linear-gradient(135deg, #f0fbff, #f7ebf7); }
 .hero-3 { background: linear-gradient(135deg, #f8faff, #fff3f7); }
@@ -222,156 +141,38 @@ h1, h2 {
 
 /* Dots */
 .hero-dots {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px;
 }
-.hero-dots .dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  border: 0; cursor: pointer; background: #d7cfee; opacity: .7;
-}
+.hero-dots .dot { width: 10px; height: 10px; border-radius: 50%; border: 0; cursor: pointer; background: #d7cfee; opacity: .7; }
 .hero-dots .dot.is-active { opacity: 1; background: var(--plum); }
 
-/* ===== Age tabs (Twinscience-like tab experience) ===== */
-.age-tabs {
-  max-width: 1100px;
-  margin: 24px auto 0;
-  text-align: left;
-}
-
-.tabs-header {
-  display: flex; gap: 8px; flex-wrap: wrap;
-  background: rgba(255,255,255,0.7);
-  border-radius: 999px;
-  padding: 6px;
-  box-shadow: var(--shadow);
-}
-
-.tab {
-  appearance: none;
-  border: 0;
-  padding: 10px 16px;
-  border-radius: 999px;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--plum);
-  background: transparent;
-}
-.tab.is-active { background: #f3effb; }
-
-.tabs-panels {
-  background: white;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  margin-top: 14px;
-  padding: 22px;
-}
-.tab-panel { display: none; }
-.tab-panel.is-active { display: block; }
-
-.tab-grid {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 24px;
-  align-items: center;
-}
-.tab-copy h2 {
-  margin: 6px 0 8px;
-  color: var(--plum);
-  font-family: 'Nunito', sans-serif;
-}
-.tab-copy p { color: var(--muted); margin: 0 0 14px; }
-
-/* soft abstract shapes in each panel */
-.tab-visual {
-  min-height: 200px;
-  border-radius: 20px;
-  box-shadow: var(--shadow);
-}
-.tab-visual.a {
-  background:
-    radial-gradient(120px 120px at 30% 40%, #ffe9c9, transparent 60%),
-    radial-gradient(140px 140px at 70% 60%, #e9ddff, transparent 60%),
-    #fff;
-}
-.tab-visual.b {
-  background:
-    radial-gradient(120px 120px at 25% 35%, #d0f2ff, transparent 60%),
-    radial-gradient(140px 140px at 70% 65%, #ffe0f0, transparent 60%),
-    #fff;
-}
-.tab-visual.c {
-  background:
-    radial-gradient(120px 120px at 25% 35%, #ffdcdc, transparent 60%),
-    radial-gradient(140px 140px at 70% 65%, #dfffd9, transparent 60%),
-    #fff;
-}
-
-/* 💬 Info section (legacy content styling support) */
-.info p {
-  max-width: 500px;
-  margin: 10px auto 20px;
-  color: var(--muted);
-}
+/* 💬 Info section (legacy support) */
+.info p { max-width: 500px; margin: 10px auto 20px; color: var(--muted); }
 
 /* 💬 Testimonials */
 .testimonials {
-  background: white;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  max-width: 500px;
-  margin: 40px auto;
-  padding: 24px;
-  font-style: italic;
-  transition: opacity 0.5s ease;
+  background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+  max-width: 500px; margin: 40px auto; padding: 24px; font-style: italic; transition: opacity 0.5s ease;
 }
 
 /* 📝 Story input & box (create.html) */
 textarea {
-  width: 100%;
-  border-radius: var(--radius);
-  border: 1px solid #e0dcec;
-  padding: 14px;
-  font-family: inherit;
-  font-size: 16px;
-  box-shadow: var(--shadow);
-  resize: vertical;
-  min-height: 140px;
+  width: 100%; border-radius: var(--radius); border: 1px solid #e0dcec; padding: 14px;
+  font-family: inherit; font-size: 16px; box-shadow: var(--shadow); resize: vertical; min-height: 140px;
 }
-
 .story-box {
-  margin-top: 30px;
-  background: #fff;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 20px;
-  text-align: left;
-  line-height: 1.6;
-  white-space: pre-wrap;
+  margin-top: 30px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 20px; text-align: left; line-height: 1.6; white-space: pre-wrap;
 }
 
 /* 🦶 Footer */
-footer {
-  margin-top: auto;
-  text-align: center;
-  padding: 20px;
-  color: var(--muted);
-  font-size: 14px;
-}
+footer { margin-top: auto; text-align: center; padding: 20px; color: var(--muted); font-size: 14px; }
 
 /* ✨ Animations */
 .fade-in { animation: fadeIn 0.8s ease both; }
-.fade-up {
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeUp 0.9s ease forwards;
-}
-.delay-1 { animation-delay: 0.3s; }
-.delay-2 { animation-delay: 0.6s; }
-
+.fade-up { opacity: 0; transform: translateY(20px); animation: fadeUp 0.9s ease forwards; }
+.delay-1 { animation-delay: 0.3s; } .delay-2 { animation-delay: 0.6s; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -379,10 +180,7 @@ footer {
 @media (max-width: 900px) {
   .hero-inner h1 { font-size: 28px; }
   .hero-slide { min-height: 360px; }
-  .tab-grid { grid-template-columns: 1fr; }
-  .tab-visual { order: -1; min-height: 160px; }
 }
-
 @media (max-width: 600px) {
   h1 { font-size: 24px; }
   h2 { font-size: 20px; }
