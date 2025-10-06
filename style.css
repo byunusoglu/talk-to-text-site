@@ -836,6 +836,58 @@ label input, label textarea { margin-top: 6px; }
   align-self: center;
 }
 
+/* --- HERO description: darker for readability --- */
+.hero-text p#heroDesc {
+  color: #3a3450;        /* darker than var(--muted) */
+  font-weight: 500;      /* a touch bolder improves contrast */
+}
+
+/* --- Product badges: bulletproof horizontal alignment --- */
+.product-badges {
+  display: inline-flex;
+  align-items: center;    /* keep all chips vertically centered as a row */
+  gap: 14px;
+  flex-wrap: wrap;        /* still wrap gracefully on smaller widths */
+}
+
+/* Remove tiny scale on desktop to avoid subpixel misalignment on high-DPI */
+@media (min-width: 768px) {
+  .product-badge {
+    transform: none;      /* was scale(0.96); ditching it removes pixel drift */
+  }
+}
+
+/* Normalize inner content metrics so first chip doesn't drift */
+.product-badge {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;         /* same baseline lock for text */
+  gap: 8px;
+}
+
+.product-badge .badge-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;         /* identical box for all icons */
+  display: block;
+}
+
+.product-badge span {
+  display: inline-block;
+  line-height: 1;         /* avoids baseline variance across fonts/sizes */
+}
+
+/* Ensure the decorative divider above badges doesn't nudge layout */
+@media (min-width: 768px) {
+  .product-badges::before {
+    display: block;
+    height: 1px;
+    /* No margin-collapsing weirdness: keep it independent of row alignment */
+    margin: 0 auto 12px;
+  }
+}
+
+
 /* --- Sticky Mobile CTA --- */
 .mobile-cta {
   position: fixed;
