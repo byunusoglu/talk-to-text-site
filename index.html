@@ -48,21 +48,40 @@
     </div>
   </section>
 
-  <!-- 🌟 Hero (simple, no containers) -->
 <section class="hero-simple" aria-label="Hero">
   <div class="hero-copy">
     <h1 id="heroTitle">Create magical fairytales together.</h1>
     <p id="heroDesc">Turn your child’s imagination into their favourite storytime moment — every night.</p>
     <button class="btn" id="heroCta">Create story</button>
 
+    <!-- ✅ Replace this block -->
     <div class="product-badges" aria-label="Available formats">
-      <span class="product-badge"><span class="badge-icon"></span>Digital</span>
-      <span class="product-badge"><span class="badge-icon"></span>Printed</span>
-      <span class="product-badge"><span class="badge-icon"></span>Animated</span>
+      <div class="product-badge" role="img" aria-label="Digital Story">
+        <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
+          <rect x="4" y="3" width="16" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="12" cy="18" r="1" fill="currentColor"/>
+        </svg>
+        <span>Digital</span>
+      </div>
+      <div class="product-badge" role="img" aria-label="Printed Book">
+        <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
+          <path d="M4 5.5C4 4.67 4.67 4 5.5 4H19v14.5c0 .83-.67 1.5-1.5 1.5H6.5A2.5 2.5 0 0 1 4 17.5V5.5z"
+                fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M8 4v15" stroke="currentColor" stroke-width="1.2" opacity=".55"/>
+        </svg>
+        <span>Printed</span>
+      </div>
+      <div class="product-badge" role="img" aria-label="Animated Movie">
+        <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <polygon points="10,9 16,12 10,15" fill="currentColor"></polygon>
+        </svg>
+        <span>Animated</span>
+      </div>
     </div>
+    <!-- ✅ End of replacement -->
   </div>
 
-  <!-- Transparent image, pasted directly on page (no wrapper styling) -->
   <img
     id="heroImage"
     src="momdaughterbanner.png"
