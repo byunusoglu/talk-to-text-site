@@ -204,22 +204,32 @@ h1, h2 {
 }
 .hidden { display: none; }
 
-/* =========================
-   Age strip & buttons (chips)
-   ========================= */
-.age-strip {
-  padding-top: 24px;
-  padding-bottom: 24px;
-  background: #fbf9ff;              /* light tint band to separate contexts */
-  border-bottom: 1px solid #eee9fb;  /* subtle divider to hero */
-}
-
 .age-buttons {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 12px;
   flex-wrap: nowrap;
+}
+
+/* Age buttons now sit directly on page */
+.age-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  margin-top: clamp(8px, 2vh, 16px);   /* closer to topbar */
+  margin-bottom: clamp(4px, 1.5vh, 12px); /* closer to hero image */
+}
+
+/* Slightly tighter on mobile */
+@media (max-width: 700px) {
+  .age-buttons {
+    gap: 8px;
+    margin-top: 6px;
+    margin-bottom: 8px;
+  }
 }
 
 /* CHANGED: age buttons feel like chips, not primary actions */
