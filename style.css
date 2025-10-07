@@ -1452,6 +1452,17 @@ html.scroll-locked { overscroll-behavior: contain; }
   );
 }
 
+/* --- Prevent overlap between personalised badge and story text --- */
+.story-reader.has-badge .story-content {
+  margin-top: 36px; /* adds space only when badge exists */
+}
+
+@media (max-width: 700px) {
+  .story-reader.has-badge .story-content {
+    margin-top: 28px; /* slightly tighter on mobile */
+  }
+}
+
 /* Glow at the blur edge to invite continuation */
 .blur-glow {
   position: absolute;
