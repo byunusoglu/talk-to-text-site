@@ -42,29 +42,43 @@
   ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
     .forEach(src => { const img = new Image(); img.src = src; });
 
-  // ---------- Hero per age (live-swap on landing) ----------
-  const HERO_BY_AGE = {
-    "0-2": {
-      image: "momdaughterbanner.png",
-      title: "Create magical fairytales together.",
-      desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
-      cta:   "Create story"
-    },
-    "3-5": {
-      image: "childsdreambanner.png",
-      title: "Create magical bedtime stories together.",
-      desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
-      cta:   "Create story"
-    },
-    "5+": {
-      image: "grownbanner.png",
-      title: "Create superhero stories together.",
-      desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
-      cta:   "Create story"
-    }
-  };
+   // Try transparent cut-out first; fall back to current assets
+const HERO_BY_AGE = {
+  "0-2": {
+    imageCut: "momdaughter_cut.png",
+    image:    "momdaughterbanner.png",
+    title: "Create magical fairytales together.",
+    desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
+    cta:   "Create story"
+  },
+  "3-5": {
+    imageCut: "childsdream_cut.png",
+    image:    "childsdreambanner.png",
+    title: "Create magical bedtime stories together.",
+    desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
+    cta:   "Create story"
+  },
+  "5+": {
+    imageCut: "grownbanner_cut.png",
+    image:    "grownbanner.png",
+    title: "Create superhero stories together.",
+    desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
+    cta:   "Create story"
+  }
+};
 
-function updateHeroForAge(ageRaw) {
+// helper: prefer cut-out if it exists on the server
+async function pickBestSrc(cfg) {
+  const trySrc = async (src) => {
+    try {
+      const res = await fetch(src, { method: "HEAD" });
+      return res.ok ? src : null;
+    } catch { return null; }
+  };
+  return (await trySrc(cfg.imageCut)) || cfg.image;
+}
+
+async function updateHeroForAge(ageRaw) {
   try {
     const age = (ageRaw || DEFAULT_AGE).trim();
     const cfg = HERO_BY_AGE[age] || HERO_BY_AGE[DEFAULT_AGE];
@@ -74,9 +88,10 @@ function updateHeroForAge(ageRaw) {
     const desc   = document.getElementById("heroDesc");
     const cta    = document.getElementById("heroCta");
 
-    if (imgEl && cfg.image) {
+    if (imgEl && cfg) {
+      const src = await pickBestSrc(cfg);
       imgEl.parentElement?.setAttribute('data-parallax', 'on');
-      imgEl.src = cfg.image;
+      imgEl.src = src;
       imgEl.alt = cfg.title || "StoryBuds hero";
     }
     if (title) title.textContent = cfg.title;
@@ -88,8 +103,7 @@ function updateHeroForAge(ageRaw) {
   } catch (_) {}
 }
 
-
-
+  
   // ---------- page guards ----------
   const isCreateChatPage = () => Boolean($('#chatWizard'));
   const isCheckoutPage   = () => Boolean($('#storyContent') && $('#productsTrack'));
