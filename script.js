@@ -348,34 +348,32 @@ function updateHeroForAge(ageRaw) {
 
 function initMobileCta() {
   const cta = $("#mobileCta");
-  const hero = $(".hero-merged"); // anchor to the new merged hero
+  const hero = $(".hero"); // anchor to split hero root
   if (!cta || !hero) return;
-
   function onScroll() {
     const rect = hero.getBoundingClientRect();
     const show = window.scrollY > (rect.height * 0.45);
     cta.classList.toggle("show", show);
   }
-
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 }
 
-   function initHeroParallax() {
+function initHeroParallax() {
   const wrap = document.querySelector('.hero-visual[data-parallax="on"]');
   const img = document.getElementById('heroImage');
   if (!wrap || !img) return;
 
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce) { wrap.removeAttribute('data-parallax'); return; }
+  const isNarrow = window.matchMedia('(max-width: 700px)').matches;
+  if (reduce || isNarrow) { wrap.removeAttribute('data-parallax'); return; }
 
   function onScroll() {
     const rect = wrap.getBoundingClientRect();
     const vh = window.innerHeight || 1;
     const center = vh / 2;
     const dist = Math.max(-40, Math.min(40, (rect.top + rect.height/2) - center));
-    // map to very small translateY (±6px max)
-    const t = (dist / center) * 6;
+    const t = (dist / center) * 6; // ±6px max
     img.style.transform = `translateY(${t.toFixed(2)}px)`;
   }
   window.addEventListener('scroll', onScroll, { passive: true });
@@ -594,6 +592,6 @@ onReady(() => {
   if (isCheckoutPage())   initCheckout();
   initTestimonials();
   initScrollMorph();
-  initHeroParallax(); // 👈 NEW
+  initHeroParallax(); // restore
 });
 })();
