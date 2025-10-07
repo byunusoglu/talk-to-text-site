@@ -1209,17 +1209,38 @@ html.scroll-locked { overscroll-behavior: contain; }
   display: block;
 }
 
-/* --- Unified hero image wrapper for consistent layout --- */
+/* --- Unified, non-cropping hero image area --- */
 .hero-art-wrapper {
   width: 100%;
   max-width: clamp(380px, 44vw, 660px);
-  aspect-ratio: 4 / 3; /* consistent height across all hero images */
+  height: clamp(320px, 48vw, 560px);  /* fixed visual height for stability */
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;           /* never crop */
   position: relative;
+  background: transparent;
 }
+
+/* 🚫 No cropping: the image always fits inside */
+.hero-art-wrapper img.hero-art {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain !important;  /* ensure full image is visible */
+  object-position: center;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* 📱 Mobile adjustments: slightly taller area for portrait screens */
+@media (max-width: 900px) {
+  .hero-art-wrapper {
+    height: min(50vh, 440px);
+    width: min(96vw, 600px);
+  }
+}
+
 
 .hero-art-wrapper img {
   width: 100%;
@@ -1302,5 +1323,23 @@ html.scroll-locked { overscroll-behavior: contain; }
   .hero-simple .hero-art {
     width: 88vw;
     max-height: 36vh;
+  }
+}
+
+/* 🚫 No cropping: the image shrinks to fit both height & width limits */
+.hero-art-wrapper img.hero-art {
+  max-height: 100%;
+  max-width: 100%;
+  height: auto;
+  width: auto;
+  object-fit: contain !important;   /* force “fit” over any legacy rules */
+  object-position: center;
+}
+
+/* On mobile, keep it a touch taller (still no cropping) */
+@media (max-width: 900px) {
+  .hero-art-wrapper {
+    height: min(50vh, 440px);
+    width: min(96vw, 600px);
   }
 }
