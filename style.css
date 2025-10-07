@@ -1111,15 +1111,16 @@ html.scroll-locked { overscroll-behavior: contain; }
   background: transparent; /* sit directly on page bg */
 }
 
-/* Left: plain text directly on the page */
-/* === Refined alignment & spacing for hero text === */
+/* Desktop: keep everything perfectly aligned */
 .hero-simple .hero-copy {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;       /* default: left-align text */
+  align-items: flex-start;     /* shared axis for title, desc, button, tags */
+  justify-content: center;
   max-width: 640px;
-  gap: 18px;                     /* consistent vertical rhythm */
+  gap: 18px;
   line-height: 1.4;
+  text-align: left;
 }
 
 /* Tighten headline/paragraph spacing for visual hierarchy */
