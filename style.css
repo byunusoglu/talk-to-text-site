@@ -1101,17 +1101,21 @@ html.scroll-locked { overscroll-behavior: contain; }
   to { transform: scale(1.07); }
 }
 
-/* === Ultra-simple hero (no boxes, no borders) === */
+/* === Ultra-simple hero (no boxes, no borders) — v2 === */
 .hero-simple {
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr; /* text left, image right */
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); /* balanced columns */
   gap: clamp(16px, 5vw, 48px);
   align-items: center;
-  padding: clamp(28px, 6vw, 72px) 20px;
+  padding: clamp(28px, 6vw, 72px) clamp(16px, 6vw, 72px);
   background: transparent; /* sit directly on page bg */
 }
 
-/* Left side: plain text directly on the page */
+/* Left: plain text directly on the page */
+.hero-simple .hero-copy { 
+  justify-self: start; 
+  max-width: 640px; 
+}
 .hero-simple .hero-copy h1 {
   font-weight: 800;
   margin: 0 0 10px;
@@ -1121,26 +1125,44 @@ html.scroll-locked { overscroll-behavior: contain; }
   color: #3a3450;
 }
 
-/* Right side: raw image, no container */
+/* Right: raw image, no container */
 .hero-simple .hero-art {
-  width: 100%;
+  justify-self: end;           /* hug the right edge on desktop */
+  width: clamp(320px, 38vw, 560px); /* responsive width like Duolingo/Khan Kids */
+  max-width: 100%;
   height: auto;
-  max-height: min(64vh, 560px);
-  object-fit: contain;  /* keep transparent PNG edges clean */
+  max-height: min(70vh, 620px); /* never taller than viewport */
+  object-fit: contain;         /* preserve transparent edges cleanly */
   display: block;
-  /* no border, no shadow, no background */
 }
 
-/* Mobile: stack vertically, text first */
+/* Mobile/tablet: stack vertically, IMAGE FIRST */
 @media (max-width: 900px) {
   .hero-simple {
     grid-template-columns: 1fr;
     padding: clamp(18px, 6vw, 36px) 16px;
+    justify-items: center;     /* center both when stacked */
+    text-align: center;        /* nicer mobile copy */
   }
   .hero-simple .hero-art {
+    order: 1;
+    width: min(92vw, 520px);
     max-height: min(42vh, 360px);
-    margin: 8px auto 0;
+    margin: 0 auto 10px;
+    justify-self: center;
+  }
+  .hero-simple .hero-copy {
+    order: 2;
+    justify-self: center;
+    max-width: 560px;
   }
   .hero-simple .hero-copy .btn { width: 100%; }
 }
 
+/* Very small phones: be extra cautious */
+@media (max-width: 380px) {
+  .hero-simple .hero-art {
+    width: 88vw;
+    max-height: 36vh;
+  }
+}
