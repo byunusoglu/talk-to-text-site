@@ -39,14 +39,14 @@
   };
 
   // Preload hero images for fast swaps
-  ["momdaughterbanner3.png","childsdreambanner.png","grownbanner.png"]
+  ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
     .forEach(src => { const img = new Image(); img.src = src; });
 
    // Try transparent cut-out first; fall back to current assets
 const HERO_BY_AGE = {
   "0-2": {
     imageCut: "momdaughter_cut.png",
-    image:    "momdaughterbanner3.png",
+    image:    "momdaughterbanner.png",
     title: "Create magical fairytales together.",
     desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
     cta:   "Create story"
