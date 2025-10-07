@@ -39,7 +39,7 @@
   };
 
   // Preload hero images for fast swaps
-  ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
+  ["momdaughterbanner3.png","childsdreambanner.png","grownbanner.png"]
     .forEach(src => { const img = new Image(); img.src = src; });
 
    // Try transparent cut-out first; fall back to current assets
