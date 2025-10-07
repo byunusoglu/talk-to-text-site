@@ -581,7 +581,15 @@ label input, label textarea { margin-top: 6px; }
 }
 
 /* --- HERO: dynamic overlay + better hierarchy (improved) --- */
-
+.hero-overlay {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.12), rgba(255,255,255,0.85));
+  backdrop-filter: blur(6px);
+  padding: 44px 22px;
+  border-radius: 16px;
+  max-width: 640px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
 
 .hero-text {
   display: flex;
