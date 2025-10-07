@@ -347,18 +347,20 @@ function updateHeroForAge(ageRaw) {
     if (cartCountEl) cartCountEl.classList.add("hidden");
   }
 
-  function initMobileCta() {
-    const cta = $("#mobileCta");
-    const hero = $(".hero-banner");
-    if (!cta || !hero) return;
-    function onScroll() {
-      const rect = hero.getBoundingClientRect();
-      if (window.scrollY > rect.height * 0.5) cta.classList.add("show");
-      else cta.classList.remove("show");
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
+function initMobileCta() {
+  const cta = $("#mobileCta");
+  const hero = $(".hero-merged"); // anchor to the new merged hero
+  if (!cta || !hero) return;
+
+  function onScroll() {
+    const rect = hero.getBoundingClientRect();
+    const show = window.scrollY > (rect.height * 0.45);
+    cta.classList.toggle("show", show);
   }
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+}
 
    function initHeroParallax() {
   const wrap = document.querySelector('.hero-visual[data-parallax="on"]');
