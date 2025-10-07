@@ -46,30 +46,51 @@
   <article class="story-reader">
     <h2 id="storyTitle" class="sr-only">Your story</h2>
 
-    <!-- Story content with a half-blur gate -->
+    <!-- 🧸 Personalised badge (JS fills child's name) -->
+    <div id="personalBadge" class="personal-badge hidden" aria-hidden="true">
+      <span class="dot">🧸</span>
+      <span id="personalBadgeText">Personalised for your child</span>
+    </div>
+
+    <!-- Story content (we’ll apply a half blur via JS) -->
     <div id="storyContent" class="story-content"></div>
 
-    <!-- ✨ Soft-wall gate (hidden when signed in) -->
+    <!-- Subtle glow at the blur edge (toggled by JS) -->
+    <div id="blurGlow" class="blur-glow hidden" aria-hidden="true"></div>
+
+    <!-- 🔒 Soft-wall gate (hidden when signed in) -->
     <div id="gateOverlay" class="gate-overlay hidden" aria-live="polite">
       <div class="gate-card">
-        <h3>Continue reading this story</h3>
-        <p>Create your free account to unlock the full tale and save it for tonight.</p>
+        <h3 id="gateTitle">Continue reading for free</h3>
+        <p id="gateDesc" class="muted">
+          Create your free account to finish tonight’s bedtime story and save it.
+        </p>
 
-        <div id="gateButtons">
-          <button class="btn" id="gateGoogle">Continue with Google</button>
-          <button class="btn ghost" id="gateEmailBtn">Continue with Email</button>
-        </div>
+        <!-- Primary one-tap action -->
+        <button class="btn btn-google" id="gateGoogle">Continue with Google</button>
 
+        <!-- Link to reveal email form -->
+        <button class="linklike" id="gateEmailBtn" type="button">Use email instead</button>
+
+        <!-- Inline email form (revealed on demand) -->
         <form id="gateEmailForm" class="gate-email hidden" autocomplete="on">
           <input type="email" id="gateEmail" placeholder="Email address" required />
           <input type="password" id="gatePass" placeholder="Password" required />
           <button type="submit" class="btn">Create free account</button>
           <button type="button" class="linklike" id="gateBackBtn">Back</button>
         </form>
+
+        <!-- Tiny trust cues -->
+        <div class="trust-row" aria-hidden="true">
+          <span>🛡️ No payment needed</span>
+          <span>·</span>
+          <span>Free forever for your first story</span>
+        </div>
       </div>
     </div>
   </article>
 </section>
+
 
 
     <!-- Products carousel -->
