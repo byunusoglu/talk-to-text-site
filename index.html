@@ -48,52 +48,49 @@
     </div>
   </section>
 
-  <!-- 🌟 Hero (Split: text card + visual) -->
-<section class="hero hero-split fade-up" aria-label="Hero">
-  <div class="hero-inner">
-    <!-- Left: text card -->
-    <div class="hero-textCard glass">
-      <h1 id="heroTitle">Create magical fairytales together.</h1>
-      <p id="heroDesc">Turn your child’s imagination into their favourite storytime moment — every night.</p>
-      <button class="btn" id="heroCta" onclick="window.location.href='create.html'">Create story</button>
+<!-- 🌟 Hero (Merged: image + create card) -->
+<section class="hero hero-merged fade-up" aria-label="Hero">
+  <div class="hero-merged-inner">
+    <div class="hero-stack">
+      <!-- Top: age-based image -->
+      <figure class="hero-visual">
+        <img id="heroImage" src="momdaughterbanner.png" alt="StoryBuds hero" loading="eager" decoding="async" />
+      </figure>
 
-      <div class="product-badges" aria-label="Available formats">
-        <div class="product-badge" role="img" aria-label="Digital Story">
-          <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
-            <rect x="4" y="3" width="16" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
-            <circle cx="12" cy="18" r="1" fill="currentColor"/>
-          </svg>
-          <span>Digital</span>
-        </div>
-        <div class="product-badge" role="img" aria-label="Printed Book">
-          <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
-            <path d="M4 5.5C4 4.67 4.67 4 5.5 4H19v14.5c0 .83-.67 1.5-1.5 1.5H6.5A2.5 2.5 0 0 1 4 17.5V5.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-            <path d="M8 4v15" stroke="currentColor" stroke-width="1.2" opacity=".55"/>
-          </svg>
-          <span>Printed Book</span>
-        </div>
-        <div class="product-badge" role="img" aria-label="Animated Movie">
-          <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
-            <rect x="3" y="5" width="18" height="14" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
-            <polygon points="10,9 16,12 10,15" fill="currentColor"/>
-          </svg>
-          <span>Animated</span>
-        </div>
-      </div>
-    </div>
+      <!-- Bottom: Create Story card (merged) -->
+      <div class="create-card">
+        <h1 id="heroTitle">Create magical fairytales together.</h1>
+        <p id="heroDesc">Turn your child’s imagination into their favourite storytime moment — every night.</p>
+        <button class="btn" id="heroCta" onclick="window.location.href='create.html'">Create story</button>
 
-    <!-- Right: visual (age-based) -->
-    <div class="hero-visual">
-      <img id="heroImage" src="momdaughterbanner.png" alt="StoryBuds hero" loading="eager" decoding="async" />
-      <!-- subtle sparkles -->
-      <div class="sparkles" aria-hidden="true">
-        <span class="sp s1"></span>
-        <span class="sp s2"></span>
-        <span class="sp s3"></span>
+        <div class="product-badges" aria-label="Available formats">
+          <div class="product-badge" role="img" aria-label="Digital Story">
+            <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
+              <rect x="4" y="3" width="16" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+              <circle cx="12" cy="18" r="1" fill="currentColor"/>
+            </svg>
+            <span>Digital</span>
+          </div>
+          <div class="product-badge" role="img" aria-label="Printed Book">
+            <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
+              <path d="M4 5.5C4 4.67 4.67 4 5.5 4H19v14.5c0 .83-.67 1.5-1.5 1.5H6.5A2.5 2.5 0 0 1 4 17.5V5.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M8 4v15" stroke="currentColor" stroke-width="1.2" opacity=".55"/>
+            </svg>
+            <span>Printed Book</span>
+          </div>
+          <div class="product-badge" role="img" aria-label="Animated Movie">
+            <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+              <polygon points="10,9 16,12 10,15" fill="currentColor"/>
+            </svg>
+            <span>Animated</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </section>
+
 
 
 
