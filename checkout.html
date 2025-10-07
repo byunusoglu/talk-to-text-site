@@ -40,14 +40,37 @@
 
   <main>
 
-    <!-- Story hero with age-based background -->
-    <section id="storyHero" class="story-hero fade-up">
-      <div class="story-hero-overlay"></div>
-      <article class="story-reader">
-        <h2 id="storyTitle" class="sr-only">Your story</h2>
-        <div id="storyContent" class="story-content"></div>
-      </article>
-    </section>
+<section id="storyHero" class="story-hero fade-up">
+  <div class="story-hero-overlay"></div>
+
+  <article class="story-reader">
+    <h2 id="storyTitle" class="sr-only">Your story</h2>
+
+    <!-- Story content with a half-blur gate -->
+    <div id="storyContent" class="story-content"></div>
+
+    <!-- ✨ Soft-wall gate (hidden when signed in) -->
+    <div id="gateOverlay" class="gate-overlay hidden" aria-live="polite">
+      <div class="gate-card">
+        <h3>Continue reading this story</h3>
+        <p>Create your free account to unlock the full tale and save it for tonight.</p>
+
+        <div id="gateButtons">
+          <button class="btn" id="gateGoogle">Continue with Google</button>
+          <button class="btn ghost" id="gateEmailBtn">Continue with Email</button>
+        </div>
+
+        <form id="gateEmailForm" class="gate-email hidden" autocomplete="on">
+          <input type="email" id="gateEmail" placeholder="Email address" required />
+          <input type="password" id="gatePass" placeholder="Password" required />
+          <button type="submit" class="btn">Create free account</button>
+          <button type="button" class="linklike" id="gateBackBtn">Back</button>
+        </form>
+      </div>
+    </div>
+  </article>
+</section>
+
 
     <!-- Products carousel -->
     <section class="section fade-up">
