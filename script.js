@@ -72,7 +72,17 @@
       const title  = document.getElementById("heroTitle");
       const desc   = document.getElementById("heroDesc");
       const cta    = document.getElementById("heroCta");
-      if (banner && cfg.image) banner.style.backgroundImage = `url('${cfg.image}')`;
+if (banner && cfg.image) {
+  // Use CSS var instead of backgroundImage to avoid mobile paint bug
+  banner.style.setProperty('--hero-image', `url('${cfg.image}')`);
+
+  // Force a reflow so mobile paints immediately
+  void banner.offsetHeight;
+  requestAnimationFrame(() => {
+    banner.style.transform = 'translateZ(0)';
+    requestAnimationFrame(() => { banner.style.transform = ''; });
+  });
+}
       if (title) title.textContent = cfg.title;
       if (desc)  desc.textContent  = cfg.desc;
       if (cta) {
