@@ -915,8 +915,8 @@ html.scroll-locked { overscroll-behavior: contain; }
   }
 }
 
-/* sparkles (very subtle) */
-.sparkles { position: absolute; inset: 0; pointer-events: none; }
+/* sparkles (very subtle) — keep definitions for backwards compat, but hide by default */
+.sparkles { position: absolute; inset: 0; pointer-events: none; display: none !important; }
 .sp {
   position: absolute;
   width: 6px; height: 6px;
@@ -956,9 +956,9 @@ html.scroll-locked { overscroll-behavior: contain; }
   color: var(--plum-dark);
 }
 
-/* Keep your existing pulseUp keyframes; we slowed duration above. 【19】 */
+/* Keep your existing pulseUp keyframes; we slowed duration above. */
 
-/* Top visual: square bottom corners so it fuses with card below */
+/* ======== Merged Hero (no inner container) ======== */
 .hero-visual.cutout {
   position: relative;
   height: clamp(320px, 48vw, 540px);
@@ -1027,9 +1027,15 @@ html.scroll-locked { overscroll-behavior: contain; }
   .hero-textCard.fused .btn { width: 100%; }
 }
 
+/* No-container hero wrapper */
 .hero.hero-merged {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
 }
