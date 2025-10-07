@@ -836,3 +836,137 @@ html.scroll-locked { overscroll-behavior: contain; }
 }
 
 @media (max-width: 900px) { .chat-stream { max-height: 54vh; } }
+
+/* === Split Hero v2 === */
+.hero {
+  position: relative;
+  padding: clamp(28px, 5vw, 56px) 20px;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+}
+
+.hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr; /* text ~45%, visual ~55% */
+  gap: clamp(16px, 4vw, 40px);
+  align-items: center;
+}
+
+.hero-textCard {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding: clamp(18px, 3vw, 28px);
+  border-radius: 20px;
+  border: 1px solid rgba(124, 90, 164, 0.12); /* matches system */
+  box-shadow: var(--shadow);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.82),
+    rgba(255,255,255,0.66)
+  );
+  backdrop-filter: blur(8px);
+}
+
+.hero-textCard h1 {
+  font-family: 'Nunito', sans-serif;
+  color: var(--plum-dark);
+  font-size: clamp(2rem, 3.6vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 4px;
+}
+
+.hero-textCard p {
+  color: #3a3450; /* improved contrast */
+  font-weight: 500;
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  margin: 0 0 6px;
+}
+
+.hero-textCard .btn {
+  margin-top: 6px;
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  padding: 14px 28px;
+  animation: pulseUp 10s ease-in-out infinite; /* slower/more premium */
+}
+
+/* badges align neatly under CTA */
+.hero-textCard .product-badges {
+  margin-top: 8px;
+  display: inline-flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Right visual */
+.hero-visual {
+  position: relative;
+  height: clamp(320px, 48vw, 560px);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid #eee9fb;
+  background: #fff;
+}
+
+.hero-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* tiny parallax on scroll */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-visual[data-parallax="on"] img {
+    transition: transform 0.4s ease;
+  }
+}
+
+/* sparkles (very subtle) */
+.sparkles { position: absolute; inset: 0; pointer-events: none; }
+.sp {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, var(--gold));
+  opacity: 0.7;
+  filter: blur(0.2px);
+  animation: drift 14s linear infinite;
+}
+.s1 { top: 12%; left: 8%;  animation-delay: 0s; }
+.s2 { top: 70%; left: 84%; animation-delay: 3s; }
+.s3 { top: 40%; left: 56%; animation-delay: 6s; }
+
+@keyframes drift {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0.0; }
+  10%  { opacity: .8; }
+  50%  { transform: translateY(-12px) translateX(8px) scale(1.05); opacity: .9; }
+  90%  { opacity: .75; }
+  100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.0; }
+}
+
+/* Responsive stacking */
+@media (max-width: 1024px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+  }
+  .hero-visual { order: -1; } /* image first on mobile/tablet for emotion */
+}
+
+/* Minor refinements to existing badges + CTA hierarchy */
+.product-badge {
+  font-size: 13px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.78);
+  border: 1px solid #e6dcfa;
+  box-shadow: var(--shadow);
+  color: var(--plum-dark);
+}
+
+/* Keep your existing pulseUp keyframes; we slowed duration above. 【19】 */
