@@ -1148,14 +1148,14 @@ html.scroll-locked { overscroll-behavior: contain; }
   }
 }
 
-/* Right: raw image, no container */
+/* Slightly larger hero image */
 .hero-simple .hero-art {
-  justify-self: end;           /* hug the right edge on desktop */
-  width: clamp(320px, 38vw, 560px); /* responsive width like Duolingo/Khan Kids */
+  justify-self: end;
+  width: clamp(360px, 42vw, 640px);   /* +10%-ish width */
   max-width: 100%;
   height: auto;
-  max-height: min(70vh, 620px); /* never taller than viewport */
-  object-fit: contain;         /* preserve transparent edges cleanly */
+  max-height: min(78vh, 680px);       /* taller but still responsive */
+  object-fit: contain;
   display: block;
 }
 
@@ -1167,13 +1167,13 @@ html.scroll-locked { overscroll-behavior: contain; }
     justify-items: center;     /* center both when stacked */
     text-align: center;        /* nicer mobile copy */
   }
-  .hero-simple .hero-art {
-    order: 1;
-    width: min(92vw, 520px);
-    max-height: min(42vh, 360px);
-    margin: 0 auto 10px;
-    justify-self: center;
-  }
+.hero-simple .hero-art {
+  order: 1;
+  width: min(96vw, 580px);           /* slightly larger on mobile too */
+  max-height: min(48vh, 420px);
+  margin: 0 auto 10px;
+  justify-self: center;
+}
   .hero-simple .hero-copy {
     order: 2;
     justify-self: center;
