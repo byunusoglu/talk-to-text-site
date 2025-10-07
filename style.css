@@ -1101,29 +1101,29 @@ html.scroll-locked { overscroll-behavior: contain; }
   to { transform: scale(1.07); }
 }
 
-/* === Ultra-simple hero (no boxes, no borders) — v2 === */
+/* === Ultra-simple hero (no boxes, no borders) — v3 === */
 .hero-simple {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); /* balanced columns */
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
   gap: clamp(16px, 5vw, 48px);
   align-items: center;
   padding: clamp(28px, 6vw, 72px) clamp(16px, 6vw, 72px);
-  background: transparent; /* sit directly on page bg */
+  background: transparent;
 }
 
-/* Desktop: keep everything perfectly aligned */
+/* Text column — perfectly aligned stack */
 .hero-simple .hero-copy {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;     /* shared axis for title, desc, button, tags */
+  align-items: center;       /* center headline, paragraph, CTA, tags */
   justify-content: center;
-  max-width: 640px;
-  gap: 18px;
+  text-align: center;
+  gap: 18px;                 /* consistent rhythm */
   line-height: 1.4;
-  text-align: left;
+  max-width: 640px;
 }
 
-/* Tighten headline/paragraph spacing for visual hierarchy */
+/* Headline + paragraph spacing */
 .hero-simple .hero-copy h1 {
   font-weight: 800;
   margin: 0 0 6px;
@@ -1135,99 +1135,20 @@ html.scroll-locked { overscroll-behavior: contain; }
   font-size: clamp(1rem, 1.3vw, 1.125rem);
 }
 
-/* Horizontally center CTA and tags relative to text block */
-.hero-simple .hero-copy .btn,
-.hero-simple .hero-copy .product-badges {
-  align-self: flex-start;
-}
-
-/* On wider screens: nudge slightly right so text, button, and tags share the same visual axis */
-@media (min-width: 1024px) {
-  .hero-simple .hero-copy {
-    padding-left: 6px; /* micro nudging */
-  }
-}
-
-/* Slightly larger hero image */
-.hero-simple .hero-art {
-  justify-self: end;
-  width: clamp(360px, 42vw, 640px);   /* +10%-ish width */
-  max-width: 100%;
-  height: auto;
-  max-height: min(78vh, 680px);       /* taller but still responsive */
-  object-fit: contain;
-  display: block;
-}
-
-/* Mobile/tablet: stack vertically, IMAGE FIRST */
-@media (max-width: 900px) {
-  .hero-simple {
-    grid-template-columns: 1fr;
-    padding: clamp(18px, 6vw, 36px) 16px;
-    justify-items: center;     /* center both when stacked */
-    text-align: center;        /* nicer mobile copy */
-  }
-.hero-simple .hero-art {
-  order: 1;
-  width: min(96vw, 580px);           /* slightly larger on mobile too */
-  max-height: min(48vh, 420px);
-  margin: 0 auto 10px;
-  justify-self: center;
-}
-  .hero-simple .hero-copy {
-    order: 2;
-    justify-self: center;
-    max-width: 560px;
-  }
-  .hero-simple .hero-copy .btn { width: 100%; }
-}
-
-/* Additional mobile refinement: center all hero text and buttons */
-@media (max-width: 900px) {
-  .hero-simple .hero-copy {
-    align-items: center;
-    text-align: center;
-    gap: 16px; /* consistent spacing between title, description, button, tags */
-  }
-  .hero-simple .hero-copy .btn,
-  .hero-simple .hero-copy .product-badges {
-    align-self: center;
-  }
-}
-
-/* Very small phones: be extra cautious */
-@media (max-width: 380px) {
-  .hero-simple .hero-art {
-    width: 88vw;
-    max-height: 36vh;
-  }
-}
-
-/* Desktop: push left copy slightly toward center */
-@media (min-width: 1024px) {
-  .hero-simple { 
-    padding-left: clamp(64px, 10vw, 180px);
-    padding-right: clamp(32px, 6vw, 120px);
-  }
-  .hero-simple .hero-copy { 
-    max-width: 680px;
-  }
-}
-
-/* Create breathing space between elements */
+/* CTA + tags line up under the text and have breathing room */
 .hero-simple .hero-copy .btn {
   display: inline-block;
-  margin-top: 6px;
-  margin-bottom: 18px;  /* more air before tags */
-  align-self: flex-start;
+  align-self: center;
+  margin-top: 8px;
+  margin-bottom: 20px;       /* air before tags */
 }
 .hero-simple .hero-copy .product-badges {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;   /* centered under button */
   gap: 12px;
   margin-top: 0;
 }
-
 .hero-simple .hero-copy .product-badge {
   display: inline-flex;
   align-items: center;
@@ -1238,8 +1159,60 @@ html.scroll-locked { overscroll-behavior: contain; }
   background: rgba(255,255,255,0.78);
   color: var(--plum-dark);
 }
-
 .hero-simple .hero-copy .badge-icon {
   width: 18px; height: 18px; flex: 0 0 18px;
 }
 
+/* Image — slightly larger but safe */
+.hero-simple .hero-art {
+  justify-self: end;
+  width: clamp(380px, 44vw, 660px);   /* +size */
+  max-width: 100%;
+  height: auto;
+  max-height: min(80vh, 700px);
+  object-fit: contain;
+  display: block;
+}
+
+/* Desktop tweaks: nudge the whole hero inward on very wide screens */
+@media (min-width: 1024px) {
+  .hero-simple {
+    padding-left: clamp(64px, 10vw, 180px);
+    padding-right: clamp(32px, 6vw, 120px);
+  }
+  .hero-simple .hero-copy { max-width: 680px; }
+}
+
+/* Mobile/tablet: stack image first, keep everything centered */
+@media (max-width: 900px) {
+  .hero-simple {
+    grid-template-columns: 1fr;
+    padding: clamp(18px, 6vw, 36px) 16px;
+    justify-items: center;
+    text-align: center;
+  }
+  .hero-simple .hero-art {
+    order: 1;
+    width: min(96vw, 600px);
+    max-height: min(50vh, 440px);
+    margin: 0 auto 10px;
+    justify-self: center;
+  }
+  .hero-simple .hero-copy {
+    order: 2;
+    justify-self: center;
+    max-width: 560px;
+    align-items: center;
+    gap: 16px;
+  }
+  .hero-simple .hero-copy .btn,
+  .hero-simple .hero-copy .product-badges { align-self: center; }
+}
+
+/* Tiny phones */
+@media (max-width: 380px) {
+  .hero-simple .hero-art {
+    width: 88vw;
+    max-height: 36vh;
+  }
+}
