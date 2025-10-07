@@ -220,7 +220,7 @@ h1, h2 {
   gap: 12px;
   flex-wrap: nowrap;
   margin-top: clamp(8px, 2vh, 16px);   /* closer to topbar */
-  margin-bottom: clamp(4px, 1.5vh, 12px); /* closer to hero image */
+  margin-bottom: clamp(4px, 1.5vh, 6px); /* closer to hero image */
 }
 
 /* Slightly tighter on mobile */
