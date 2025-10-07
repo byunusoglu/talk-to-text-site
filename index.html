@@ -48,14 +48,22 @@
     </div>
   </section>
 
-<!-- 🌟 Hero (Split: text card + visual) -->
-<section class="hero hero-split fade-up" aria-label="Hero">
-  <div class="hero-inner">
-    <!-- Left: text card -->
-    <div class="hero-textCard glass">
+<!-- 🌟 Hero (Merged: cutout visual + text card) -->
+<section class="hero hero-merged fade-up" aria-label="Hero">
+  <div class="hero-inner merged">
+    <!-- Visual on top -->
+    <div class="hero-visual cutout" data-parallax="on">
+      <img id="heroImage" src="momdaughterbanner.png" alt="StoryBuds hero" loading="eager" decoding="async" />
+      <div class="sparkles" aria-hidden="true">
+        <span class="sp s1"></span><span class="sp s2"></span><span class="sp s3"></span>
+      </div>
+    </div>
+
+    <!-- Text card attached under visual -->
+    <div class="hero-textCard fused">
       <h1 id="heroTitle">Create magical fairytales together.</h1>
       <p id="heroDesc">Turn your child’s imagination into their favourite storytime moment — every night.</p>
-      <button class="btn" id="heroCta" onclick="window.location.href='create.html'">Create story</button>
+      <button class="btn" id="heroCta">Create story</button>
 
       <div class="product-badges" aria-label="Available formats">
         <div class="product-badge" role="img" aria-label="Digital Story">
@@ -81,18 +89,9 @@
         </div>
       </div>
     </div>
-
-    <!-- Right: visual (age-based) -->
-    <div class="hero-visual" data-parallax="on">
-      <img id="heroImage" src="momdaughterbanner.png" alt="StoryBuds hero" loading="eager" decoding="async" />
-      <div class="sparkles" aria-hidden="true">
-        <span class="sp s1"></span>
-        <span class="sp s2"></span>
-        <span class="sp s3"></span>
-      </div>
-    </div>
   </div>
 </section>
+
 
 
   <!-- Formats -->
