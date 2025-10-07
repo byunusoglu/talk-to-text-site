@@ -1140,7 +1140,7 @@ html.scroll-locked { overscroll-behavior: contain; }
   display: inline-block;
   align-self: center;
   margin-top: 8px;
-  margin-bottom: 20px;       /* air before tags */
+  margin-bottom: 24px;       /* air before tags */
 }
 .hero-simple .hero-copy .product-badges {
   display: flex;
@@ -1181,6 +1181,13 @@ html.scroll-locked { overscroll-behavior: contain; }
     padding-right: clamp(32px, 6vw, 120px);
   }
   .hero-simple .hero-copy { max-width: 680px; }
+}
+
+@media (min-width: 1400px) {
+  .hero-simple {
+    padding-left: clamp(120px, 14vw, 220px);
+    padding-right: clamp(60px, 8vw, 160px);
+  }
 }
 
 /* Mobile/tablet: stack image first, keep everything centered */
