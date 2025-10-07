@@ -1,0 +1,291 @@
+<!-- home.html — Post-signup Homepage (StoryBuds) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Your Home — StoryBuds</title>
+
+  <!-- Fonts + Shared CSS/JS -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="script.js"></script>
+
+  <style>
+    /* Minimal extras that build on your existing system */
+    .plans-grid { 
+      display: grid; 
+      grid-template-columns: repeat(3, minmax(0, 1fr)); 
+      gap: 14px; 
+      max-width: 980px; 
+      margin: 0 auto; 
+    }
+    @media (max-width: 900px) { .plans-grid { grid-template-columns: 1fr; } }
+
+    .plan-card { 
+      background: rgba(255,255,255,0.9);
+      border: 1px solid #eee9fb;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      text-align: left;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .plan-card h3 { margin: 0 0 8px; color: var(--plum-dark); font-size: 20px; }
+    .plan-card .price { font-weight: 800; color: var(--plum-dark); margin-bottom: 6px; }
+    .plan-card ul { margin: 10px 0 14px; padding-left: 18px; }
+    .plan-card li { margin: 6px 0; color: #3a3450; }
+    .plan-card .btn { width: 100%; }
+
+    .plan-card.free  { background: #ffffff; }
+    .plan-card.pro   { background: linear-gradient(180deg, rgba(243,240,250,.6), rgba(233,220,255,.6)); }
+    .plan-card.premium { 
+      background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(246,241,255,0.9));
+      box-shadow: 0 16px 30px rgba(142,68,236,0.18);
+    }
+
+    .ribbon {
+      position: absolute; top: 12px; right: -32px;
+      background: linear-gradient(135deg, #8E44EC, #B67AF3);
+      color: #fff; font-weight: 800; font-size: 12px;
+      padding: 8px 42px; transform: rotate(12deg);
+      box-shadow: var(--shadow);
+    }
+
+    .storybud-wrap {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px;
+      max-width: 980px;
+      margin: 0 auto;
+      text-align: left;
+      align-items: center;
+    }
+    .storybud-media {
+      border-radius: 18px; overflow: hidden; border: 1px solid #eee9fb;
+      box-shadow: var(--shadow); background: #fff;
+      height: min(40vh, 340px); display: grid; place-items: center;
+    }
+    .storybud-media img { width: 100%; height: 100%; object-fit: cover; }
+    .storybud-copy h3 { margin: 0 0 8px; color: var(--plum-dark); font-size: 22px; }
+    .storybud-copy p { margin: 6px 0 10px; color: #3a3450; }
+    .storybud-perk { display: inline-block; margin-top: 6px; }
+    @media (max-width: 900px) {
+      .storybud-wrap { grid-template-columns: 1fr; }
+      .storybud-media { height: 240px; }
+    }
+
+    /* Small polish */
+    .hero-premium .btn + .hint { color: rgba(255,255,255,0.9); margin-top: 10px; }
+  </style>
+</head>
+<body class="fade-in">
+
+  <!-- Topbar (same as other pages) -->
+  <header class="topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-badge">
+        <img src="logo.png" alt="StoryBuds logo" />
+      </span>
+    </a>
+
+    <div class="top-actions">
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">
+        <svg class="cart-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3 3h2l3.6 9.59a1 1 0 0 0 .92.65H17a1 1 0 0 0 .96-.74L20 6H6"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="9" cy="20" r="1" fill="currentColor"></circle>
+          <circle cx="17" cy="20" r="1" fill="currentColor"></circle>
+        </svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
+    </div>
+
+    <nav id="menu" class="menu hidden" aria-label="Main navigation">
+      <a href="home.html" aria-current="page">Home</a>
+      <a href="create.html">Create Stories</a>
+      <a href="#">My Profile</a>
+    </nav>
+  </header>
+
+  <!-- HERO: Personal welcome + free-story CTA -->
+  <section class="hero-premium fade-in">
+    <div class="hero-bg">
+      <!-- You can swap this for a more “bedtime” photo or an abstract gradient -->
+      <img src="familyanimation.png" alt="Welcome to your story world" />
+    </div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <h1 id="welcomeTitle">Welcome to your story world 🌙</h1>
+      <p id="welcomeDesc">Your first magical story is ready to read tonight.</p>
+      <button class="btn" id="openStoryBtn">Open your free story</button>
+      <div class="hint">Want more voices and stories? See plans below.</div>
+    </div>
+  </section>
+
+  <!-- PLAN COMPARISON -->
+  <section class="section fade-up">
+    <h2>Grow the magic</h2>
+    <p class="formats-sub">Choose the plan that fits your family's bedtime rhythm.</p>
+
+    <div class="plans-grid">
+      <!-- Free -->
+      <article class="plan-card free">
+        <h3>Free</h3>
+        <div class="price">£0 / month</div>
+        <ul>
+          <li>Create <b>2 stories</b> / month</li>
+          <li><b>2 voiceovers</b> / month</li>
+          <li><b>2 voice options</b></li>
+        </ul>
+        <button class="btn ghost" disabled>Current plan</button>
+      </article>
+
+      <!-- Pro -->
+      <article class="plan-card pro">
+        <h3>Pro</h3>
+        <div class="price">£3.99 / month</div>
+        <ul>
+          <li><b>Unlimited</b> story sound effects</li>
+          <li><b>10 voiceovers</b> / month</li>
+          <li>Create up to <b>15 stories</b> / month</li>
+          <li><b>5 voice options</b></li>
+          <li><b>5 digital/physical books</b> for £20</li>
+        </ul>
+        <button class="btn" data-upgrade="pro">Upgrade to Pro</button>
+      </article>
+
+      <!-- Premium -->
+      <article class="plan-card premium">
+        <div class="ribbon">⭐ Most loved</div>
+        <h3>Premium</h3>
+        <div class="price">£8.99 / month</div>
+        <ul>
+          <li><b>Unlimited</b> sound effects & voiceovers</li>
+          <li><b>30 voice options</b></li>
+          <li>Create <b>unlimited stories</b></li>
+          <li>Personalisation feedback loop</li>
+          <li><b>1 gift book</b> every 3 months</li>
+        </ul>
+        <button class="btn" data-upgrade="premium">Go Premium</button>
+      </article>
+    </div>
+  </section>
+
+  <!-- STORYBUD DEVICE CROSS-SELL -->
+  <section class="section fade-up">
+    <h2>Bring stories to life with StoryBud</h2>
+    <p class="formats-sub">A magical storyteller that reads your child’s tales aloud — with sounds, giggles, and love.</p>
+
+    <div class="storybud-wrap">
+      <div class="storybud-media">
+        <!-- Replace with your real product image when ready -->
+        <img src="childsdreambanner.png" alt="StoryBud toy speaker playing bedtime stories" />
+      </div>
+      <div class="storybud-copy">
+        <h3>StoryBud — the bedtime storyteller</h3>
+        <p>Just press play. Your child hears their own personalised adventures — hands-free, screen-free.</p>
+        <div class="pill storybud-perk">🎁 Includes <b>3 months Premium</b> for free</div>
+        <div style="margin-top:12px">
+          <button class="btn" id="buyStoryBudBtn">Get StoryBud</button>
+          <button class="btn ghost" id="learnStoryBudBtn">Learn more</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS (reuse your rotator) -->
+  <section class="section testimonials fade-up delay-1" id="testimonials" aria-label="What parents say">
+    <figure class="testimonial">
+      <blockquote class="t-quote">“Bedtime became our favourite 10 minutes. She laughs at the whooosh and plip-plop bits.”</blockquote>
+      <figcaption class="t-by">— <b>Elif</b></figcaption>
+    </figure>
+
+    <!-- Hidden pool for JS rotator (reused pattern from index.html) -->
+    <template id="t-pool">
+      <figure>
+        <blockquote>“Personalised names make him light up. We finally look forward to the routine.”</blockquote>
+        <figcaption>— <b>James</b></figcaption>
+      </figure>
+      <figure>
+        <blockquote>“It feels like co-creating. The app listens while we talk, then the story appears. Magic.”</blockquote>
+        <figcaption>— <b>Ana</b></figcaption>
+      </figure>
+      <figure>
+        <blockquote>“The voices and sound effects are a delight. We upgraded after a week.”</blockquote>
+        <figcaption>— <b>Zeynep</b></figcaption>
+      </figure>
+    </template>
+  </section>
+
+  <footer>
+    © <span id="year"></span> StoryBuds
+  </footer>
+
+  <!-- Sticky CTA for mobile -->
+  <a class="mobile-cta" id="mobileCta" href="#" aria-label="Upgrade plan">
+    ✨ Upgrade to Pro — £3.99
+  </a>
+
+  <!-- Inline wiring for personalization + signed-in state + CTA behavior -->
+  <script>
+    (function() {
+      // 1) Ensure the user is considered "signed in" post-signup
+      try { localStorage.setItem('yw_signed_in', '1'); } catch (e) {}
+
+      // 2) Personalise welcome with child's name (if we have one)
+      function getChildNameFromTranscript() {
+        try {
+          const raw = sessionStorage.getItem('yw_transcript') || '';
+          const m = raw.match(/Child name:\s*([^\n]+)/i);
+          const name = (m && m[1] ? m[1].trim() : '').replace(/[^A-Za-zÇĞİÖŞÜçğıöşü' -]/g, '');
+          return name || '';
+        } catch (_) { return ''; }
+      }
+      const kid = getChildNameFromTranscript();
+      const title = document.getElementById('welcomeTitle');
+      const desc  = document.getElementById('welcomeDesc');
+      if (kid && title && desc) {
+        title.textContent = `Welcome to your story world, ${kid} 🌙`;
+        desc.textContent  = `Your first magical story is ready to read with ${kid} tonight.`;
+      }
+
+      // 3) Primary CTA: open free story (checkout page will show full story if signed in)
+      const openBtn = document.getElementById('openStoryBtn');
+      if (openBtn) {
+        openBtn.addEventListener('click', function() {
+          document.body.classList.add('fade-out');
+          setTimeout(() => { window.location.href = 'checkout.html'; }, 120);
+        });
+      }
+
+      // 4) Upgrade buttons (placeholder handlers)
+      function goUpgrade(tier) {
+        // TODO: replace with real checkout/Stripe link.
+        // For now, go to checkout with a query param or show a modal.
+        window.location.href = 'checkout.html?upgrade=' + encodeURIComponent(tier);
+      }
+      document.querySelectorAll('[data-upgrade]').forEach(btn => {
+        btn.addEventListener('click', () => goUpgrade(btn.getAttribute('data-upgrade')));
+      });
+
+      // 5) StoryBud CTA (placeholder)
+      const buy = document.getElementById('buyStoryBudBtn');
+      const learn = document.getElementById('learnStoryBudBtn');
+      if (buy)   buy.addEventListener('click', () => alert('StoryBud purchase flow coming soon. Includes 3 months of Premium.'));
+      if (learn) learn.addEventListener('click', () => alert('StoryBud details page coming soon.'));
+
+      // 6) Mobile sticky CTA
+      const mobileCta = document.getElementById('mobileCta');
+      if (mobileCta) {
+        mobileCta.addEventListener('click', (e) => {
+          e.preventDefault();
+          goUpgrade('pro');
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
