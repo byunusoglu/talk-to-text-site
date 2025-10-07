@@ -1248,6 +1248,26 @@ html.scroll-locked { overscroll-behavior: contain; }
   .hero-simple .hero-copy .product-badges { align-self: center; }
 }
 
+/* --- Mobile refinements: tighter and clearer tags --- */
+@media (max-width: 900px) {
+  /* Bring tags closer to the button */
+  .hero-simple .hero-copy .btn {
+    margin-bottom: 4px;  /* previously 6px or 10px */
+  }
+
+  /* Increase tag font size for readability */
+  .hero-simple .hero-copy .product-badge {
+    font-size: 1rem;     /* slightly larger on mobile (~16px) */
+    padding: 7px 14px;   /* slightly more tappable */
+  }
+
+  /* Keep spacing between tags visually balanced */
+  .hero-simple .hero-copy .product-badges {
+    gap: 8px;
+  }
+}
+
+
 /* Tiny phones */
 @media (max-width: 380px) {
   .hero-simple .hero-art {
