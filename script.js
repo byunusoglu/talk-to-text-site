@@ -371,10 +371,15 @@ function makePreviewHtml(md, maxLines = 10) {
       unlockGate();
     }, { once: true });
   }
-
+  
   function unlockGate() {
     setSignedIn(true);
     const storyEl = document.getElementById("storyContent");
+     const fullHtml = SS.getItem("yw_story_html");
+     if (storyEl && fullHtml) {
+    storyEl.innerHTML = fullHtml;
+    delete storyEl.dataset.preview;
+  }
     const gate = document.getElementById("gateOverlay");
     const glow = document.getElementById("blurGlow");
 
