@@ -565,90 +565,123 @@ label input, label textarea { margin-top: 6px; }
 
 .carousel-controls { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
 
-/* === Merged Hero (single component) === */
-.hero-merged {
-  padding: clamp(20px, 4vw, 40px) 20px;
+/* === Split Hero v2 (text card + visual) === */
+.hero {
+  position: relative;
+  padding: clamp(28px, 5vw, 56px) 20px;
   background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
 }
-.hero-merged-inner {
-  max-width: 900px;           /* centered, not too wide */
+
+.hero-inner {
+  max-width: 1200px;
   margin: 0 auto;
-}
-
-.hero-stack {
-  position: relative;
-  border-radius: 22px;        /* outer rounding only */
-  overflow: hidden;           /* children inherit outer rounding */
-  box-shadow: var(--shadow);
-  border: 1px solid #eee9fb;
-  background: #fff;           /* subtle backing for the card */
-}
-
-/* Top: image — gets only top rounding via parent, bottom edge stays square */
-.hero-stack .hero-visual {
-  margin: 0;
-  line-height: 0;
-}
-.hero-stack .hero-visual img {
-  width: 100%;
-  height: clamp(280px, 40vw, 420px); /* balanced height */
-  object-fit: cover;
-  display: block;
-  transform: translateZ(0);
-}
-
-/* Bottom: Create Story card — top edge square, bottom corners rounded by parent */
-.hero-stack .create-card {
   display: grid;
-  gap: 10px;
-  padding: clamp(16px, 3.6vw, 24px);
-  border-top: 1px solid #f0ecfb; /* subtle seam; remove if you want a perfect merge */
-  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
-  backdrop-filter: blur(6px);
+  grid-template-columns: 1fr 1.2fr; /* text ~45%, visual ~55% */
+  gap: clamp(16px, 4vw, 40px);
+  align-items: center;
 }
 
-.hero-stack .create-card h1 {
+.hero-textCard {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding: clamp(18px, 3vw, 28px);
+  border-radius: 20px;
+  border: 1px solid rgba(124, 90, 164, 0.12);
+  box-shadow: var(--shadow);
+  background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.66));
+  backdrop-filter: blur(8px);
+}
+.hero-textCard h1 {
   font-family: 'Nunito', sans-serif;
   color: var(--plum-dark);
+  font-size: clamp(2rem, 3.6vw, 3rem);
   font-weight: 800;
-  font-size: clamp(1.75rem, 3.2vw, 2.4rem);
   letter-spacing: -0.01em;
-  margin: 0;
+  margin: 0 0 4px;
 }
-.hero-stack .create-card p {
-  color: #3a3450; /* better contrast, consistent with previous adjustments */
+.hero-textCard p {
+  color: #3a3450;
   font-weight: 500;
-  font-size: clamp(1rem, 1.3vw, 1.125rem);
-  margin: 0;
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  margin: 0 0 6px;
 }
-.hero-stack .create-card .btn {
-  margin-top: 4px;
-  align-self: start;
-  font-size: clamp(1rem, 1.3vw, 1.15rem);
+.hero-textCard .btn {
+  margin-top: 6px;
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
   padding: 14px 28px;
   animation: pulseUp 10s ease-in-out infinite; /* calmer */
 }
-
-/* badges align under CTA, compact */
-.hero-stack .product-badges {
+.hero-textCard .product-badges {
+  margin-top: 8px;
   display: inline-flex;
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-start;
+}
+
+/* Right visual */
+.hero-visual {
+  position: relative;
+  height: clamp(320px, 48vw, 560px);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid #eee9fb;
+  background: #fff;
+}
+.hero-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* tiny parallax on scroll (desktop only) */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-visual[data-parallax="on"] img { transition: transform 0.4s ease; }
+}
+
+/* sparkles (very subtle) */
+.sparkles { position: absolute; inset: 0; pointer-events: none; }
+.sp {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, var(--gold));
+  opacity: 0.7;
+  filter: blur(0.2px);
+  animation: drift 14s linear infinite;
+}
+.s1 { top: 12%; left: 8%;  animation-delay: 0s; }
+.s2 { top: 70%; left: 84%; animation-delay: 3s; }
+.s3 { top: 40%; left: 56%; animation-delay: 6s; }
+@keyframes drift {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0.0; }
+  10%  { opacity: .8; }
+  50%  { transform: translateY(-12px) translateX(8px) scale(1.05); opacity: .9; }
+  90%  { opacity: .75; }
+  100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.0; }
+}
+
+/* Responsive stacking */
+@media (max-width: 1024px) {
+  .hero-inner { grid-template-columns: 1fr; }
+  /* Text first on mobile so headline is above the fold */
+  .hero-visual { order: initial; }
+  .hero-visual { height: min(42vh, 360px); } /* tame image height on phones */
 }
 
 /* Mobile refinements */
-@media (max-width: 768px) {
-  .hero-stack .hero-visual img {
-    height: min(38vh, 340px); /* prevent giant image on first screen */
-  }
-  .hero-stack .create-card {
-    padding: 16px;
-    gap: 8px;
-  }
-  .hero-stack .create-card .btn {
-    width: 100%;
-  }
+@media (max-width: 700px) {
+  .hero-textCard { padding: 16px; gap: 8px; }
+  .hero-textCard h1 { font-size: clamp(1.6rem, 6vw, 2rem); }
+  .hero-textCard p  { font-size: 0.98rem; }
+  .hero-textCard .btn { width: 100%; }
+  /* Optional: fully disable parallax on small devices */
+  .hero-visual[data-parallax="on"] img { transform: none !important; }
 }
 
 
