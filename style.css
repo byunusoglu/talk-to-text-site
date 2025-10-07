@@ -957,3 +957,82 @@ html.scroll-locked { overscroll-behavior: contain; }
 }
 
 /* Keep your existing pulseUp keyframes; we slowed duration above. 【19】 */
+
+/* ========= Merged Hero (visual fused to text card) ========= */
+.hero-inner.merged {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0; /* no gap so edges touch */
+}
+
+/* Top visual: square bottom corners so it fuses with card below */
+.hero-visual.cutout {
+  position: relative;
+  height: clamp(320px, 48vw, 540px);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  overflow: hidden;
+  border: 1px solid #eee9fb;
+  box-shadow: var(--shadow);
+  background:
+    radial-gradient(1200px 600px at 50% 50%, rgba(255,255,255,0.0) 60%, rgba(255,255,255,0.6) 100%),
+    linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3)); /* brandy backdrop */
+}
+
+/* Soft cut-out illusion even if PNG isn't transparent yet */
+.hero-visual.cutout img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;           /* prefer contain for character focus */
+  transform: translateZ(0);
+  /* edge fade "mask" so busy backgrounds disappear */
+  --fade: radial-gradient(1200px 600px at 50% 55%, #000 60%, transparent 85%);
+  -webkit-mask-image: var(--fade);
+          mask-image: var(--fade);
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-size: 120% 120%;
+          mask-size: 120% 120%;
+  filter: drop-shadow(0 10px 24px rgba(0,0,0,0.14));
+}
+
+/* Subtle de-emphasis of leftover background via overlay */
+.hero-visual.cutout::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(600px 300px at 50% 50%, rgba(255,255,255,0) 55%, rgba(255,255,255,0.65) 100%);
+  pointer-events: none;
+}
+
+/* Bottom card: square top corners so it fuses with visual above */
+.hero-textCard.fused {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
+  margin-top: -2px; /* remove hairline gap */
+  text-align: center;
+}
+
+/* Keep strong hierarchy you already designed */
+.hero-textCard.fused h1 { margin-top: 2px; }
+.hero-textCard.fused .btn {
+  margin-top: 10px;
+  font-weight: 800;
+}
+
+/* Parallax stays tiny & safe on desktop */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-visual.cutout[data-parallax="on"] img { transition: transform 0.4s ease; }
+}
+
+/* Mobile refinements */
+@media (max-width: 700px) {
+  .hero-visual.cutout { height: min(42vh, 360px); }
+  .hero-textCard.fused .btn { width: 100%; }
+}
+
