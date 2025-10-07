@@ -67,6 +67,15 @@ const HERO_BY_AGE = {
   }
 };
 
+     const AUTH_KEY = "yw_signed_in";
+
+  const isSignedIn = () => {
+    try { return localStorage.getItem(AUTH_KEY) === "1"; } catch (_) { return false; }
+  };
+  const setSignedIn = (v) => {
+    try { localStorage.setItem(AUTH_KEY, v ? "1" : "0"); } catch (_) {}
+  };
+
 // helper: prefer cut-out if it exists on the server
 async function pickBestSrc(cfg) {
   const trySrc = async (src) => {
@@ -271,6 +280,53 @@ async function updateHeroForAge(ageRaw) {
     });
   }
 
+     function showGate() {
+    const storyEl = document.getElementById("storyContent");
+    const gate = document.getElementById("gateOverlay");
+    if (storyEl) storyEl.classList.add("blur-bottom");
+    if (gate) gate.classList.remove("hidden");
+
+    const btnGoogle = document.getElementById("gateGoogle");
+    const btnEmail  = document.getElementById("gateEmailBtn");
+    const backBtn   = document.getElementById("gateBackBtn");
+    const formWrap  = document.getElementById("gateEmailForm");
+
+    btnGoogle?.addEventListener("click", unlockGate, { once: true });
+    btnEmail?.addEventListener("click", () => {
+      document.getElementById("gateButtons")?.classList.add("hidden");
+      formWrap?.classList.remove("hidden");
+    });
+    backBtn?.addEventListener("click", () => {
+      formWrap?.classList.add("hidden");
+      document.getElementById("gateButtons")?.classList.remove("hidden");
+    });
+
+    formWrap?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      unlockGate();
+    }, { once: true });
+  }
+
+  function unlockGate() {
+    setSignedIn(true);
+    // “Redirect to unlocked checkout page”: we’re already on checkout,
+    // so just remove gate + blur and show a tiny confirmation.
+    const storyEl = document.getElementById("storyContent");
+    const gate = document.getElementById("gateOverlay");
+    storyEl?.classList.remove("blur-bottom");
+    gate?.classList.add("hidden");
+
+    // Optional toast:
+    try {
+      const note = document.createElement("div");
+      note.textContent = "Your story is unlocked and saved.";
+      note.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999;";
+      document.body.appendChild(note);
+      setTimeout(() => note.remove(), 1600);
+    } catch(_) {}
+  }
+
+
   // ---------- Checkout: render story + products ----------
   let cartCount = 0;
   function initCheckout() {
@@ -280,6 +336,16 @@ async function updateHeroForAge(ageRaw) {
     const html = SS.getItem(K_STORY_HTML);
     const md   = SS.getItem(K_STORY_MD);
     storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
+         // If not signed in, show the soft-wall gate
+    if (!isSignedIn() && html) {
+      showGate();
+    } else {
+      // ensure visible when already signed in
+      const gate = document.getElementById("gateOverlay");
+      gate?.classList.add("hidden");
+      storyEl.classList.remove("blur-bottom");
+    }
+
 
     const rawMdEl = $('#storyMarkdown');
     if (rawMdEl && md) rawMdEl.textContent = md;
