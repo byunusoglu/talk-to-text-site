@@ -143,19 +143,44 @@ async function updateHeroForAge(ageRaw) {
   };
 
    // --- Build a 10-line preview from Markdown (counting non-empty lines) ---
+// --- Build a ~10-line preview from Markdown (favoring body paragraphs) ---
 function makePreviewHtml(md, maxLines = 10) {
   if (!md) return "";
-  const lines = md.split(/\r?\n/);
-  let taken = 0;
+
+  // 1) Remove the very first H1 (title) and any immediate blank lines after it.
+  let cleaned = md.replace(/^\s*# [^\n]*\n+(\s*\n)*/m, "");
+
+  // 2) Split into lines and build a preview that SKIPS H2/H3 headings
+  //    so headings don't "consume" the clamp height.
+  const lines = cleaned.split(/\r?\n/);
   const out = [];
+  let taken = 0;
+
   for (const ln of lines) {
+    // Skip section headings in the preview
+    if (/^\s*##{1,2}\s+/.test(ln)) continue;
+
     out.push(ln);
     if (ln.trim().length) taken++;
     if (taken >= maxLines) break;
   }
+
+  // Fallback: if we somehow collected nothing, just take the first maxLines
+  if (!taken) {
+    out.length = 0;
+    taken = 0;
+    for (const ln of lines) {
+      out.push(ln);
+      if (ln.trim().length) taken++;
+      if (taken >= maxLines) break;
+    }
+  }
+
+  // 3) Add a graceful ellipsis and convert to HTML
   const previewMd = out.join("\n") + "\n\n…";
   return mdToHtml(previewMd);
 }
+
 
 
   // ---------- Landing: age buttons ----------
