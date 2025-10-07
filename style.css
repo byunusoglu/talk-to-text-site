@@ -1177,3 +1177,32 @@ html.scroll-locked { overscroll-behavior: contain; }
     max-width: 680px;
   }
 }
+
+/* Make CTA and tags separate lines with breathing room */
+.hero-simple .hero-copy .btn {
+  display: inline-block;
+  margin-bottom: 10px; /* space above tags */
+}
+
+.hero-simple .hero-copy .product-badges {
+  display: flex;           /* block-level, so it will start on a new line */
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;         /* extra air below CTA */
+}
+
+.hero-simple .hero-copy .product-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #e6dcfa;
+  background: rgba(255,255,255,0.78);
+  color: var(--plum-dark);
+}
+
+.hero-simple .hero-copy .badge-icon {
+  width: 18px; height: 18px; flex: 0 0 18px;
+}
+
