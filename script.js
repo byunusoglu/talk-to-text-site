@@ -378,6 +378,7 @@ function makePreviewHtml(md, maxLines = 10) {
      const fullHtml = SS.getItem("yw_story_html");
      if (storyEl && fullHtml) {
     storyEl.innerHTML = fullHtml;
+            storyEl.classList.remove("preview-clamp");  // <-- make sure clamp is gone
     delete storyEl.dataset.preview;
   }
     const gate = document.getElementById("gateOverlay");
@@ -411,9 +412,11 @@ if (!isSignedIn() && md) {
   const previewHtml = makePreviewHtml(md, 10);
   storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
   storyEl.dataset.preview = "lines";
+  storyEl.classList.add("preview-clamp");   // <-- add this line
 } else {
   storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
   delete storyEl.dataset.preview;
+  storyEl.classList.remove("preview-clamp"); // <-- and remove here
 }
 
 // (optional) keep raw markdown debug view if present
