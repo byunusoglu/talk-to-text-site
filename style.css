@@ -958,15 +958,6 @@ html.scroll-locked { overscroll-behavior: contain; }
 
 /* Keep your existing pulseUp keyframes; we slowed duration above. 【19】 */
 
-/* ========= Merged Hero (visual fused to text card) ========= */
-.hero-inner.merged {
-  max-width: 900px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0; /* no gap so edges touch */
-}
-
 /* Top visual: square bottom corners so it fuses with card below */
 .hero-visual.cutout {
   position: relative;
@@ -1036,3 +1027,9 @@ html.scroll-locked { overscroll-behavior: contain; }
   .hero-textCard.fused .btn { width: 100%; }
 }
 
+.hero.hero-merged {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
