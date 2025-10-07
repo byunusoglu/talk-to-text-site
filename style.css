@@ -1414,3 +1414,123 @@ html.scroll-locked { overscroll-behavior: contain; }
 
 /* util */
 .hidden { display: none !important; }
+
+/* ====== Conversion UX: badge + blur glow + refined gate ====== */
+
+/* Personalised pill */
+.personal-badge {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #e6dcfa;
+  color: var(--plum-dark);
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+.personal-badge .dot { font-size: 14px; }
+.personal-badge.hidden { display: none; }
+
+/* Half-blur mask (applied by JS as .blur-bottom on #storyContent) */
+.story-content.blur-bottom {
+  position: relative;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0 55%, rgba(0,0,0,0) 95%);
+          mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0 55%, rgba(0,0,0,0) 95%);
+}
+
+/* Glow at the blur edge to invite continuation */
+.blur-glow {
+  position: absolute;
+  left: 0; right: 0; bottom: 80px;
+  height: 60px;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(255,255,255,0.95), rgba(255,255,255,0));
+  filter: drop-shadow(0 -10px 24px rgba(142,68,236,0.25));
+  z-index: 2;
+}
+.blur-glow.hidden { display: none; }
+
+/* Gate overlay container */
+.gate-overlay {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+}
+.gate-overlay.hidden { display: none; }
+
+.gate-card {
+  width: 100%;
+  max-width: 560px;
+  border-radius: 18px;
+  border: 1px solid #eee9fb;
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 18px 36px rgba(0,0,0,0.10);
+  padding: 16px;
+  text-align: center;
+}
+.gate-card h3 {
+  margin: 0 0 6px;
+  color: var(--plum-dark);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+}
+.gate-card p.muted { margin: 0 0 10px; color: #3a3450; }
+
+/* Primary auth button styled as 'Continue with Google' */
+.btn.btn-google {
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 14px 18px;
+  border-radius: 999px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  width: 100%;
+}
+.btn.btn-google:hover { background: #000; }
+
+.linklike {
+  background: none;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+/* Inline email form */
+.gate-email {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.gate-email input {
+  border: 1px solid #e0dcec;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 16px;
+  box-shadow: var(--shadow);
+}
+
+/* Subtle trust row */
+.trust-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
