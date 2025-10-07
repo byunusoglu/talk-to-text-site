@@ -67,14 +67,26 @@ const HERO_BY_AGE = {
   }
 };
 
-     const AUTH_KEY = "yw_signed_in";
-
+     // --- Auth + personalisation helpers ---
+  const AUTH_KEY = "yw_signed_in";
   const isSignedIn = () => {
     try { return localStorage.getItem(AUTH_KEY) === "1"; } catch (_) { return false; }
   };
   const setSignedIn = (v) => {
     try { localStorage.setItem(AUTH_KEY, v ? "1" : "0"); } catch (_) {}
   };
+
+  // Pull child's first name from the transcript we already stash
+  function getChildName() {
+    try {
+      const raw = SS.getItem(K_TRANSCRIPT) || "";
+      // Expecting lines like: "Child name: Arthur"
+      const m = raw.match(/Child name:\s*([^\n]+)/i);
+      const name = (m && m[1] ? m[1].trim() : "").replace(/[^A-Za-zÇĞİÖŞÜçğıöşü' -]/g, "");
+      return name || "";
+    } catch (_) { return ""; }
+  }
+
 
 // helper: prefer cut-out if it exists on the server
 async function pickBestSrc(cfg) {
@@ -280,25 +292,52 @@ async function updateHeroForAge(ageRaw) {
     });
   }
 
-     function showGate() {
+      function showGate(personName) {
     const storyEl = document.getElementById("storyContent");
     const gate = document.getElementById("gateOverlay");
-    if (storyEl) storyEl.classList.add("blur-bottom");
-    if (gate) gate.classList.remove("hidden");
+    const glow = document.getElementById("blurGlow");
+    const badge = document.getElementById("personalBadge");
+    const badgeText = document.getElementById("personalBadgeText");
 
+    // Personalised badge
+    if (personName && badge && badgeText) {
+      badgeText.textContent = `Personalised for ${personName}`;
+      badge.classList.remove("hidden");
+    }
+
+    // Apply the half-blur and show glow + gate
+    storyEl?.classList.add("blur-bottom");
+    glow?.classList.remove("hidden");
+    gate?.classList.remove("hidden");
+
+    // Personalised microcopy on gate
+    const gateTitle = document.getElementById("gateTitle");
+    const gateDesc  = document.getElementById("gateDesc");
+    if (personName && gateTitle && gateDesc) {
+      gateTitle.textContent = "Continue reading for free";
+      gateDesc.textContent  = `Create your free account to finish ${personName}’s bedtime story and save it.`;
+    }
+
+    // One-tap action
     const btnGoogle = document.getElementById("gateGoogle");
     const btnEmail  = document.getElementById("gateEmailBtn");
     const backBtn   = document.getElementById("gateBackBtn");
     const formWrap  = document.getElementById("gateEmailForm");
+    const btnRow    = document.getElementById("gateButtons"); // legacy id; safe if null
 
     btnGoogle?.addEventListener("click", unlockGate, { once: true });
     btnEmail?.addEventListener("click", () => {
-      document.getElementById("gateButtons")?.classList.add("hidden");
+      // reveal inline email form, keep context
       formWrap?.classList.remove("hidden");
+      // optional: hide any old row if present
+      btnRow?.classList.add("hidden");
+      btnEmail?.classList.add("hidden");
     });
+
     backBtn?.addEventListener("click", () => {
       formWrap?.classList.add("hidden");
-      document.getElementById("gateButtons")?.classList.remove("hidden");
+      btnEmail?.classList.remove("hidden");
+      btnRow?.classList.remove("hidden");
     });
 
     formWrap?.addEventListener("submit", (e) => {
@@ -309,20 +348,21 @@ async function updateHeroForAge(ageRaw) {
 
   function unlockGate() {
     setSignedIn(true);
-    // “Redirect to unlocked checkout page”: we’re already on checkout,
-    // so just remove gate + blur and show a tiny confirmation.
     const storyEl = document.getElementById("storyContent");
     const gate = document.getElementById("gateOverlay");
+    const glow = document.getElementById("blurGlow");
+
     storyEl?.classList.remove("blur-bottom");
     gate?.classList.add("hidden");
+    glow?.classList.add("hidden");
 
-    // Optional toast:
+    // Subtle success toast
     try {
       const note = document.createElement("div");
-      note.textContent = "Your story is unlocked and saved.";
+      note.textContent = "✨ Story unlocked and saved to your account.";
       note.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999;";
       document.body.appendChild(note);
-      setTimeout(() => note.remove(), 1600);
+      setTimeout(() => note.remove(), 1800);
     } catch(_) {}
   }
 
@@ -336,16 +376,22 @@ async function updateHeroForAge(ageRaw) {
     const html = SS.getItem(K_STORY_HTML);
     const md   = SS.getItem(K_STORY_MD);
     storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
-         // If not signed in, show the soft-wall gate
+       // Personalised badge + gate
+    const childName = getChildName();
     if (!isSignedIn() && html) {
-      showGate();
+      showGate(childName);
     } else {
-      // ensure visible when already signed in
-      const gate = document.getElementById("gateOverlay");
-      gate?.classList.add("hidden");
+      // If already signed in, make sure no blur/gate shows
+      document.getElementById("gateOverlay")?.classList.add("hidden");
+      document.getElementById("blurGlow")?.classList.add("hidden");
       storyEl.classList.remove("blur-bottom");
+      const badge = document.getElementById("personalBadge");
+      const badgeText = document.getElementById("personalBadgeText");
+      if (childName && badge && badgeText) {
+        badgeText.textContent = `Personalised for ${childName}`;
+        badge.classList.remove("hidden");
+      }
     }
-
 
     const rawMdEl = $('#storyMarkdown');
     if (rawMdEl && md) rawMdEl.textContent = md;
