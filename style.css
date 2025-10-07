@@ -1166,3 +1166,14 @@ html.scroll-locked { overscroll-behavior: contain; }
     max-height: 36vh;
   }
 }
+
+/* Desktop: push left copy slightly toward center */
+@media (min-width: 1024px) {
+  .hero-simple { 
+    padding-left: clamp(64px, 10vw, 180px);
+    padding-right: clamp(32px, 6vw, 120px);
+  }
+  .hero-simple .hero-copy { 
+    max-width: 680px;
+  }
+}
