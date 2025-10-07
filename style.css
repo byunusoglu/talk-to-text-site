@@ -570,12 +570,14 @@ label input, label textarea { margin-top: 6px; }
   position: relative;
   width: 100%;
   min-height: 520px;
-  background: url('momdaughterbanner.png') center/cover no-repeat;
+  background: center/cover no-repeat;
+  background-image: var(--hero-image, url('momdaughterbanner.png'));
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 0;
   margin-top: 0;
+  will-change: background-image; /* hint to compositor */
 }
 
 /* --- HERO: dynamic overlay + better hierarchy (improved) --- */
