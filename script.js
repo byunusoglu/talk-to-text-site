@@ -355,6 +355,7 @@ function showGate(personName) {
   if (personName && badge && badgeText) {
     badgeText.textContent = `Personalised for ${personName}`;
     badge.classList.remove("hidden");
+       reader?.classList.add("has-badge");
   }
   if (personName && gateDesc) {
     gateDesc.textContent = `Create your free account to finish ${personName}’s bedtime story and save it.`;
@@ -481,6 +482,7 @@ if (rawMdEl && md) rawMdEl.textContent = md;
       if (childName && badge && badgeText) {
         badgeText.textContent = `Just for ${childName}`;
         badge.classList.remove("hidden");
+           reader?.classList.add("has-badge");
       }
     }
 
