@@ -72,11 +72,19 @@
       const title  = document.getElementById("heroTitle");
       const desc   = document.getElementById("heroDesc");
       const cta    = document.getElementById("heroCta");
-if (banner && cfg.image) {
-  // Use CSS var instead of backgroundImage to avoid mobile paint bug
-  banner.style.setProperty('--hero-image', `url('${cfg.image}')`);
+// ensure global counter exists once near top of file
+// (put it just before the function if you want)
+let __heroSwapNonce = 0;
 
-  // Force a reflow so mobile paints immediately
+// replace the banner swap line with:
+if (banner && cfg.image) {
+  __heroSwapNonce = (__heroSwapNonce + 1) % 1e6;
+  const url = `${cfg.image}?v=${__heroSwapNonce}`;
+
+  // use CSS variable for hero image (fixes mobile repaint bug)
+  banner.style.setProperty('--hero-image', `url('${url}')`);
+
+  // force a reflow + repaint on mobile browsers
   void banner.offsetHeight;
   requestAnimationFrame(() => {
     banner.style.transform = 'translateZ(0)';
