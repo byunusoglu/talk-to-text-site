@@ -142,6 +142,22 @@ async function updateHeroForAge(ageRaw) {
       .replace(/(^|>)(?!<h\d|<p|<\/p>)([^\n]+)(?=\n|$)/g, "$1<p>$2</p>");
   };
 
+   // --- Build a 10-line preview from Markdown (counting non-empty lines) ---
+function makePreviewHtml(md, maxLines = 10) {
+  if (!md) return "";
+  const lines = md.split(/\r?\n/);
+  let taken = 0;
+  const out = [];
+  for (const ln of lines) {
+    out.push(ln);
+    if (ln.trim().length) taken++;
+    if (taken >= maxLines) break;
+  }
+  const previewMd = out.join("\n") + "\n\n…";
+  return mdToHtml(previewMd);
+}
+
+
   // ---------- Landing: age buttons ----------
   function initAgeButtons() {
     paintSelectedAge();
@@ -292,12 +308,22 @@ async function updateHeroForAge(ageRaw) {
     });
   }
 
+
       function showGate(personName) {
     const storyEl = document.getElementById("storyContent");
     const gate = document.getElementById("gateOverlay");
     const glow = document.getElementById("blurGlow");
     const badge = document.getElementById("personalBadge");
     const badgeText = document.getElementById("personalBadgeText");
+           const isPreviewLines = storyEl?.dataset.preview === "lines";
+
+           if (!isPreviewLines) {
+    storyEl?.classList.add("blur-bottom");
+    glow?.classList.remove("hidden");
+  } else {
+    glow?.classList.add("hidden");
+    storyEl?.classList.remove("blur-bottom");
+  }
 
     // Personalised badge
     if (personName && badge && badgeText) {
@@ -372,10 +398,23 @@ async function updateHeroForAge(ageRaw) {
   function initCheckout() {
     const storyEl = $('#storyContent');
     if (!storyEl) return;
+const html = SS.getItem(K_STORY_HTML);
+const md   = SS.getItem(K_STORY_MD);
 
-    const html = SS.getItem(K_STORY_HTML);
-    const md   = SS.getItem(K_STORY_MD);
-    storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
+// If not signed in, show only the first 10 lines (preview)
+if (!isSignedIn() && md) {
+  const previewHtml = makePreviewHtml(md, 10);
+  storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
+  storyEl.dataset.preview = "lines";
+} else {
+  storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
+  delete storyEl.dataset.preview;
+}
+
+// (optional) keep raw markdown debug view if present
+const rawMdEl = $('#storyMarkdown');
+if (rawMdEl && md) rawMdEl.textContent = md;
+
        // Personalised badge + gate
     const childName = getChildName();
     if (!isSignedIn() && html) {
@@ -392,9 +431,6 @@ async function updateHeroForAge(ageRaw) {
         badge.classList.remove("hidden");
       }
     }
-
-    const rawMdEl = $('#storyMarkdown');
-    if (rawMdEl && md) rawMdEl.textContent = md;
 
     const productsTrack = $('#productsTrack');
     if (productsTrack) {
