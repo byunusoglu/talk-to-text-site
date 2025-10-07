@@ -481,17 +481,19 @@ if (rawMdEl && md) rawMdEl.textContent = md;
     if (!isSignedIn() && html) {
       showGate(childName);
     } else {
-      // If already signed in, make sure no blur/gate shows
-      document.getElementById("gateOverlay")?.classList.add("hidden");
-      document.getElementById("blurGlow")?.classList.add("hidden");
-      storyEl.classList.remove("blur-bottom");
-      const badge = document.getElementById("personalBadge");
-      const badgeText = document.getElementById("personalBadgeText");
-      if (childName && badge && badgeText) {
-        badgeText.textContent = `Just for ${childName}`;
-        badge.classList.remove("hidden");
-           reader?.classList.add("has-badge");
-      }
+  // If already signed in, make sure no blur/gate shows
+  document.getElementById("gateOverlay")?.classList.add("hidden");
+  document.getElementById("blurGlow")?.classList.add("hidden");
+  storyEl.classList.remove("blur-bottom");
+
+  const reader = document.querySelector(".story-reader");
+  const badge = document.getElementById("personalBadge");
+  const badgeText = document.getElementById("personalBadgeText");
+  if (childName && badge && badgeText) {
+    badgeText.textContent = `Just for ${childName}`;
+    badge.classList.remove("hidden");
+    reader?.classList.add("has-badge");
+  }
     }
 
     const productsTrack = $('#productsTrack');
