@@ -565,138 +565,92 @@ label input, label textarea { margin-top: 6px; }
 
 .carousel-controls { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
 
-/* 🌟 Hero Banner (landing) */
-.hero-banner {
+/* === Merged Hero (single component) === */
+.hero-merged {
+  padding: clamp(20px, 4vw, 40px) 20px;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+}
+.hero-merged-inner {
+  max-width: 900px;           /* centered, not too wide */
+  margin: 0 auto;
+}
+
+.hero-stack {
   position: relative;
-  width: 100%;
-  min-height: 520px;
-  background: center/cover no-repeat;
-  background-image: var(--hero-image, url('momdaughterbanner.png'));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0;
-  margin-top: 0;
-  will-change: background-image; /* hint to compositor */
-}
-
-/* --- HERO: dynamic overlay + better hierarchy (improved) --- */
-.hero-overlay {
-  background: linear-gradient(to bottom, rgba(255,255,255,0.12), rgba(255,255,255,0.85));
-  backdrop-filter: blur(6px);
-  padding: 44px 22px;
-  border-radius: 16px;
-  max-width: 640px;
-  text-align: center;
+  border-radius: 22px;        /* outer rounding only */
+  overflow: hidden;           /* children inherit outer rounding */
   box-shadow: var(--shadow);
+  border: 1px solid #eee9fb;
+  background: #fff;           /* subtle backing for the card */
 }
 
-.hero-text {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+/* Top: image — gets only top rounding via parent, bottom edge stays square */
+.hero-stack .hero-visual {
+  margin: 0;
+  line-height: 0;
+}
+.hero-stack .hero-visual img {
+  width: 100%;
+  height: clamp(280px, 40vw, 420px); /* balanced height */
+  object-fit: cover;
+  display: block;
+  transform: translateZ(0);
 }
 
-.hero-text h1 {
+/* Bottom: Create Story card — top edge square, bottom corners rounded by parent */
+.hero-stack .create-card {
+  display: grid;
+  gap: 10px;
+  padding: clamp(16px, 3.6vw, 24px);
+  border-top: 1px solid #f0ecfb; /* subtle seam; remove if you want a perfect merge */
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
+  backdrop-filter: blur(6px);
+}
+
+.hero-stack .create-card h1 {
   font-family: 'Nunito', sans-serif;
   color: var(--plum-dark);
-  font-size: clamp(2.1rem, 4.2vw, 3.5rem);
   font-weight: 800;
-  margin-bottom: 12px;
+  font-size: clamp(1.75rem, 3.2vw, 2.4rem);
   letter-spacing: -0.01em;
+  margin: 0;
+}
+.hero-stack .create-card p {
+  color: #3a3450; /* better contrast, consistent with previous adjustments */
+  font-weight: 500;
+  font-size: clamp(1rem, 1.3vw, 1.125rem);
+  margin: 0;
+}
+.hero-stack .create-card .btn {
+  margin-top: 4px;
+  align-self: start;
+  font-size: clamp(1rem, 1.3vw, 1.15rem);
+  padding: 14px 28px;
+  animation: pulseUp 10s ease-in-out infinite; /* calmer */
 }
 
-.hero-text p {
-  color: var(--muted);
-  font-size: clamp(1rem, 1.6vw, 1.125rem);
-  margin-top: 8px;
-}
-
-/* Responsive behavior */
-@media (max-width: 768px) {
-  .hero-banner { min-height: 420px; background-position: top center; }
-  .hero-text h1 { font-size: 28px; }
-  .hero-text p { font-size: 16px; }
-}
-
-/* On small screens, lighten overlay so the image shines more */
-@media (max-width: 600px) {
-  .hero-overlay { background: rgba(255,255,255,0.28); backdrop-filter: blur(3px); width: 92%; }
-  .hero-text { display: grid; gap: 8px; }
-  .story-reader { margin: 20px 12px; padding: 18px 16px; }
-  .story-content { font-size: 17px; }
-}
-
-/* Checkout hero — gradients (no external images) */
-.story-hero.bg-0-2 { 
-  background-image: none !important;
-  background: linear-gradient(135deg, #fff7ec, #fde8ff, #eef4ff) !important;
-  background-size: cover;
-  background-position: center;
-}
-.story-hero.bg-3-5 { 
-  background-image: none !important;
-  background: linear-gradient(135deg, #f9f0ff, #ffe8ef, #f1fff5) !important;
-  background-size: cover;
-  background-position: center;
-}
-.story-hero.bg-5-plus { 
-  background-image: none !important;
-  background: linear-gradient(135deg, #efe9ff, #e7f2ff, #fff2e6) !important;
-  background-size: cover;
-  background-position: center;
-}
-
-.hero-overlay { transition: none !important; }
-
-/* Class used by JS to hard-disable overlay transitions during image swap */
-.no-overlay-anim .hero-overlay { transition: none !important; }
-
-/* =========================
-   Formats awareness (hero)
-   ========================= */
-.product-badges {
-  margin-top: 14px;
+/* badges align under CTA, compact */
+.hero-stack .product-badges {
   display: inline-flex;
-  gap: 14px;
-  align-items: center;
-  justify-content: center;
+  gap: 12px;
   flex-wrap: wrap;
-  position: relative;
-  opacity: 0;                 /* start hidden */
-  transform: translateY(8px); /* start slightly lowered */
-  animation: fadeUpHeroBadges 0.8s ease forwards;
-  animation-delay: 0.5s;      /* requested delay */
-}
-
-.product-badge {
-  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;          /* slightly smaller than before for hierarchy */
-  border-radius: 999px;
-  background: rgba(255,255,255,0.72);
-  border: 1px solid #e6dcfa;  /* slightly richer border */
-  box-shadow: var(--shadow);
-  color: var(--plum-dark);
-  font-weight: 700;
-  font-size: 13px;            /* smaller than CTA */
-  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
-  will-change: transform;
 }
-.product-badge:hover { transform: translateY(-2px); background: rgba(255,255,255,0.9); }
-.product-badge .badge-icon { width: 18px; height: 18px; display: block; flex: 0 0 18px; }
 
-/* Fade-up animation for badges */
-@keyframes fadeUpHeroBadges { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Mobile: instant appearance, wrap nicely */
-@media (max-width: 700px) {
-  .hero-text #heroCta { margin-bottom: 14px; }
-  .product-badges { flex-wrap: wrap; justify-content: center; opacity: 1; transform: none; animation: none; }
-  .product-badge { font-size: 14px; padding: 8px 12px; }
+/* Mobile refinements */
+@media (max-width: 768px) {
+  .hero-stack .hero-visual img {
+    height: min(38vh, 340px); /* prevent giant image on first screen */
+  }
+  .hero-stack .create-card {
+    padding: 16px;
+    gap: 8px;
+  }
+  .hero-stack .create-card .btn {
+    width: 100%;
+  }
 }
+
 
 /* =========================
    Formats band (below hero)
