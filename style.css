@@ -1145,12 +1145,15 @@ html.scroll-locked { overscroll-behavior: contain; }
   font-size: clamp(1rem, 1.3vw, 1.125rem);
 }
 
-/* Final polish: tighter tags and slightly larger font */
+/* Create Story button — slightly larger for better emphasis */
 .hero-simple .hero-copy .btn {
   display: inline-block;
   align-self: center;
   margin-top: 8px;
-  margin-bottom: 6px; /* tighter connection to tags */
+  margin-bottom: 6px;
+  font-size: clamp(1.05rem, 1.8vw, 1.25rem); /* responsive increase */
+  padding: 16px 38px; /* keep proportions consistent */
+  font-weight: 800;
 }
 
 .hero-simple .hero-copy .product-badges {
