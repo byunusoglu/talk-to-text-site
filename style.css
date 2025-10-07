@@ -1252,7 +1252,7 @@ html.scroll-locked { overscroll-behavior: contain; }
 @media (max-width: 900px) {
   /* Bring tags closer to the button */
   .hero-simple .hero-copy .btn {
-    margin-bottom: 4px;  /* previously 6px or 10px */
+    margin-bottom: 1px;  /* previously 6px or 10px */
   }
 
   /* Increase tag font size for readability */
