@@ -1145,12 +1145,12 @@ html.scroll-locked { overscroll-behavior: contain; }
   font-size: clamp(1rem, 1.3vw, 1.125rem);
 }
 
-/* CTA + tags line up under the text and have breathing room */
+/* Create Story button spacing — tighter harmony with tags */
 .hero-simple .hero-copy .btn {
   display: inline-block;
   align-self: center;
   margin-top: 8px;
-  margin-bottom: 24px;       /* air before tags */
+  margin-bottom: 10px; /* reduced from 20px for cleaner grouping */
 }
 .hero-simple .hero-copy .product-badges {
   display: flex;
