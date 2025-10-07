@@ -64,41 +64,32 @@
     }
   };
 
-  function updateHeroForAge(ageRaw) {
-    try {
-      const age = (ageRaw || DEFAULT_AGE).trim();
-      const cfg = HERO_BY_AGE[age] || HERO_BY_AGE[DEFAULT_AGE];
-      const banner = document.querySelector(".hero-banner");
-      const title  = document.getElementById("heroTitle");
-      const desc   = document.getElementById("heroDesc");
-      const cta    = document.getElementById("heroCta");
-// ensure global counter exists once near top of file
-// (put it just before the function if you want)
-let __heroSwapNonce = 0;
+function updateHeroForAge(ageRaw) {
+  try {
+    const age = (ageRaw || DEFAULT_AGE).trim();
+    const cfg = HERO_BY_AGE[age] || HERO_BY_AGE[DEFAULT_AGE];
 
-// replace the banner swap line with:
-if (banner && cfg.image) {
-  __heroSwapNonce = (__heroSwapNonce + 1) % 1e6;
-  const url = `${cfg.image}?v=${__heroSwapNonce}`;
+    // NEW: target split-hero elements
+    const imgEl  = document.getElementById("heroImage");
+    const title  = document.getElementById("heroTitle");
+    const desc   = document.getElementById("heroDesc");
+    const cta    = document.getElementById("heroCta");
 
-  // use CSS variable for hero image (fixes mobile repaint bug)
-  banner.style.setProperty('--hero-image', `url('${url}')`);
-
-  // force a reflow + repaint on mobile browsers
-  void banner.offsetHeight;
-  requestAnimationFrame(() => {
-    banner.style.transform = 'translateZ(0)';
-    requestAnimationFrame(() => { banner.style.transform = ''; });
-  });
+    if (imgEl && cfg.image) {
+      // parallax container flag
+      imgEl.parentElement?.setAttribute('data-parallax', 'on');
+      imgEl.src = cfg.image;
+      imgEl.alt = cfg.title || "StoryBuds hero";
+    }
+    if (title) title.textContent = cfg.title;
+    if (desc)  desc.textContent  = cfg.desc;
+    if (cta) {
+      cta.textContent = cfg.cta;
+      cta.onclick = () => fadeOutAnd(() => { window.location.href = "create.html"; });
+    }
+  } catch (_) {}
 }
-      if (title) title.textContent = cfg.title;
-      if (desc)  desc.textContent  = cfg.desc;
-      if (cta) {
-        cta.textContent = cfg.cta;
-        cta.onclick = () => fadeOutAnd(() => { window.location.href = "create.html"; });
-      }
-    } catch (_) {}
-  }
+
 
   // ---------- page guards ----------
   const isCreateChatPage = () => Boolean($('#chatWizard'));
