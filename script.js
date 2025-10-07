@@ -408,64 +408,46 @@ function showGate(personName) {
 
   
 function unlockGate() {
-  const gate = document.querySelector('.gate');
-  if (!gate) return;
+  // Mark signed-in for future visits
+  setSignedIn(true);
 
-  // Fade out the gate overlay
-  gate.style.transition = 'opacity 0.6s ease';
-  gate.style.opacity = '0';
+  const storyEl = document.getElementById("storyContent");
+  const reader  = document.querySelector(".story-reader");
+  const gate    = document.getElementById("gateOverlay");
+  const glow    = document.getElementById("blurGlow");
 
+  // If we have the full story, swap it in; otherwise we’ll just redirect
+  const fullHtml =
+    (typeof SS !== "undefined" && SS && (SS.getItem(K_STORY_HTML) || SS.getItem("yw_story_html"))) || "";
+
+  if (storyEl && fullHtml) {
+    storyEl.innerHTML = fullHtml;
+  }
+
+  // Clear any preview/blur state and hide gate
+  storyEl?.classList.remove("preview-clamp", "blur-bottom");
+  if (storyEl?.dataset) delete storyEl.dataset.preview;
+  reader?.classList.remove("gated");
+  gate?.classList.add("hidden");
+  glow?.classList.add("hidden");
+
+  // Tiny confirmation toast
+  try {
+    const note = document.createElement("div");
+    note.textContent = "✨ Account created! Taking you to your home.";
+    note.style.cssText =
+      "position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999;";
+    document.body.appendChild(note);
+    setTimeout(() => note.remove(), 900);
+  } catch (_) {}
+
+  // Smooth transition to home
+  try { document.body.classList.add("fade-out"); } catch (_) {}
   setTimeout(() => {
-    // Hide the gate completely
-    gate.style.display = 'none';
-
-    // Remove any blur effects from the story preview
-    const preview = document.querySelector('.story-blur');
-    if (preview) preview.classList.remove('story-blur');
-
-    // Add a welcome message overlay
-    const welcomeMsg = document.createElement('div');
-    welcomeMsg.className = 'gate-message';
-    welcomeMsg.textContent = 'Welcome! Redirecting...';
-    Object.assign(welcomeMsg.style, {
-      position: 'fixed',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      background: 'rgba(255, 255, 255, 0.9)',
-      color: 'var(--plum)',
-      fontSize: '1.2rem',
-      padding: '16px 28px',
-      borderRadius: '12px',
-      boxShadow: 'var(--shadow)',
-      opacity: '0',
-      transition: 'opacity 0.6s ease',
-      zIndex: '9999'
-    });
-    document.body.appendChild(welcomeMsg);
-
-    // Fade in the message
-    requestAnimationFrame(() => {
-      welcomeMsg.style.opacity = '1';
-    });
-
-    // Wait briefly, fade out the message, then redirect with a fade effect
-    setTimeout(() => {
-      welcomeMsg.style.opacity = '0';
-      setTimeout(() => {
-        welcomeMsg.remove();
-
-        // Fade out the current page before redirect
-        document.body.style.transition = 'opacity 0.6s ease';
-        document.body.style.opacity = '0';
-
-        setTimeout(() => {
-          window.location.href = 'home.html';
-        }, 600);
-      }, 600);
-    }, 1200);
+    window.location.href = "home.html";   // ← change to your true home if different
   }, 600);
 }
+
 
 
 
