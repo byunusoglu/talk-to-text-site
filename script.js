@@ -309,94 +309,113 @@ function makePreviewHtml(md, maxLines = 10) {
   }
 
 
-      function showGate(personName) {
-    const storyEl = document.getElementById("storyContent");
-    const gate = document.getElementById("gateOverlay");
-    const glow = document.getElementById("blurGlow");
-    const badge = document.getElementById("personalBadge");
-    const badgeText = document.getElementById("personalBadgeText");
-           const isPreviewLines = storyEl?.dataset.preview === "lines";
+// --- Gate: show overlay + handle preview vs blur ---
+function showGate(personName) {
+  const storyEl   = document.getElementById("storyContent");
+  const gate      = document.getElementById("gateOverlay");
+  const glow      = document.getElementById("blurGlow");
+  const reader    = document.querySelector(".story-reader");
+  const badge     = document.getElementById("personalBadge");
+  const badgeText = document.getElementById("personalBadgeText");
+  const gateTitle = document.getElementById("gateTitle");
+  const gateDesc  = document.getElementById("gateDesc");
 
-           if (!isPreviewLines) {
+  const btnGoogle = document.getElementById("gateGoogle");
+  const btnEmail  = document.getElementById("gateEmailBtn");
+  const formWrap  = document.getElementById("gateEmailForm");
+  const backBtn   = document.getElementById("gateBackBtn");
+  const btnRow    = document.getElementById("gateButtons"); // may not exist (legacy-safe)
+
+  // Personalised badge + copy
+  if (personName && badge && badgeText) {
+    badgeText.textContent = `Personalised for ${personName}`;
+    badge.classList.remove("hidden");
+  }
+  if (personName && gateDesc) {
+    gateDesc.textContent = `Create your free account to finish ${personName}’s bedtime story and save it.`;
+  }
+  if (gateTitle) gateTitle.textContent = "Continue reading for free";
+
+  // Give room for the gate card (so it doesn't cover preview lines)
+  reader?.classList.add("gated");
+
+  // If we're showing a 10-line preview, skip extra blur/glow
+  const isPreviewLines = storyEl?.dataset.preview === "lines";
+  if (!isPreviewLines) {
     storyEl?.classList.add("blur-bottom");
     glow?.classList.remove("hidden");
   } else {
-    glow?.classList.add("hidden");
     storyEl?.classList.remove("blur-bottom");
+    glow?.classList.add("hidden");
   }
 
-    // Personalised badge
-    if (personName && badge && badgeText) {
-      badgeText.textContent = `Just for ${personName}`;
-      badge.classList.remove("hidden");
-    }
+  // Show overlay
+  gate?.classList.remove("hidden");
 
-    // Apply the half-blur and show glow + gate
-    storyEl?.classList.add("blur-bottom");
-    glow?.classList.remove("hidden");
-    gate?.classList.remove("hidden");
-
-    // Personalised microcopy on gate
-    const gateTitle = document.getElementById("gateTitle");
-    const gateDesc  = document.getElementById("gateDesc");
-    if (personName && gateTitle && gateDesc) {
-      gateTitle.textContent = "Continue reading for free";
-      gateDesc.textContent  = `Create your free account to finish ${personName}’s bedtime story and save it.`;
-    }
-
-    // One-tap action
-    const btnGoogle = document.getElementById("gateGoogle");
-    const btnEmail  = document.getElementById("gateEmailBtn");
-    const backBtn   = document.getElementById("gateBackBtn");
-    const formWrap  = document.getElementById("gateEmailForm");
-    const btnRow    = document.getElementById("gateButtons"); // legacy id; safe if null
-
-    btnGoogle?.addEventListener("click", unlockGate, { once: true });
-    btnEmail?.addEventListener("click", () => {
-      // reveal inline email form, keep context
+  // Wire actions (use direct handlers to avoid duplicate listeners)
+  if (btnGoogle) {
+    btnGoogle.onclick = (e) => { e.preventDefault(); unlockGate(); };
+  }
+  if (btnEmail) {
+    btnEmail.onclick = (e) => {
+      e.preventDefault();
       formWrap?.classList.remove("hidden");
-      // optional: hide any old row if present
+      btnEmail.classList.add("hidden");
       btnRow?.classList.add("hidden");
-      btnEmail?.classList.add("hidden");
-    });
-
-    backBtn?.addEventListener("click", () => {
+    };
+  }
+  if (backBtn) {
+    backBtn.onclick = (e) => {
+      e.preventDefault();
       formWrap?.classList.add("hidden");
       btnEmail?.classList.remove("hidden");
       btnRow?.classList.remove("hidden");
-    });
-
-    formWrap?.addEventListener("submit", (e) => {
+    };
+  }
+  if (formWrap) {
+    formWrap.onsubmit = (e) => {
       e.preventDefault();
       unlockGate();
-    }, { once: true });
+    };
   }
+}
+
   
-  function unlockGate() {
-    setSignedIn(true);
-    const storyEl = document.getElementById("storyContent");
-     const fullHtml = SS.getItem("yw_story_html");
-     if (storyEl && fullHtml) {
+// --- Gate: unlock → show full story, remove overlays, toast ---
+function unlockGate() {
+  setSignedIn(true);
+
+  const storyEl = document.getElementById("storyContent");
+  const reader  = document.querySelector(".story-reader");
+  const gate    = document.getElementById("gateOverlay");
+  const glow    = document.getElementById("blurGlow");
+
+  // Swap preview → full story HTML
+  const fullHtml =
+    (typeof SS !== "undefined" && SS && (SS.getItem(K_STORY_HTML) || SS.getItem("yw_story_html"))) || "";
+  if (storyEl && fullHtml) {
     storyEl.innerHTML = fullHtml;
-            storyEl.classList.remove("preview-clamp");  // <-- make sure clamp is gone
-    delete storyEl.dataset.preview;
   }
-    const gate = document.getElementById("gateOverlay");
-    const glow = document.getElementById("blurGlow");
 
-    storyEl?.classList.remove("blur-bottom");
-    gate?.classList.add("hidden");
-    glow?.classList.add("hidden");
+  // Clear any preview/blur state
+  storyEl?.classList.remove("preview-clamp");
+  if (storyEl?.dataset) delete storyEl.dataset.preview;
+  storyEl?.classList.remove("blur-bottom");
+  reader?.classList.remove("gated");
+  gate?.classList.add("hidden");
+  glow?.classList.add("hidden");
 
-    // Subtle success toast
-    try {
-      const note = document.createElement("div");
-      note.textContent = "✨ Story unlocked and saved to your account.";
-      note.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999;";
-      document.body.appendChild(note);
-      setTimeout(() => note.remove(), 1800);
-    } catch(_) {}
-  }
+  // Subtle success toast
+  try {
+    const note = document.createElement("div");
+    note.textContent = "✨ Story unlocked and saved to your account.";
+    note.style.cssText =
+      "position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999;";
+    document.body.appendChild(note);
+    setTimeout(() => note.remove(), 1800);
+  } catch (_) {}
+}
+
 
 
   // ---------- Checkout: render story + products ----------
