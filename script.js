@@ -360,6 +360,28 @@ function updateHeroForAge(ageRaw) {
     onScroll();
   }
 
+   function initHeroParallax() {
+  const wrap = document.querySelector('.hero-visual[data-parallax="on"]');
+  const img = document.getElementById('heroImage');
+  if (!wrap || !img) return;
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { wrap.removeAttribute('data-parallax'); return; }
+
+  function onScroll() {
+    const rect = wrap.getBoundingClientRect();
+    const vh = window.innerHeight || 1;
+    const center = vh / 2;
+    const dist = Math.max(-40, Math.min(40, (rect.top + rect.height/2) - center));
+    // map to very small translateY (±6px max)
+    const t = (dist / center) * 6;
+    img.style.transform = `translateY(${t.toFixed(2)}px)`;
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  onScroll();
+}
+
   function initTestimonials() {
     const wrap = $("#testimonials");
     if (!wrap) return;
@@ -570,6 +592,7 @@ onReady(() => {
   if (isCreateChatPage()) initCreateChatWizard();
   if (isCheckoutPage())   initCheckout();
   initTestimonials();
-  initScrollMorph(); // 👈 add this here
+  initScrollMorph();
+  initHeroParallax(); // 👈 NEW
 });
 })();
