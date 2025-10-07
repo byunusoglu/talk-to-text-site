@@ -1560,3 +1560,17 @@ html.scroll-locked { overscroll-behavior: contain; }
   pointer-events: none;
   background: linear-gradient(to top, rgba(255,255,255,0.98), rgba(255,255,255,0));
 }
+
+/* Give the story box extra room when the gate is shown */
+.story-reader.gated {
+  padding-bottom: 180px; /* room for the gate card to sit without covering text */
+}
+@media (max-width: 700px) {
+  .story-reader.gated { padding-bottom: 220px; }
+}
+
+/* Make the bottom fade smaller so it doesn’t hide too much text */
+.story-content.preview-clamp::after {
+  height: 48px; /* was 72px */
+}
+
