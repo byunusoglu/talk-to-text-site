@@ -431,7 +431,6 @@ function unlockGate() {
   gate?.classList.add("hidden");
   glow?.classList.add("hidden");
 
-  // Subtle success toast
   try {
     const note = document.createElement("div");
     note.textContent = "✨ Story unlocked and saved to your account.";
