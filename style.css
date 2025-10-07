@@ -1112,17 +1112,39 @@ html.scroll-locked { overscroll-behavior: contain; }
 }
 
 /* Left: plain text directly on the page */
-.hero-simple .hero-copy { 
-  justify-self: start; 
-  max-width: 640px; 
+/* === Refined alignment & spacing for hero text === */
+.hero-simple .hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;       /* default: left-align text */
+  max-width: 640px;
+  gap: 18px;                     /* consistent vertical rhythm */
+  line-height: 1.4;
 }
+
+/* Tighten headline/paragraph spacing for visual hierarchy */
 .hero-simple .hero-copy h1 {
   font-weight: 800;
-  margin: 0 0 10px;
+  margin: 0 0 6px;
+  line-height: 1.2;
 }
 .hero-simple .hero-copy p {
-  margin: 0 0 18px;
+  margin: 0;
   color: #3a3450;
+  font-size: clamp(1rem, 1.3vw, 1.125rem);
+}
+
+/* Horizontally center CTA and tags relative to text block */
+.hero-simple .hero-copy .btn,
+.hero-simple .hero-copy .product-badges {
+  align-self: flex-start;
+}
+
+/* On wider screens: nudge slightly right so text, button, and tags share the same visual axis */
+@media (min-width: 1024px) {
+  .hero-simple .hero-copy {
+    padding-left: 6px; /* micro nudging */
+  }
 }
 
 /* Right: raw image, no container */
@@ -1159,6 +1181,19 @@ html.scroll-locked { overscroll-behavior: contain; }
   .hero-simple .hero-copy .btn { width: 100%; }
 }
 
+/* Additional mobile refinement: center all hero text and buttons */
+@media (max-width: 900px) {
+  .hero-simple .hero-copy {
+    align-items: center;
+    text-align: center;
+    gap: 16px; /* consistent spacing between title, description, button, tags */
+  }
+  .hero-simple .hero-copy .btn,
+  .hero-simple .hero-copy .product-badges {
+    align-self: center;
+  }
+}
+
 /* Very small phones: be extra cautious */
 @media (max-width: 380px) {
   .hero-simple .hero-art {
@@ -1178,17 +1213,18 @@ html.scroll-locked { overscroll-behavior: contain; }
   }
 }
 
-/* Make CTA and tags separate lines with breathing room */
+/* Create breathing space between elements */
 .hero-simple .hero-copy .btn {
   display: inline-block;
-  margin-bottom: 10px; /* space above tags */
+  margin-top: 6px;
+  margin-bottom: 18px;  /* more air before tags */
+  align-self: flex-start;
 }
-
 .hero-simple .hero-copy .product-badges {
-  display: flex;           /* block-level, so it will start on a new line */
+  display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 6px;         /* extra air below CTA */
+  margin-top: 0;
 }
 
 .hero-simple .hero-copy .product-badge {
