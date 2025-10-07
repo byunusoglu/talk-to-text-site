@@ -1101,3 +1101,46 @@ html.scroll-locked { overscroll-behavior: contain; }
   to { transform: scale(1.07); }
 }
 
+/* === Ultra-simple hero (no boxes, no borders) === */
+.hero-simple {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr; /* text left, image right */
+  gap: clamp(16px, 5vw, 48px);
+  align-items: center;
+  padding: clamp(28px, 6vw, 72px) 20px;
+  background: transparent; /* sit directly on page bg */
+}
+
+/* Left side: plain text directly on the page */
+.hero-simple .hero-copy h1 {
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+.hero-simple .hero-copy p {
+  margin: 0 0 18px;
+  color: #3a3450;
+}
+
+/* Right side: raw image, no container */
+.hero-simple .hero-art {
+  width: 100%;
+  height: auto;
+  max-height: min(64vh, 560px);
+  object-fit: contain;  /* keep transparent PNG edges clean */
+  display: block;
+  /* no border, no shadow, no background */
+}
+
+/* Mobile: stack vertically, text first */
+@media (max-width: 900px) {
+  .hero-simple {
+    grid-template-columns: 1fr;
+    padding: clamp(18px, 6vw, 36px) 16px;
+  }
+  .hero-simple .hero-art {
+    max-height: min(42vh, 360px);
+    margin: 8px auto 0;
+  }
+  .hero-simple .hero-copy .btn { width: 100%; }
+}
+
