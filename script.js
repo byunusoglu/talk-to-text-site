@@ -46,7 +46,7 @@
 const HERO_BY_AGE = {
   "0-2": {
     imageCut: "momdaughter_cut.png",
-    image:    "momdaughterbanner.png",
+    image:    "momdaughterbanner3.png",
     title: "Create magical fairytales together.",
     desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
     cta:   "Create story"
