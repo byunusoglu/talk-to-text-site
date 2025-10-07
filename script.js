@@ -69,14 +69,12 @@ function updateHeroForAge(ageRaw) {
     const age = (ageRaw || DEFAULT_AGE).trim();
     const cfg = HERO_BY_AGE[age] || HERO_BY_AGE[DEFAULT_AGE];
 
-    // NEW: target split-hero elements
     const imgEl  = document.getElementById("heroImage");
     const title  = document.getElementById("heroTitle");
     const desc   = document.getElementById("heroDesc");
     const cta    = document.getElementById("heroCta");
 
     if (imgEl && cfg.image) {
-      // parallax container flag
       imgEl.parentElement?.setAttribute('data-parallax', 'on');
       imgEl.src = cfg.image;
       imgEl.alt = cfg.title || "StoryBuds hero";
@@ -89,6 +87,7 @@ function updateHeroForAge(ageRaw) {
     }
   } catch (_) {}
 }
+
 
 
   // ---------- page guards ----------
