@@ -1145,13 +1145,35 @@ html.scroll-locked { overscroll-behavior: contain; }
   font-size: clamp(1rem, 1.3vw, 1.125rem);
 }
 
-/* Create Story button spacing — tighter harmony with tags */
+/* Final polish: tighter tags and slightly larger font */
 .hero-simple .hero-copy .btn {
   display: inline-block;
   align-self: center;
   margin-top: 8px;
-  margin-bottom: 10px; /* reduced from 20px for cleaner grouping */
+  margin-bottom: 6px; /* tighter connection to tags */
 }
+
+.hero-simple .hero-copy .product-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px; /* consistent spacing between tags */
+  margin-top: 0;
+}
+
+.hero-simple .hero-copy .product-badge {
+  font-size: 0.95rem;       /* slightly larger text */
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #e6dcfa;
+  background: rgba(255,255,255,0.78);
+  color: var(--plum-dark);
+}
+
 .hero-simple .hero-copy .product-badges {
   display: flex;
   flex-wrap: wrap;
