@@ -301,7 +301,7 @@ async function updateHeroForAge(ageRaw) {
 
     // Personalised badge
     if (personName && badge && badgeText) {
-      badgeText.textContent = `Personalised for ${personName}`;
+      badgeText.textContent = `Just for ${personName}`;
       badge.classList.remove("hidden");
     }
 
@@ -388,7 +388,7 @@ async function updateHeroForAge(ageRaw) {
       const badge = document.getElementById("personalBadge");
       const badgeText = document.getElementById("personalBadgeText");
       if (childName && badge && badgeText) {
-        badgeText.textContent = `Personalised for ${childName}`;
+        badgeText.textContent = `Just for ${childName}`;
         badge.classList.remove("hidden");
       }
     }
