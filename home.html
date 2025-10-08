@@ -252,14 +252,13 @@
         desc.textContent  = `Your first magical story is ready to read with ${kid} tonight.`;
       }
 
-      // 3) Primary CTA: open free story (checkout page will show full story if signed in)
-      const openBtn = document.getElementById('openStoryBtn');
-      if (openBtn) {
-        openBtn.addEventListener('click', function() {
-          document.body.classList.add('fade-out');
-          setTimeout(() => { window.location.href = 'checkout.html'; }, 120);
-        });
-      }
+const openBtn = document.getElementById('openStoryBtn');
+if (openBtn) {
+  openBtn.addEventListener('click', function() {
+    document.body.classList.add('fade-out');
+    setTimeout(() => { window.location.href = 'storydetail.html'; }, 120);
+  });
+}
 
       // 4) Upgrade buttons (placeholder handlers)
       function goUpgrade(tier) {
