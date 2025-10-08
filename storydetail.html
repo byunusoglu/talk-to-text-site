@@ -196,61 +196,81 @@
       if (id === 'stop')   return stopAmbience();
     });
 
-    // —— Speech-to-sfx (keyword matching; child-safe) ——
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const micBtn = document.getElementById('toggleMic');
-    const micStatus = document.getElementById('micStatus');
-    let rec = null, active = false, lastAt = {};
+// —— Speech-to-sfx (robust, child-safe) ——
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const micBtn = document.getElementById('toggleMic');
+const micStatus = document.getElementById('micStatus');
 
-    const keywords = [
-      { pax: ['whoosh','fly','soared','rüzgar','uçtu'], fn: playWhoosh, cooldown: 1200 },
-      { pax: ['rain','raindrop','shower','plip','yağmur'], fn: playPlip, cooldown: 1200 },
-      { pax: ['wind','breeze','forest','ağaç','rüzgâr'], fn: playWind, cooldown: 4000 },
-      { pax: ['magic','sparkle','stars','parladı','sihir'], fn: playChime, cooldown: 1500 },
-      { pax: ['dog','puppy','bark','köpek'], fn: playBarkSoft, cooldown: 2000 },
-      { pax: ['good night','sleep','yawn','uyku','iyi geceler'], fn: playLullaby, cooldown: 6000 },
-    ];
+let rec = null, active = false;
+let lastEffectAt = 0;           // global throttle
+const COOLDOWN_GLOBAL_MS = 600; // global gap between any two effects
+const lastAtByEffect = Object.create(null); // per-effect cooldowns
 
-    function canTrigger(name, cd) {
-      const now = Date.now();
-      if (!lastAt[name] || now - lastAt[name] > cd) { lastAt[name] = now; return true; }
-      return false;
-    }
+// Helper: normalize accents & lower
+const deaccent = (s) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
-    function startMic() {
-      if (!SpeechRec) {
-        micStatus.textContent = 'Microphone: unavailable on this device — use the SFX buttons';
-        return;
+// Distinctive, boundary-safe terms (EN + TR)
+const effects = [
+  { name: 'whoosh',  rx: /\b(fly|whoosh|soar(?:ed)?|uçtu|r[üu]zgar)\b/iu,  fn: playWhoosh,  cd: 1600 },
+  { name: 'plip',    rx: /\b(rain|raindrop|plip(?:-?plop)?|shower|ya[ğg]mur)\b/iu, fn: playPlip,    cd: 1600 },
+  { name: 'wind',    rx: /\b(wind|breeze|forest|a[gğ]a[cç])\b/iu,         fn: playWind,    cd: 5000 },
+  { name: 'chime',   rx: /\b(magic|sparkle|star[s]?|parlad[ıi]|sihir)\b/iu, fn: playChime,   cd: 2500 },
+  { name: 'bark',    rx: /\b(dog|puppy|bark|k[öo]pek)\b/iu,               fn: playBarkSoft,cd: 2200 },
+  { name: 'lullaby', rx: /\b(good\s*night|sleep|yawn|uyku|iyi\s*geceler)\b/iu, fn: playLullaby, cd: 7000 },
+];
+
+function canTrigger(effectName, cdMs) {
+  const now = Date.now();
+  if (now - lastEffectAt < COOLDOWN_GLOBAL_MS) return false;
+  const last = lastAtByEffect[effectName] || 0;
+  if (now - last < cdMs) return false;
+  lastAtByEffect[effectName] = now;
+  lastEffectAt = now;
+  return true;
+}
+
+function startMic() {
+  if (!SpeechRec) {
+    micStatus.textContent = 'Microphone: unavailable — use the SFX buttons';
+    return;
+  }
+  if (active) return;
+  ctx.resume?.();
+
+  rec = new SpeechRec();
+  rec.lang = 'en-GB';
+  rec.continuous = true;
+  rec.interimResults = false;    // <— only final, avoids spam
+
+  rec.onresult = (e) => {
+    // Only handle the latest final transcript
+    const r = e.results[e.results.length - 1];
+    if (!r || !r.isFinal) return;
+    const text = deaccent(r[0].transcript || '');
+    for (const eff of effects) {
+      if (eff.rx.test(text) && canTrigger(eff.name, eff.cd)) {
+        eff.fn();
+        break; // one effect per final phrase
       }
-      if (active) return;
-      ctx.resume?.();
-      rec = new SpeechRec(); rec.lang = 'en-GB'; rec.continuous = true; rec.interimResults = true;
-      rec.onresult = (e) => {
-        const text = Array.from(e.results).map(r => r[0].transcript).join(' ').toLowerCase();
-        keywords.forEach(k => {
-          if (k.pax.some(word => text.includes(word))) {
-            if (canTrigger(k.pax[0], k.cooldown)) k.fn();
-          }
-        });
-      };
-      rec.onend = () => { if (active) rec.start(); }; // auto-restart while active
-      rec.onerror = () => {};
-      rec.start();
-      active = true;
-      micStatus.textContent = 'Microphone: listening…';
-      micBtn.textContent = 'Stop listening';
     }
+  };
+  rec.onend = () => { if (active) rec.start(); }; // keep listening while active
+  rec.onerror = () => {};
+  rec.start();
+  active = true;
+  micStatus.textContent = 'Microphone: listening…';
+  micBtn.textContent = 'Stop listening';
+}
 
-    function stopMic() {
-      active = false;
-      try { rec && rec.stop(); } catch(_) {}
-      rec = null;
-      micStatus.textContent = 'Microphone: off';
-      micBtn.textContent = 'Start listening';
-      stopAmbience();
-    }
+function stopMic() {
+  active = false;
+  try { rec && rec.stop(); } catch(_) {}
+  rec = null;
+  micStatus.textContent = 'Microphone: off';
+  micBtn.textContent = 'Start listening';
+}
+micBtn.addEventListener('click', () => active ? stopMic() : startMic());
 
-    micBtn.addEventListener('click', () => active ? stopMic() : startMic());
 
     // Chrome autoplay policy: first user gesture may be needed
     document.body.addEventListener('click', () => ctx.resume && ctx.resume(), { once:true });
