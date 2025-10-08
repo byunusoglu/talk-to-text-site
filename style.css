@@ -1584,3 +1584,26 @@ html.scroll-locked { overscroll-behavior: contain; }
 .story-content.preview-clamp::after {
   height: 48px; /* was 72px */
 }
+
+/* --- Mobile hero image size fix --- */
+@media (max-width: 700px) {
+  .hero-art-wrapper {
+    height: auto;                     /* let height shrink naturally */
+    max-height: 300px;                /* cap image height */
+    width: 90vw;                      /* keep it visually centered */
+    margin: 0 auto 10px;              /* add spacing below */
+  }
+
+  .hero-art-wrapper img.hero-art {
+    max-height: 300px;                /* hard cap for small screens */
+    height: auto;
+    width: auto;
+    object-fit: contain;              /* keep full image visible */
+  }
+
+  /* optional: tighten vertical rhythm */
+  .hero-simple .hero-copy {
+    margin-top: 6px;
+    gap: 12px;                        /* closer headline–CTA spacing */
+  }
+}
