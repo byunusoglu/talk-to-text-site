@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Your Story — Read with Sounds (Beta) | StoryBuds</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="script.js"></script>
+  <style>
+    /* Page-specific polish (kept local so we don't disturb global CSS) */
+    .detail-wrap { max-width: 980px; margin: 20px auto; padding: 0 16px; }
+    .soundbar {
+      position: sticky; top: 68px; z-index: 10;
+      display: grid; grid-template-columns: 1fr auto auto; gap: 8px;
+      align-items: center; background: rgba(255,255,255,0.9);
+      border: 1px solid #eee9fb; border-radius: 14px; padding: 10px 12px;
+      box-shadow: var(--shadow);
+    }
+    .soundbar .status { color: #3a3450; font-weight: 600; }
+    .soundbar .hint   { color: var(--muted); font-size: 13px; }
+    .sfx-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .sfx-row .btn { padding: 10px 14px; font-weight: 700; }
+    .inline-field { display:flex; align-items:center; gap:8px; }
+    .inline-field input[type="range"] { width: 160px; }
+    .story-reader { margin-top: 16px; } /* reuse your card layout */
+    .badge-beta { display:inline-block; margin-left:6px; font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; background:#fbf9ff; border:1px solid #eee9fb; color: var(--plum-dark); }
+  </style>
+</head>
+<body class="fade-in">
+  <!-- Topbar (unchanged) -->
+  <header class="topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-badge"><img src="logo.png" alt="StoryBuds logo" /></span>
+    </a>
+    <div class="top-actions">
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">
+        <svg class="cart-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3 3h2l3.6 9.59a1 1 0 0 0 .92.65H17a1 1 0 0 0 .96-.74L20 6H6"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="9" cy="20" r="1" fill="currentColor"></circle>
+          <circle cx="17" cy="20" r="1" fill="currentColor"></circle>
+        </svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
+    </div>
+    <nav id="menu" class="menu hidden" aria-label="Main navigation">
+      <a href="home.html">Home</a>
+      <a href="create.html">Create Stories</a>
+      <a href="#">My Profile</a>
+    </nav>
+  </header>
+
+  <main class="detail-wrap">
+    <h1>Read with Sounds <span class="badge-beta">Beta</span></h1>
+
+    <!-- Reactive sound controls -->
+    <section class="soundbar">
+      <div>
+        <div class="status" id="micStatus">Microphone: off</div>
+        <div class="hint" id="micHint">Tap “Start listening” and read the story aloud. We’ll keep sounds gentle and child-safe.</div>
+        <div class="sfx-row" id="manualSfx">
+          <button class="btn ghost" data-sfx="whoosh">Whoosh</button>
+          <button class="btn ghost" data-sfx="plip">Plip-plop</button>
+          <button class="btn ghost" data-sfx="wind">Wind</button>
+          <button class="btn ghost" data-sfx="chime">Magic chime</button>
+          <button class="btn ghost" data-sfx="bark">Puppy bark (soft)</button>
+          <button class="btn ghost" data-sfx="lullaby">Lullaby (fade)</button>
+          <button class="btn ghost" data-sfx="stop">Stop ambience</button>
+        </div>
+      </div>
+      <div class="inline-field">
+        <label for="vol" class="muted">Volume</label>
+        <input id="vol" type="range" min="0" max="1" step="0.01" value="0.35" />
+      </div>
+      <div>
+        <button class="btn" id="toggleMic">Start listening</button>
+      </div>
+    </section>
+
+    <!-- Story rendering (reuses your .story-reader styles) -->
+    <section class="story-reader">
+      <h2 id="storyTitle" class="sr-only">Your story</h2>
+      <div id="storyContent" class="story-content"></div>
+    </section>
+  </main>
+
+  <footer>© <span id="year"></span> StoryBuds</footer>
+
+  <script>
+    // Pull story HTML from sessionStorage (same keys your app already uses)
+    const SS = window.sessionStorage;
+    const K_STORY_HTML = "yw_story_html"; // as used in script.js
+    const storyEl = document.getElementById("storyContent");
+    const html = SS.getItem(K_STORY_HTML);
+
+    if (html) {
+      storyEl.innerHTML = html;
+    } else {
+      storyEl.innerHTML = '<p class="muted">No story found. Please generate a story first.</p>';
+    }
+
+    // —— Reactive audio engine (pure Web Audio; no external assets) ——
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let master = ctx.createGain(); master.gain.value = 0.35; master.connect(ctx.destination);
+    const vol = document.getElementById('vol'); vol.addEventListener('input', () => { master.gain.value = parseFloat(vol.value || "0.35"); });
+
+    // Helper: quick noise buffer
+    function makeNoiseBuffer() {
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.6;
+      return buffer;
+    }
+
+    // SFX builders
+    function playWhoosh() {
+      const src = ctx.createBufferSource(); src.buffer = makeNoiseBuffer();
+      const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.frequency.setValueAtTime(15000, ctx.currentTime);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.08);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+      filt.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.6);
+      src.connect(filt).connect(g).connect(master); src.start(); src.stop(ctx.currentTime + 0.65);
+    }
+    function playPlip() {
+      const t = ctx.currentTime;
+      [0, 0.18].forEach((delay, i) => {
+        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(i ? 660 : 520, t + delay);
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + delay);
+        g.gain.exponentialRampToValueAtTime(0.2, t + delay + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + delay + 0.25);
+        o.connect(g).connect(master); o.start(t + delay); o.stop(t + delay + 0.26);
+      });
+    }
+    function playChime() {
+      const t = ctx.currentTime;
+      [784, 988, 1319].forEach((f, i) => {
+        const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.setValueAtTime(f, t + i * 0.08);
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + i * 0.08);
+        g.gain.exponentialRampToValueAtTime(0.22, t + i * 0.08 + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.08 + 0.6);
+        o.connect(g).connect(master); o.start(t + i * 0.08); o.stop(t + i * 0.08 + 0.65);
+      });
+    }
+    let windNode = null;
+    function playWind() {
+      stopAmbience();
+      const src = ctx.createBufferSource(); src.buffer = makeNoiseBuffer(); src.loop = true;
+      const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.frequency.value = 900;
+      const g = ctx.createGain(); g.gain.value = 0.12;
+      src.connect(filt).connect(g).connect(master); src.start();
+      windNode = { src, g };
+    }
+    function playLullaby() {
+      stopAmbience();
+      const t = ctx.currentTime;
+      const g = ctx.createGain(); g.gain.value = 0.12; g.connect(master);
+      const seq = [523,523,392,440,523,523,523]; // simplified Twinkle fragment
+      seq.forEach((f, i) => {
+        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(f, t + i * 0.5);
+        o.connect(g); o.start(t + i * 0.5); o.stop(t + i * 0.5 + 0.48);
+      });
+      windNode = { src: null, g }; // reuse handle for fade out
+    }
+    function playBarkSoft() {
+      const t = ctx.currentTime;
+      const o = ctx.createOscillator(); o.type = "square"; o.frequency.setValueAtTime(220, t);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.15, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      o.connect(g).connect(master); o.start(t); o.stop(t + 0.21);
+    }
+    function stopAmbience() {
+      if (windNode) {
+        try {
+          const end = ctx.currentTime + 0.4;
+          windNode.g.gain.linearRampToValueAtTime(0, end);
+          if (windNode.src) windNode.src.stop(end);
+        } catch(_) {}
+        windNode = null;
+      }
+    }
+
+    // Manual SFX (tap-to-play)
+    document.getElementById('manualSfx').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-sfx]'); if (!b) return;
+      const id = b.getAttribute('data-sfx');
+      if (id === 'whoosh') return playWhoosh();
+      if (id === 'plip')   return playPlip();
+      if (id === 'chime')  return playChime();
+      if (id === 'wind')   return playWind();
+      if (id === 'lullaby')return playLullaby();
+      if (id === 'bark')   return playBarkSoft();
+      if (id === 'stop')   return stopAmbience();
+    });
+
+    // —— Speech-to-sfx (keyword matching; child-safe) ——
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const micBtn = document.getElementById('toggleMic');
+    const micStatus = document.getElementById('micStatus');
+    let rec = null, active = false, lastAt = {};
+
+    const keywords = [
+      { pax: ['whoosh','fly','soared','rüzgar','uçtu'], fn: playWhoosh, cooldown: 1200 },
+      { pax: ['rain','raindrop','shower','plip','yağmur'], fn: playPlip, cooldown: 1200 },
+      { pax: ['wind','breeze','forest','ağaç','rüzgâr'], fn: playWind, cooldown: 4000 },
+      { pax: ['magic','sparkle','stars','parladı','sihir'], fn: playChime, cooldown: 1500 },
+      { pax: ['dog','puppy','bark','köpek'], fn: playBarkSoft, cooldown: 2000 },
+      { pax: ['good night','sleep','yawn','uyku','iyi geceler'], fn: playLullaby, cooldown: 6000 },
+    ];
+
+    function canTrigger(name, cd) {
+      const now = Date.now();
+      if (!lastAt[name] || now - lastAt[name] > cd) { lastAt[name] = now; return true; }
+      return false;
+    }
+
+    function startMic() {
+      if (!SpeechRec) {
+        micStatus.textContent = 'Microphone: unavailable on this device — use the SFX buttons';
+        return;
+      }
+      if (active) return;
+      ctx.resume?.();
+      rec = new SpeechRec(); rec.lang = 'en-GB'; rec.continuous = true; rec.interimResults = true;
+      rec.onresult = (e) => {
+        const text = Array.from(e.results).map(r => r[0].transcript).join(' ').toLowerCase();
+        keywords.forEach(k => {
+          if (k.pax.some(word => text.includes(word))) {
+            if (canTrigger(k.pax[0], k.cooldown)) k.fn();
+          }
+        });
+      };
+      rec.onend = () => { if (active) rec.start(); }; // auto-restart while active
+      rec.onerror = () => {};
+      rec.start();
+      active = true;
+      micStatus.textContent = 'Microphone: listening…';
+      micBtn.textContent = 'Stop listening';
+    }
+
+    function stopMic() {
+      active = false;
+      try { rec && rec.stop(); } catch(_) {}
+      rec = null;
+      micStatus.textContent = 'Microphone: off';
+      micBtn.textContent = 'Start listening';
+      stopAmbience();
+    }
+
+    micBtn.addEventListener('click', () => active ? stopMic() : startMic());
+
+    // Chrome autoplay policy: first user gesture may be needed
+    document.body.addEventListener('click', () => ctx.resume && ctx.resume(), { once:true });
+
+    // Footer year
+    (function(){ const y = document.getElementById('year'); if (y) y.textContent = new Date().getFullYear(); })();
+  </script>
+</body>
+</html>
