@@ -7,8 +7,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script defer src="script.js"></script>
+
   <style>
-    /* Page-specific polish kept local */
+    /* === Local layout polish === */
     .detail-wrap { max-width: 980px; margin: 20px auto; padding: 0 16px; }
     .soundbar {
       position: sticky; top: 68px; z-index: 10;
@@ -23,16 +24,30 @@
     .sfx-row .btn { padding: 10px 14px; font-weight: 700; }
     .inline-field { display:flex; align-items:center; gap:8px; }
     .inline-field input[type="range"] { width: 160px; }
-    .story-reader { margin-top: 16px; } /* reuse your card layout */
+    .story-reader { margin-top: 16px; }
     .badge-beta { display:inline-block; margin-left:6px; font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; background:#fbf9ff; border:1px solid #eee9fb; color: var(--plum-dark); }
-    @media (max-width: 900px){
-      .soundbar{ grid-template-columns: 1fr; gap:10px; }
-      .inline-field{ justify-content: space-between; }
+
+    /* === STT Debug Panel === */
+    .stt-debug { margin-top:12px; border:1px solid #eee9fb; border-radius:14px; background:rgba(255,255,255,0.9); box-shadow:var(--shadow); padding:12px; }
+    .stt-controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+    .stt-panels { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .stt-panel { display:flex; flex-direction:column; gap:6px; }
+    .stt-title { font-weight:700; color:#3a3450; font-size:14px; }
+    .stt-box { min-height:80px; padding:10px; border:1px solid #eee9fb; border-radius:10px; background:#fff; overflow:auto; }
+    .monospace { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; white-space:pre-wrap; }
+    .stt-meter-row { display:flex; align-items:center; gap:12px; margin-top:10px; }
+    .stt-meter { flex:1; height:10px; background:#f2f2f6; border-radius:999px; overflow:hidden; border:1px solid #eee9fb; }
+    .stt-meter span { display:block; height:100%; width:0%; background:#8E44EC; transition: width .08s linear; }
+
+    @media (max-width:900px){
+      .soundbar{ grid-template-columns:1fr; }
+      .stt-panels{ grid-template-columns:1fr; }
     }
   </style>
 </head>
+
 <body class="fade-in">
-  <!-- Topbar (unchanged) -->
+  <!-- Topbar -->
   <header class="topbar">
     <a href="index.html" class="logo">
       <span class="logo-badge"><img src="logo.png" alt="StoryBuds logo" /></span>
@@ -59,29 +74,29 @@
   <main class="detail-wrap">
     <h1>Read with Sounds <span class="badge-beta">Beta</span></h1>
 
-    <!-- Reactive sound controls -->
+    <!-- Controls -->
     <section class="soundbar">
       <div>
         <div class="status" id="micStatus">Microphone: off</div>
-        <div class="hint" id="micHint">Tap “Start listening” and read the story aloud. We’ll keep sounds gentle and child-safe.</div>
+        <div class="hint" id="micHint">Tap “Start listening” and read the story aloud.</div>
         <div class="sfx-row" id="manualSfx">
           <button class="btn ghost" data-sfx="whoosh">Whoosh</button>
           <button class="btn ghost" data-sfx="plip">Plip-plop</button>
           <button class="btn ghost" data-sfx="wind">Wind</button>
           <button class="btn ghost" data-sfx="chime">Magic chime</button>
           <button class="btn ghost" data-sfx="bark">Puppy bark (soft)</button>
-          <button class="btn ghost" data-sfx="lullaby">Lullaby (fade)</button>
+          <button class="btn ghost" data-sfx="lullaby">Lullaby (phrase)</button>
           <button class="btn ghost" data-sfx="stop">Stop ambience</button>
         </div>
       </div>
 
-      <!-- Volume control -->
+      <!-- Volume -->
       <div class="inline-field">
         <label for="vol" class="muted">Volume</label>
         <input id="vol" type="range" min="0" max="1" step="0.01" value="0.35" />
       </div>
 
-      <!-- Ambience selector -->
+      <!-- Ambience -->
       <div class="inline-field">
         <label for="amb" class="muted">Ambience</label>
         <select id="amb">
@@ -101,7 +116,35 @@
       </div>
     </section>
 
-    <!-- Story rendering (reuses your .story-reader styles) -->
+    <!-- Debug -->
+    <section class="stt-debug" aria-label="Speech recognition debug">
+      <div class="stt-controls">
+        <div class="inline-field">
+          <label for="sttLang" class="muted">Recognition language</label>
+          <select id="sttLang">
+            <option value="en-GB" selected>English (UK)</option>
+            <option value="en-US">English (US)</option>
+            <option value="tr-TR">Türkçe</option>
+          </select>
+        </div>
+        <label class="muted"><input type="checkbox" id="sttInterimChk" checked /> Show interim</label>
+        <button class="btn ghost" id="sttClear" type="button">Clear logs</button>
+      </div>
+
+      <div class="stt-panels">
+        <div class="stt-panel"><div class="stt-title">Final transcript</div><div id="sttFinal" class="stt-box"></div></div>
+        <div class="stt-panel"><div class="stt-title">Interim transcript</div><div id="sttInterim" class="stt-box"></div></div>
+        <div class="stt-panel"><div class="stt-title">Events</div><div id="sttEvents" class="stt-box monospace"></div></div>
+      </div>
+
+      <div class="stt-meter-row">
+        <div class="stt-title">Mic level</div>
+        <div class="stt-meter"><span id="sttMeterBar"></span></div>
+        <button class="btn ghost" id="sttMicTest" type="button">Start mic test</button>
+      </div>
+    </section>
+
+    <!-- Story -->
     <section class="story-reader">
       <h2 id="storyTitle" class="sr-only">Your story</h2>
       <div id="storyContent" class="story-content"></div>
@@ -111,61 +154,55 @@
   <footer>© <span id="year"></span> StoryBuds</footer>
 
   <script>
-    // Pull story HTML from sessionStorage
+    /* =======================
+       Load story + audio base
+    ======================= */
     const SS = window.sessionStorage;
-    const K_STORY_HTML = "yw_story_html";
     const storyEl = document.getElementById("storyContent");
-    const html = SS.getItem(K_STORY_HTML);
-    if (html) { storyEl.innerHTML = html; }
-    else { storyEl.innerHTML = '<p class="muted">No story found. Please generate a story first.</p>'; }
+    storyEl.innerHTML = SS.getItem("yw_story_html") || '<p class="muted">No story found. Please generate a story first.</p>';
 
-    // —— Web Audio setup ——
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const master = ctx.createGain(); master.gain.value = 0.35; master.connect(ctx.destination);
-    const vol = document.getElementById('vol');
-    vol.addEventListener('input', () => { master.gain.value = parseFloat(vol.value || "0.35"); });
+    document.getElementById('vol').addEventListener('input', e => { master.gain.value = parseFloat(e.target.value || "0.35"); });
 
-    // Helpers
     const deaccent = (s) => (s || "").normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
-    function makeNoiseBuffer() {
-      const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.6;
-      return buffer;
+    /* ========= SFX ========= */
+    function makeNoiseBuffer(){
+      const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+      const d = b.getChannelData(0);
+      for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * 0.6;
+      return b;
     }
-
-    // —— Short SFX (tap or mic-triggered) ——
-    function playWhoosh() {
-      const src = ctx.createBufferSource(); src.buffer = makeNoiseBuffer();
-      const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.frequency.setValueAtTime(15000, ctx.currentTime);
+    function playWhoosh(){
+      const s = ctx.createBufferSource(); s.buffer = makeNoiseBuffer();
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 14000;
       const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, ctx.currentTime);
       g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.08);
       g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
-      filt.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.6);
-      src.connect(filt).connect(g).connect(master); src.start(); src.stop(ctx.currentTime + 0.65);
+      s.connect(f).connect(g).connect(master); s.start(); s.stop(ctx.currentTime + 0.65);
     }
-    function playPlip() {
+    function playPlip(){
       const t = ctx.currentTime;
-      [0, 0.18].forEach((delay, i) => {
-        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(i ? 660 : 520, t + delay);
-        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + delay);
-        g.gain.exponentialRampToValueAtTime(0.2, t + delay + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + delay + 0.25);
-        o.connect(g).connect(master); o.start(t + delay); o.stop(t + delay + 0.26);
+      [0, 0.18].forEach((d, i) => {
+        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(i ? 660 : 520, t + d);
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + d);
+        g.gain.exponentialRampToValueAtTime(0.2, t + d + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.25);
+        o.connect(g).connect(master); o.start(t + d); o.stop(t + d + 0.26);
       });
     }
-    function playChime() {
+    function playChime(){
       const t = ctx.currentTime;
       [784, 988, 1319].forEach((f, i) => {
-        const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.setValueAtTime(f, t + i * 0.08);
-        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + i * 0.08);
-        g.gain.exponentialRampToValueAtTime(0.22, t + i * 0.08 + 0.04);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.08 + 0.6);
-        o.connect(g).connect(master); o.start(t + i * 0.08); o.stop(t + i * 0.08 + 0.65);
+        const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.setValueAtTime(f, t + i*0.08);
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + i*0.08);
+        g.gain.exponentialRampToValueAtTime(0.22, t + i*0.08 + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.08 + 0.6);
+        o.connect(g).connect(master); o.start(t + i*0.08); o.stop(t + i*0.08 + 0.65);
       });
     }
-    function playBarkSoft() {
+    function playBarkSoft(){
       const t = ctx.currentTime;
       const o = ctx.createOscillator(); o.type = "square"; o.frequency.setValueAtTime(220, t);
       const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t);
@@ -173,44 +210,56 @@
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
       o.connect(g).connect(master); o.start(t); o.stop(t + 0.21);
     }
-    function playWindGust() {
-      const src = ctx.createBufferSource(); src.buffer = makeNoiseBuffer();
+    function playWindGust(){
+      const s = ctx.createBufferSource(); s.buffer = makeNoiseBuffer();
       const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 400; bp.Q.value = 0.7;
       const g = ctx.createGain(); g.gain.value = 0.0001;
       g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.06);
       g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
-      src.connect(bp).connect(g).connect(master); src.start(); src.stop(ctx.currentTime + 0.85);
+      s.connect(bp).connect(g).connect(master); s.start(); s.stop(ctx.currentTime + 0.85);
     }
-    function playLullabyPhrase() {
+    function playLullabyPhrase(){
       const t = ctx.currentTime;
       const g = ctx.createGain(); g.gain.value = 0.16; g.connect(master);
-      const seq = [523.25, 523.25, 392.00, 440.00, 523.25]; // tiny "twinkle" hint
+      const seq = [523.25, 523.25, 392.00, 440.00, 523.25];
       seq.forEach((f, i) => {
-        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(f, t + i * 0.45);
-        o.connect(g); o.start(t + i * 0.45); o.stop(t + i * 0.45 + 0.42);
+        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(f, t + i*0.45);
+        o.connect(g); o.start(t + i*0.45); o.stop(t + i*0.45 + 0.42);
       });
       setTimeout(() => { try { g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3); } catch(_){} }, 2400);
     }
 
-    // —— Ambient engine (constant calming background with crossfade) ——
+    // Manual SFX
+    document.getElementById("manualSfx").addEventListener("click", (e) => {
+      const id = e.target.closest('[data-sfx]')?.dataset.sfx; if (!id) return;
+      if (id === "whoosh")  return playWhoosh();
+      if (id === "plip")    return playPlip();
+      if (id === "chime")   return playChime();
+      if (id === "bark")    return playBarkSoft();
+      if (id === "wind")    return playWindGust();
+      if (id === "lullaby") return playLullabyPhrase();
+      if (id === "stop")    return stopAmbience();
+    });
+
+    /* ====== Ambience (auto + crossfade) ====== */
     let amb = { node: null, gain: null, kind: 'off' };
 
-    function makeNoiseLoop(color='white') {
+    function makeNoiseLoop(color='white'){
       const src = ctx.createBufferSource();
-      const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        const white = Math.random() * 2 - 1;
-        data[i] = color === 'ocean' ? ((data[i-1] || 0) * 0.98 + white * 0.02)
-              : color === 'rain'  ? (white * 0.35)
-              : (white * 0.22);
+      const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+      const d = b.getChannelData(0);
+      for (let i=0;i<d.length;i++){
+        const white = Math.random()*2-1;
+        d[i] = color === 'ocean' ? ((d[i-1]||0)*0.98 + white*0.02)
+             : color === 'rain'  ? white*0.35
+             : white*0.22;
       }
-      src.buffer = buffer; src.loop = true;
+      src.buffer = b; src.loop = true;
       return src;
     }
-    function makePad(freqs=[220, 277, 330]) {
+    function makePad(freqs=[220, 277, 330]){
       const g = ctx.createGain(); g.gain.value = 0.0;
-      freqs.forEach((f, i) => {
+      freqs.forEach((f,i) => {
         const o = ctx.createOscillator(); o.type = 'sine';
         o.frequency.setValueAtTime(f, ctx.currentTime + i*0.03);
         const og = ctx.createGain(); og.gain.value = 0.06;
@@ -218,32 +267,26 @@
       });
       return { node: g, gain: g };
     }
-    function startAmbience(kind) {
+    function startAmbience(kind){
       stopAmbience(0.5);
       let node=null, gain=null;
-      if (kind === 'forest') {
-        const src = makeNoiseLoop('white');
-        const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
-        const g = ctx.createGain(); g.gain.value = 0.0;
-        src.connect(lp).connect(g).connect(master); src.start(); node = src; gain = g;
-      } else if (kind === 'ocean') {
-        const src = makeNoiseLoop('ocean');
-        const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=200; bp.Q.value=0.7;
-        const g = ctx.createGain(); g.gain.value = 0.0;
-        src.connect(bp).connect(g).connect(master); src.start(); node = src; gain = g;
-      } else if (kind === 'rain') {
-        const src = makeNoiseLoop('rain');
-        const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1800;
-        const g = ctx.createGain(); g.gain.value = 0.0;
-        src.connect(lp).connect(g).connect(master); src.start(); node = src; gain = g;
-      } else if (kind === 'night') {
-        const pad = makePad([261.6, 329.6, 392.0]); pad.node.connect(master); node = pad.node; gain = pad.gain;
-      } else if (kind === 'castle') {
-        const pad = makePad([329.6, 415.3, 523.3]); pad.node.connect(master); node = pad.node; gain = pad.gain;
-      } else if (kind === 'pad') {
-        const pad = makePad([220, 277, 330]); pad.node.connect(master); node = pad.node; gain = pad.gain;
+      if (kind === 'forest'){
+        const s = makeNoiseLoop('white'); const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
+        const g = ctx.createGain(); g.gain.value = 0.0; s.connect(lp).connect(g).connect(master); s.start(); node=s; gain=g;
+      } else if (kind === 'ocean'){
+        const s = makeNoiseLoop('ocean'); const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=200; bp.Q.value=0.7;
+        const g = ctx.createGain(); g.gain.value = 0.0; s.connect(bp).connect(g).connect(master); s.start(); node=s; gain=g;
+      } else if (kind === 'rain'){
+        const s = makeNoiseLoop('rain'); const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1800;
+        const g = ctx.createGain(); g.gain.value = 0.0; s.connect(lp).connect(g).connect(master); s.start(); node=s; gain=g;
+      } else if (kind === 'night'){
+        const p = makePad([261.6, 329.6, 392.0]); p.node.connect(master); node=p.node; gain=p.gain;
+      } else if (kind === 'castle'){
+        const p = makePad([329.6, 415.3, 523.3]); p.node.connect(master); node=p.node; gain=p.gain;
+      } else if (kind === 'pad'){
+        const p = makePad([220, 277, 330]); p.node.connect(master); node=p.node; gain=p.gain;
       }
-      if (gain) {
+      if (gain){
         const t = ctx.currentTime;
         gain.gain.cancelScheduledValues(t);
         gain.gain.linearRampToValueAtTime(0.0, t);
@@ -251,8 +294,8 @@
       }
       amb = { node, gain, kind };
     }
-    function stopAmbience(fade=0.3) {
-      if (!amb.gain) { amb = { node:null, gain:null, kind:'off' }; return; }
+    function stopAmbience(fade=0.3){
+      if (!amb.gain){ amb = { node:null, gain:null, kind:'off' }; return; }
       const t = ctx.currentTime;
       amb.gain.gain.cancelScheduledValues(t);
       amb.gain.gain.linearRampToValueAtTime(0, t + fade);
@@ -260,39 +303,53 @@
       amb = { node:null, gain:null, kind:'off' };
     }
 
-    // Manual SFX (tap-to-play)
-    document.getElementById('manualSfx').addEventListener('click', (e) => {
-      const b = e.target.closest('[data-sfx]'); if (!b) return;
-      const id = b.getAttribute('data-sfx');
-      if (id === 'whoosh')  return playWhoosh();
-      if (id === 'plip')    return playPlip();
-      if (id === 'chime')   return playChime();
-      if (id === 'wind')    return playWindGust();
-      if (id === 'lullaby') return playLullabyPhrase();
-      if (id === 'bark')    return playBarkSoft();
-      if (id === 'stop')    return stopAmbience();
-    });
+    const ambSel = document.getElementById('amb');
+    function pickAmbienceFromStory(text){
+      const s = deaccent(text || '');
+      if (/\brain|storm|puddle/.test(s)) return 'rain';
+      if (/\bocean|sea|wave|beach/.test(s)) return 'ocean';
+      if (/\bforest|woods|tree|owl/.test(s)) return 'forest';
+      if (/\bnight|moon|sleep|star/.test(s)) return 'night';
+      if (/\bcastle|king|queen|magic/.test(s)) return 'castle';
+      return 'pad';
+    }
+    function applyAmbienceSelection(val){
+      if (val === 'off') return stopAmbience(0.4);
+      if (val === 'auto') return startAmbience(pickAmbienceFromStory(storyEl.textContent || ''));
+      startAmbience(val);
+    }
+    applyAmbienceSelection('auto');
+    ambSel.addEventListener('change', e => applyAmbienceSelection(e.target.value));
 
-    // —— Speech-to-sfx (robust, child-safe) ——
+    /* ====== Speech Recognition (interim + final with cooldowns) ====== */
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const micBtn = document.getElementById('toggleMic');
+    const micBtn    = document.getElementById('toggleMic');
     const micStatus = document.getElementById('micStatus');
+    const langSel   = document.getElementById('sttLang');
+    const interimChk= document.getElementById('sttInterimChk');
+    const boxFinal  = document.getElementById('sttFinal');
+    const boxInter  = document.getElementById('sttInterim');
+    const boxEv     = document.getElementById('sttEvents');
+    const btnClear  = document.getElementById('sttClear');
 
     let rec = null, active = false;
-    let lastEffectAt = 0;            // global throttle
-    const COOLDOWN_GLOBAL_MS = 600;  // global gap between any two effects
-    const lastAtByEffect = Object.create(null); // per-effect cooldowns
+    function logEv(msg){ const t = new Date().toLocaleTimeString(); boxEv.textContent += `[${t}] ${msg}\n`; boxEv.scrollTop = boxEv.scrollHeight; }
 
+    // effects and regexes
     const effects = [
-      { name: 'whoosh',  rx: /\b(fly|whoosh|soar(?:ed)?|uçtu|r[üu]zgar)\b/iu,   fn: playWhoosh,       cd: 1600 },
-      { name: 'plip',    rx: /\b(rain|raindrop|plip(?:-?plop)?|shower|ya[ğg]mur)\b/iu, fn: playPlip, cd: 1600 },
-      { name: 'wind',    rx: /\b(wind|breeze|forest|a[gğ]a[cç])\b/iu,          fn: playWindGust,     cd: 5000 },
-      { name: 'chime',   rx: /\b(magic|sparkle|star[s]?|parlad[ıi]|sihir)\b/iu, fn: playChime,        cd: 2500 },
-      { name: 'bark',    rx: /\b(dog|puppy|bark|k[öo]pek)\b/iu,                fn: playBarkSoft,     cd: 2200 },
+      { name: 'whoosh',  rx: /\b(fly|whoosh|soar(?:ed)?|uçtu|r[üu]zgar)\b/iu,   fn: playWhoosh,          cd: 1600 },
+      { name: 'plip',    rx: /\b(rain|raindrop|plip(?:-?plop)?|shower|ya[ğg]mur)\b/iu, fn: playPlip,   cd: 1600 },
+      { name: 'wind',    rx: /\b(wind|breeze|forest|a[gğ]a[cç])\b/iu,          fn: playWindGust,        cd: 5000 },
+      { name: 'chime',   rx: /\b(magic|sparkle|star[s]?|parlad[ıi]|sihir)\b/iu, fn: playChime,           cd: 2500 },
+      { name: 'bark',    rx: /\b(dog|puppy|bark|k[öo]pek)\b/iu,                fn: playBarkSoft,        cd: 2200 },
       { name: 'lullaby', rx: /\b(good\s*night|sleep|yawn|uyku|iyi\s*geceler)\b/iu, fn: playLullabyPhrase, cd: 7000 },
     ];
 
-    function canTrigger(effectName, cdMs) {
+    // cooldowns
+    let lastEffectAt = 0;
+    const COOLDOWN_GLOBAL_MS = 500;
+    const lastAtByEffect = Object.create(null);
+    function canTrigger(effectName, cdMs){
       const now = Date.now();
       if (now - lastEffectAt < COOLDOWN_GLOBAL_MS) return false;
       const last = lastAtByEffect[effectName] || 0;
@@ -302,77 +359,99 @@
       return true;
     }
 
-    function startMic() {
-      if (!SpeechRec) {
-        micStatus.textContent = 'Microphone: unavailable — use the SFX buttons';
-        return;
+    // interim window
+    let interimWindow = "";
+    const MAX_WINDOW_CHARS = 240;
+    let debounceTimer = null;
+
+    function scanAndTrigger(text){
+      const clean = deaccent(text);
+      for (const eff of effects){
+        if (eff.rx.test(clean) && canTrigger(eff.name, eff.cd)) { eff.fn(); break; }
       }
-      if (active) return;
-      ctx.resume?.();
-
-      rec = new SpeechRec();
-      rec.lang = 'en-GB';
-      rec.continuous = true;
-      rec.interimResults = false;    // only final, avoids spam
-
-      rec.onresult = (e) => {
-        const r = e.results[e.results.length - 1];
-        if (!r || !r.isFinal) return;
-        const text = deaccent(r[0].transcript || '');
-        for (const eff of effects) {
-          if (eff.rx.test(text) && canTrigger(eff.name, eff.cd)) {
-            eff.fn();
-            break; // one effect per final phrase
-          }
-        }
-      };
-      rec.onend = () => { if (active) rec.start(); }; // keep listening while active
-      rec.onerror = () => {};
-      rec.start();
-      active = true;
-      micStatus.textContent = 'Microphone: listening…';
-      micBtn.textContent = 'Stop listening';
     }
 
-    function stopMic() {
+    function startMic(){
+      if (!SpeechRec){ micStatus.textContent = 'Microphone: unsupported in this browser'; logEv('SpeechRecognition not available'); return; }
+      if (active) return;
+
+      const lang = (langSel?.value || 'en-GB');
+      rec = new SpeechRec();
+      rec.lang = lang;
+      rec.continuous = true;
+      rec.interimResults = true; // allow mid-sentence
+
+      rec.onstart = () => { active = true; micStatus.textContent = `Microphone: listening… (${lang})`; micBtn.textContent = 'Stop listening'; logEv('onstart'); };
+      rec.onresult = (e) => {
+        const finals=[], interims=[];
+        for (let i=e.resultIndex; i<e.results.length; i++){
+          const r = e.results[i]; const t = r[0]?.transcript || '';
+          (r.isFinal ? finals : interims).push(t);
+        }
+
+        // Interim (live)
+        const interimText = interims.join(' ').trim();
+        boxInter.textContent = (interimChk?.checked ? interimText : '');
+        if (interimText){
+          interimWindow = (interimWindow + ' ' + interimText).slice(-MAX_WINDOW_CHARS);
+          scanAndTrigger(interimWindow);
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => scanAndTrigger(interimWindow), 220);
+        }
+
+        // Final (commit)
+        if (finals.length){
+          const finalText = finals.join(' ').trim();
+          if (finalText){
+            boxFinal.textContent += (boxFinal.textContent ? '\n' : '') + finalText;
+            boxFinal.scrollTop = boxFinal.scrollHeight;
+            logEv(`final: "${finalText}"`);
+            scanAndTrigger(finalText);
+          }
+          interimWindow = '';
+          boxInter.textContent = '';
+        }
+      };
+      rec.onerror = (e) => logEv(`onerror: ${e?.error || 'unknown'}`);
+      rec.onend   = () => { logEv('onend'); if (active) { try { rec.start(); } catch(_) {} } };
+      try { rec.start(); } catch(err) { logEv(`start() error: ${err?.message || err}`); }
+    }
+
+    function stopMic(){
       active = false;
       try { rec && rec.stop(); } catch(_) {}
       rec = null;
       micStatus.textContent = 'Microphone: off';
       micBtn.textContent = 'Start listening';
-    }
-    micBtn.addEventListener('click', () => active ? stopMic() : startMic());
-
-    // —— Auto ambience from story content + selector wiring ——
-    function pickAmbienceFromStory(text) {
-      const s = deaccent(text || '');
-      if (/\brain|storm|puddle/.test(s)) return 'rain';
-      if (/\bocean|sea|wave|beach/.test(s)) return 'ocean';
-      if (/\bforest|woods|tree|owl/.test(s)) return 'forest';
-      if (/\bnight|moon|sleep|star/.test(s)) return 'night';
-      if (/\bcastle|king|queen|magic/.test(s)) return 'castle';
-      return 'pad';
+      clearTimeout(debounceTimer);
     }
 
-    const rawText = storyEl.textContent || '';
-    const ambSel = document.getElementById('amb');
-    function applyAmbienceSelection(val) {
-      if (val === 'off') { stopAmbience(0.4); return; }
-      if (val === 'auto') {
-        const kind = pickAmbienceFromStory(rawText);
-        startAmbience(kind);
-      } else {
-        startAmbience(val);
-      }
-    }
-    applyAmbienceSelection('auto');
-    ambSel.addEventListener('change', e => applyAmbienceSelection(e.target.value));
+    document.getElementById("toggleMic").addEventListener("click", () => active ? stopMic() : startMic());
+    document.getElementById("sttClear").addEventListener("click", () => { document.getElementById('sttFinal').textContent=''; document.getElementById('sttInterim').textContent=''; document.getElementById('sttEvents').textContent=''; });
 
-    // Chrome autoplay policy: first user gesture may be needed
-    document.body.addEventListener('click', () => ctx.resume && ctx.resume(), { once:true });
+    // Mic level test
+    const meterBar = document.getElementById("sttMeterBar");
+    document.getElementById("sttMicTest").addEventListener("click", async () => {
+      try{
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true } });
+        const src = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser(); analyser.fftSize = 512; src.connect(analyser);
+        const data = new Uint8Array(analyser.fftSize);
+        (function loop(){
+          analyser.getByteTimeDomainData(data);
+          let sum=0; for (let i=0;i<data.length;i++){ const d=data[i]-128; sum+=d*d; }
+          const rms = Math.sqrt(sum/data.length);
+          const pct = Math.min(100, Math.max(0, (rms/35)*100));
+          meterBar.style.width = pct.toFixed(0) + '%';
+          requestAnimationFrame(loop);
+        })();
+        logEv('Mic test running — speak and watch the bar');
+      } catch(err){ logEv('Mic test error: ' + (err?.message || err)); }
+    });
 
-    // Footer year
-    (function(){ const y = document.getElementById('year'); if (y) y.textContent = new Date().getFullYear(); })();
+    // One-time resume for mobile autoplay policies
+    document.body.addEventListener("click", () => ctx.resume && ctx.resume(), { once:true });
+    document.getElementById("year").textContent = new Date().getFullYear();
   </script>
 </body>
 </html>
