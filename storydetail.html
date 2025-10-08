@@ -39,10 +39,6 @@
     .stt-meter { flex:1; height:10px; background:#f2f2f6; border-radius:999px; overflow:hidden; border:1px solid #eee9fb; }
     .stt-meter span { display:block; height:100%; width:0%; background:#8E44EC; transition: width .08s linear; }
 
-    /* small helper badge for KWS status */
-    .kws-pill { display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid #eee9fb; background:#fbf9ff; color:#6C2E9C; font-weight:800; font-size:12px; }
-    .kws-pill.on { background:#eaf8f1; color:#055a35; border-color:#d6efe3; }
-
     @media (max-width:900px){
       .soundbar{ grid-template-columns:1fr; }
       .stt-panels{ grid-template-columns:1fr; }
@@ -131,14 +127,8 @@
             <option value="tr-TR">Türkçe</option>
           </select>
         </div>
-
         <label class="muted"><input type="checkbox" id="sttInterimChk" checked /> Show interim</label>
-
         <button class="btn ghost" id="sttClear" type="button">Clear logs</button>
-
-        <!-- Optional Keyword Spotter toggle -->
-        <button class="btn ghost" id="kwsToggle" type="button">Enable Keyword Spotter</button>
-        <span id="kwsStatus" class="kws-pill" aria-live="polite">KWS: Off</span>
       </div>
 
       <div class="stt-panels">
@@ -222,8 +212,7 @@
     }
     function playWindGust(){
       const s = ctx.createBufferSource(); s.buffer = makeNoiseBuffer();
-      const bp = ctx.createBiquacFilter ? ctx.createBiquacFilter() : ctx.createBiquadFilter();
-      bp.type = "bandpass"; bp.frequency.value = 400; bp.Q.value = 0.7;
+      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 400; bp.Q.value = 0.7;
       const g = ctx.createGain(); g.gain.value = 0.0001;
       g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.06);
       g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
@@ -332,39 +321,32 @@
     applyAmbienceSelection('auto');
     ambSel.addEventListener('change', e => applyAmbienceSelection(e.target.value));
 
-    /* ====== Speech Recognition (interim + final with cooldowns) ====== */
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const micBtn    = document.getElementById('toggleMic');
-    const micStatus = document.getElementById('micStatus');
-    const langSel   = document.getElementById('sttLang');
-    const interimChk= document.getElementById('sttInterimChk');
-    const boxFinal  = document.getElementById('sttFinal');
-    const boxInter  = document.getElementById('sttInterim');
-    const boxEv     = document.getElementById('sttEvents');
-    const btnClear  = document.getElementById('sttClear');
+    /* ==========================================
+       Option 1: Story follower + prefix trigger
+       ========================================== */
+    const RAW_TEXT = (storyEl.textContent || "")
+      .toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+      .replace(/[^a-z0-9\s']/g,' ')
+      .replace(/\s+/g,' ')
+      .trim();
 
-    let rec = null, active = false;
-    function logEv(msg){ const t = new Date().toLocaleTimeString(); boxEv.textContent += `[${t}] ${msg}\n`; boxEv.scrollTop = boxEv.scrollHeight; }
-
-    // effects and regexes (for both SR & KWS mapping)
-    const EFFECTS = {
-      whoosh: { fn: playWhoosh, cd: 1600 },
-      plip:   { fn: playPlip,   cd: 1600 },
-      wind:   { fn: playWindGust, cd: 5000 },
-      chime:  { fn: playChime,  cd: 2500 },
-      bark:   { fn: playBarkSoft, cd: 2200 },
-      lullaby:{ fn: playLullabyPhrase, cd: 7000 },
+    // Triggers we care about and mapping to effects
+    const TRIGGERS = new Set(['magic','sparkle','rain','wind','dog','puppy','star','sleep','fly']);
+    const EFFECT_FOR = {
+      magic:'chime', sparkle:'chime', star:'chime',
+      rain:'plip', wind:'wind', dog:'bark', puppy:'bark',
+      sleep:'lullaby', fly:'whoosh'
     };
-    const effectMatchers = [
-      { name:'whoosh',  rx:/\b(fly|whoosh|soar(?:ed)?|uçtu|r[üu]zgar)\b/iu },
-      { name:'plip',    rx:/\b(rain|raindrop|raindrops|plip(?:-?plop)?|shower|ya[ğg]mur)\b/iu },
-      { name:'wind',    rx:/\b(wind|breeze|forest|a[gğ]a[cç])\b/iu },
-      { name:'chime',   rx:/\b(magic|sparkle|sparkly|sparkles|star[s]?|parlad[ıi]|sihir)\b/iu },
-      { name:'bark',    rx:/\b(dog|puppy|papi|poppy|bark|k[öo]pek)\b/iu },
-      { name:'lullaby', rx:/\b(good\s*night|sleep|yawn|uyku|iyi\s*geceler)\b/iu },
-    ];
 
-    // cooldowns
+    // Tokenize story and maintain a soft cursor (rough reading progress)
+    const TOKENS = RAW_TEXT ? RAW_TEXT.split(' ') : [];
+    let cursor = 0;
+
+    // How early to fire for a word (prefix length)
+    const MIN_PREFIX = (w) => Math.min(3, Math.max(2, Math.floor(w.length * 0.35)));
+
+    // Cooldowns shared with SR path
     let lastEffectAt = 0;
     const COOLDOWN_GLOBAL_MS = 380;
     const lastAtByEffect = Object.create(null);
@@ -377,37 +359,108 @@
       lastEffectAt = now;
       return true;
     }
-
-    // interim window (low-latency)
-    let interimWindow = "";
-    const MAX_WINDOW_CHARS = 200;
-    let debounceTimer = null;
-    let lastTokenSeen = "";
-
+    const EFFECTS = {
+      whoosh: { fn: playWhoosh,       cd: 1600 },
+      plip:   { fn: playPlip,         cd: 1600 },
+      wind:   { fn: playWindGust,     cd: 5000 },
+      chime:  { fn: playChime,        cd: 2500 },
+      bark:   { fn: playBarkSoft,     cd: 2200 },
+      lullaby:{ fn: playLullabyPhrase,cd: 7000 },
+    };
     function triggerEffect(name){
       const eff = EFFECTS[name];
       if (!eff) return;
       if (canTrigger(name, eff.cd)) eff.fn();
     }
-    function scanAndTrigger(text){
-      const clean = deaccent(text);
-      for (const {name, rx} of effectMatchers){
-        if (rx.test(clean)) { triggerEffect(name); break; }
+
+    // Align interim tail to the script near the cursor and fire on prefix
+    function alignAndMaybeTrigger(interimTail) {
+      if (!TOKENS.length) return;
+      const words = interimTail.toLowerCase().split(/\s+/).filter(Boolean).slice(-12);
+      if (!words.length) return;
+
+      // Search in a local window around cursor for best overlap
+      const WINDOW = 30;
+      let bestIdx = cursor, bestHit = 0;
+      const start = Math.max(0, cursor - WINDOW);
+      const end   = Math.min(TOKENS.length, cursor + WINDOW);
+
+      for (let i = start; i < end; i++) {
+        const sliceStart = Math.max(0, i - words.length + 1);
+        const slice = TOKENS.slice(sliceStart, i + 1);
+        // quick overlap score: count exact matches aligned at the end
+        let hit = 0;
+        const offset = Math.max(0, words.length - slice.length);
+        for (let k = 0; k < slice.length; k++) if (slice[k] === words[offset + k]) hit++;
+        if (hit > bestHit) { bestHit = hit; bestIdx = i; }
+      }
+
+      // Nudge cursor slowly toward best match
+      if (bestIdx > cursor) cursor = Math.min(bestIdx, cursor + 3);
+
+      // Look ahead for the next trigger word and fire on prefix
+      for (let j = cursor; j < Math.min(cursor + 20, TOKENS.length); j++) {
+        const w = TOKENS[j];
+        if (!TRIGGERS.has(w)) continue;
+
+        const need   = MIN_PREFIX(w);
+        const prefix = w.slice(0, need);
+        const lastWord = words[words.length - 1] || '';
+
+        if (lastWord.startsWith(prefix)) {
+          const eff = EFFECT_FOR[w];
+          if (eff) triggerEffect(eff);     // fire early at word start
+          cursor = Math.min(j + 1, TOKENS.length - 1); // advance past it
+          break;
+        }
+        if (j - cursor > 8) break; // don’t scan too far
       }
     }
 
+    /* ====== Speech Recognition (low-latency interim + follower) ====== */
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const micBtn    = document.getElementById('toggleMic');
+    const micStatus = document.getElementById('micStatus');
+    const langSel   = document.getElementById('sttLang');
+    const interimChk= document.getElementById('sttInterimChk');
+    const boxFinal  = document.getElementById('sttFinal');
+    const boxInter  = document.getElementById('sttInterim');
+    const boxEv     = document.getElementById('sttEvents');
+    const btnClear  = document.getElementById('sttClear');
+
+    function logEv(msg){ const t = new Date().toLocaleTimeString(); boxEv.textContent += `[${t}] ${msg}\n`; boxEv.scrollTop = boxEv.scrollHeight; }
+
+    // Free-vocab matchers (kept as a fallback alongside follower)
+    const effectMatchers = [
+      { name:'whoosh',  rx:/\b(fly|whoosh|soar(?:ed)?|uçtu|r[üu]zgar)\b/iu },
+      { name:'plip',    rx:/\b(rain|raindrop|raindrops|plip(?:-?plop)?|shower|ya[ğg]mur)\b/iu },
+      { name:'wind',    rx:/\b(wind|breeze|forest|a[gğ]a[cç])\b/iu },
+      { name:'chime',   rx:/\b(magic|sparkle|sparkly|sparkles|star[s]?|parlad[ıi]|sihir)\b/iu },
+      { name:'bark',    rx:/\b(dog|puppy|papi|poppy|bark|k[öo]pek)\b/iu },
+      { name:'lullaby', rx:/\b(good\s*night|sleep|yawn|uyku|iyi\s*geceler)\b/iu },
+    ];
+    function scanAndTriggerFree(text){
+      const clean = deaccent(text);
+      for (const {name, rx} of effectMatchers){ if (rx.test(clean)) { triggerEffect(name); break; } }
+    }
+
+    // Low-latency interim scanning
+    let interimWindow = "";
+    const MAX_WINDOW_CHARS = 200;
+    let debounceTimer = null;
+    let lastTokenSeen = "";
+
     function startMic(){
       if (!SpeechRec){ micStatus.textContent = 'Microphone: unsupported in this browser'; logEv('SpeechRecognition not available'); return; }
-      if (active) return;
 
       const lang = (langSel?.value || 'en-GB');
-      rec = new SpeechRec();
+      const rec = new SpeechRec();
       rec.lang = lang;
       rec.continuous = true;
       rec.interimResults = true;
       rec.maxAlternatives = 1;
 
-      rec.onstart = () => { active = true; micStatus.textContent = `Microphone: listening… (${lang})`; micBtn.textContent = 'Stop listening'; logEv('onstart'); };
+      rec.onstart = () => { micStatus.textContent = `Microphone: listening… (${lang})`; micBtn.textContent = 'Stop listening'; logEv('onstart'); };
       rec.onresult = (e) => {
         const finals=[], interims=[];
         for (let i=e.resultIndex; i<e.results.length; i++){
@@ -415,50 +468,61 @@
           (r.isFinal ? finals : interims).push(t);
         }
 
-        // Interim (live, token-first)
+        // Interim (live) — token-first + follower prefix
         const interimText = interims.join(' ').trim();
         boxInter.textContent = (interimChk?.checked ? interimText : '');
         if (interimText) {
+          // react to newest token (free-vocab)
           const toks = interimText.trim().split(/\s+/).slice(-6);
           const lastTok = toks[toks.length - 1] || "";
           if (lastTok && lastTok !== lastTokenSeen) {
             lastTokenSeen = lastTok;
-            scanAndTrigger(lastTok); // react to newest token
+            scanAndTriggerFree(lastTok);
           }
+          // follower: align and fire early on the next trigger word
+          alignAndMaybeTrigger(interimText);
+
+          // small rolling window + tiny fallback to smooth chunking
           interimWindow = (interimWindow + ' ' + interimText).slice(-MAX_WINDOW_CHARS);
           clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => scanAndTrigger(interimWindow), 80);
+          debounceTimer = setTimeout(() => alignAndMaybeTrigger(interimWindow), 60);
         }
 
-        // Final (commit)
+        // Final (commit) — log + follower correction
         if (finals.length){
           const finalText = finals.join(' ').trim();
           if (finalText){
             boxFinal.textContent += (boxFinal.textContent ? '\n' : '') + finalText;
             boxFinal.scrollTop = boxFinal.scrollHeight;
             logEv(`final: "${finalText}"`);
-            scanAndTrigger(finalText);
+            // free-vocab safety + follower correction
+            scanAndTriggerFree(finalText);
+            alignAndMaybeTrigger(finalText);
           }
           interimWindow = '';
           boxInter.textContent = '';
         }
       };
       rec.onerror = (e) => logEv(`onerror: ${e?.error || 'unknown'}`);
-      rec.onend   = () => { logEv('onend'); if (active) { try { rec.start(); } catch(_) {} } };
+      rec.onend   = () => { logEv('onend'); micStatus.textContent = 'Microphone: off'; micBtn.textContent = 'Start listening'; };
+
+      // toggle handler
+      function stopMic(){
+        try { rec.stop(); } catch(_) {}
+        micStatus.textContent = 'Microphone: off';
+        micBtn.textContent = 'Start listening';
+        clearTimeout(debounceTimer);
+        document.getElementById("toggleMic").onclick = () => startMic();
+      }
+      document.getElementById("toggleMic").onclick = stopMic;
+
       try { rec.start(); } catch(err) { logEv(`start() error: ${err?.message || err}`); }
     }
+    document.getElementById("toggleMic").onclick = () => startMic();
 
-    function stopMic(){
-      active = false;
-      try { rec && rec.stop(); } catch(_) {}
-      rec = null;
-      micStatus.textContent = 'Microphone: off';
-      micBtn.textContent = 'Start listening';
-      clearTimeout(debounceTimer);
-    }
-
-    document.getElementById("toggleMic").addEventListener("click", () => active ? stopMic() : startMic());
-    document.getElementById("sttClear").addEventListener("click", () => { boxFinal.textContent=''; boxInter.textContent=''; boxEv.textContent=''; });
+    document.getElementById("sttClear").addEventListener("click", () => {
+      boxFinal.textContent=''; boxInter.textContent=''; boxEv.textContent='';
+    });
 
     // Mic level test
     const meterBar = document.getElementById("sttMeterBar");
@@ -483,120 +547,6 @@
     // One-time resume for mobile autoplay policies
     document.body.addEventListener("click", () => ctx.resume && ctx.resume(), { once:true });
     document.getElementById("year").textContent = new Date().getFullYear();
-
-    /* ===========================
-       OPTIONAL: Keyword Spotter
-       ===========================
-       This block auto-enables low-latency KWS if a compatible SDK is present.
-       It does NOT break anything if the SDK is missing.
-       Steps (when you're ready):
-       1) Include your KWS SDK script tag in <head> (e.g., Porcupine Web).
-       2) Provide ACCESS_KEY and keyword model URLs below.
-       3) Click "Enable Keyword Spotter" in the debug panel.
-    */
-    const kwsBtn = document.getElementById('kwsToggle');
-    const kwsStatus = document.getElementById('kwsStatus');
-    let kwsEngine = null;
-    let kwsOn = false;
-
-    // Map KWS detections → our effect names
-    const KWS_MAP = {
-      magic: 'chime',
-      sparkle: 'chime',
-      star: 'chime',
-      rain: 'plip',
-      wind: 'wind',
-      dog: 'bark',
-      sleep: 'lullaby',
-      fly: 'whoosh'
-    };
-
-    async function initKwsIfAvailable(){
-      if (kwsEngine) return kwsEngine;
-
-      // TODO: If using Porcupine Web SDK, ensure it’s loaded globally (window.PorcupineWeb).
-      // If not present, we just return null and keep using SR fallback.
-      if (!window.PorcupineWeb) return null;
-
-      // TODO: put your real access key here
-      const ACCESS_KEY = "YOUR_PORCUPINE_ACCESS_KEY";
-
-      // TODO: map your keyword labels to .ppn URLs you host/cdn.
-      // You can start with 4–6 core words you want instant reactions for.
-      const KEYWORDS = {
-        magic:   "https://yourcdn.example.com/kws/magic_en.ppn",
-        sparkle: "https://yourcdn.example.com/kws/sparkle_en.ppn",
-        star:    "https://yourcdn.example.com/kws/star_en.ppn",
-        rain:    "https://yourcdn.example.com/kws/rain_en.ppn",
-        wind:    "https://yourcdn.example.com/kws/wind_en.ppn",
-        dog:     "https://yourcdn.example.com/kws/dog_en.ppn",
-        sleep:   "https://yourcdn.example.com/kws/sleep_en.ppn",
-        fly:     "https://yourcdn.example.com/kws/fly_en.ppn"
-      };
-
-      try {
-        // Example initialization pattern (Porcupine Web style API).
-        // Adjust to your chosen SDK’s API.
-        const p = await PorcupineWeb.create(ACCESS_KEY, Object.values(KEYWORDS));
-        // Wrap a small adapter so we know which keyword fired:
-        const labels = Object.keys(KEYWORDS);
-        kwsEngine = {
-          start: async () => {
-            const mic = await PorcupineWeb.MicrophoneRecorder.create(p);
-            mic.start();
-            // Polling callback:
-            mic.setOnFrameProcessed((keywordIndex) => {
-              if (keywordIndex >= 0) {
-                const label = labels[keywordIndex];
-                const eff = KWS_MAP[label];
-                if (eff) triggerEffect(eff);
-                logEv(`KWS: ${label}`);
-              }
-            });
-          },
-          stop: async () => { try { await PorcupineWeb.MicrophoneRecorder.stop(); } catch(_){} }
-        };
-        return kwsEngine;
-      } catch (err) {
-        logEv('KWS init failed: ' + (err?.message || err));
-        return null;
-      }
-    }
-
-    kwsBtn.addEventListener('click', async () => {
-      if (!kwsOn) {
-        kwsBtn.disabled = true;
-        const engine = await initKwsIfAvailable();
-        kwsBtn.disabled = false;
-        if (!engine) {
-          logEv('KWS not available (no SDK or init error). Staying on SR fallback.');
-          kwsStatus.textContent = 'KWS: Off';
-          kwsStatus.classList.remove('on');
-          return;
-        }
-        await engine.start();
-        kwsOn = true;
-        kwsStatus.textContent = 'KWS: On';
-        kwsStatus.classList.add('on');
-        kwsBtn.textContent = 'Disable Keyword Spotter';
-        logEv('KWS started');
-      } else {
-        try { await kwsEngine?.stop(); } catch(_){}
-        kwsOn = false;
-        kwsStatus.textContent = 'KWS: Off';
-        kwsStatus.classList.remove('on');
-        kwsBtn.textContent = 'Enable Keyword Spotter';
-        logEv('KWS stopped');
-      }
-    });
-
   </script>
-
-  <!--
-    OPTIONAL: if you plan to use Porcupine Web, add its script here.
-    <script src="https://cdn.picovoice.ai/porcupine/porcupine-web-en-worker.js"></script>
-    <script src="https://cdn.picovoice.ai/porcupine/porcupine-web.js"></script>
-    Then fill ACCESS_KEY and KEYWORDS URLs above.
-  -->
 </body>
 </html>
