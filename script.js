@@ -5,10 +5,25 @@
    (Legacy stepper/simple UIs removed)
 ===================================================== */
 (() => {
-   // TEMP: always reset sign-in state when landing on index.html
-if (window.location.pathname.endsWith("index.html") || window.location.pathname === "/") {
-  try { localStorage.removeItem("yw_signed_in"); } catch (_) {}
-}
+// --- Reset auth when we are truly on the public landing page (GitHub Pages-safe)
+(() => {
+  const p = window.location.pathname || "";
+
+  // true for "/", "/index.html", "/something/", "/something/index.html"
+  const looksLikeLanding =
+    /(?:^|\/)(index\.html?)?$/.test(p) || /\/[^/]+\/?$/.test(p);
+
+  // also true if the DOM has our landing markers (defensive)
+  const hasLandingMarkers =
+    !!document.querySelector('.age-buttons') &&
+    !!document.getElementById('heroCta');
+
+  if (looksLikeLanding || hasLandingMarkers) {
+    try { localStorage.removeItem("yw_signed_in"); } catch (_) {}
+    // Optional: also clear any accidental auto-login leftovers
+    // try { sessionStorage.removeItem("yw_story_html"); } catch (_) {}
+  }
+})();
   const AGE_KEY = "yw_age_group";          // '0-2' | '3-5' | '5+'
   const DEFAULT_AGE = "0-2";
   const API_URL = "https://fairytale-api.vercel.app/api/generate-story";
@@ -454,61 +469,70 @@ function unlockGate() {
   }, 600);
 }
 
+   // ---------- Checkout: render story + products ----------
+let cartCount = 0;
+function initCheckout() {
+  const storyEl = $('#storyContent');
+  if (!storyEl) return;
 
+  const html = SS.getItem(K_STORY_HTML);
+  const md   = SS.getItem(K_STORY_MD);
 
+  // ---- Decide what to render based on auth state ----
+  if (!isSignedIn()) {
+    // Always show a preview for signed-out users
+    if (md) {
+      const previewHtml = makePreviewHtml(md, 10); // first ~10 non-empty lines
+      storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
+    } else {
+      // No markdown? Show a minimal teaser so we NEVER leak the full html
+      storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
+    }
+    storyEl.dataset.preview = "lines";
+    storyEl.classList.add("preview-clamp");
 
+    // Gate overlay for conversion
+    const childName = getChildName();
+    if (html || md) showGate(childName);
+  } else {
+    // Signed in → full story
+    storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
+    delete storyEl.dataset.preview;
+    storyEl.classList.remove("preview-clamp");
 
-  // ---------- Checkout: render story + products ----------
-  let cartCount = 0;
-  function initCheckout() {
-    const storyEl = $('#storyContent');
-    if (!storyEl) return;
-const html = SS.getItem(K_STORY_HTML);
-const md   = SS.getItem(K_STORY_MD);
+    // Hide gate overlays just in case
+    document.getElementById("gateOverlay")?.classList.add("hidden");
+    document.getElementById("blurGlow")?.classList.add("hidden");
 
-// If not signed in, show only the first 10 lines (preview)
-if (!isSignedIn() && md) {
-  const previewHtml = makePreviewHtml(md, 10);
-  storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
-  storyEl.dataset.preview = "lines";
-  storyEl.classList.add("preview-clamp");   // <-- add this line
-} else {
-  storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
-  delete storyEl.dataset.preview;
-  storyEl.classList.remove("preview-clamp"); // <-- and remove here
+    // Personalised badge
+    const childName = getChildName();
+    const reader = document.querySelector(".story-reader");
+    const badge = document.getElementById("personalBadge");
+    const badgeText = document.getElementById("personalBadgeText");
+    if (childName && badge && badgeText) {
+      badgeText.textContent = `Just for ${childName}`;
+      badge.classList.remove("hidden");
+      reader?.classList.add("has-badge");
+    }
+  }
+
+  // Optional raw markdown debug (if the element exists)
+  const rawMdEl = $('#storyMarkdown');
+  if (rawMdEl && md) rawMdEl.textContent = md;
+
+  // ---- Products carousel (age-aware) ----
+  const productsTrack = $('#productsTrack');
+  if (productsTrack) {
+    const age = getAge();
+    const products = getProductsForAge(age);
+    renderProducts(productsTrack, products);
+  }
+
+  // init cart badge as hidden
+  const cartCountEl = document.getElementById("cartCount");
+  if (cartCountEl) cartCountEl.classList.add("hidden");
 }
 
-// (optional) keep raw markdown debug view if present
-const rawMdEl = $('#storyMarkdown');
-if (rawMdEl && md) rawMdEl.textContent = md;
-
-       // Personalised badge + gate
-    const childName = getChildName();
-    if (!isSignedIn() && html) {
-      showGate(childName);
-    } else {
-  // If already signed in, make sure no blur/gate shows
-  document.getElementById("gateOverlay")?.classList.add("hidden");
-  document.getElementById("blurGlow")?.classList.add("hidden");
-  storyEl.classList.remove("blur-bottom");
-
-  const reader = document.querySelector(".story-reader");
-  const badge = document.getElementById("personalBadge");
-  const badgeText = document.getElementById("personalBadgeText");
-  if (childName && badge && badgeText) {
-    badgeText.textContent = `Just for ${childName}`;
-    badge.classList.remove("hidden");
-    reader?.classList.add("has-badge");
-  }
-    }
-
-    const productsTrack = $('#productsTrack');
-    if (productsTrack) {
-      const age = getAge();
-      const products = getProductsForAge(age);
-      renderProducts(productsTrack, products);
-    }
-  }
 
   // ---------- Products data per age ----------
   function getProductsForAge(age) {
