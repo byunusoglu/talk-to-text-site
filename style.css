@@ -1750,3 +1750,21 @@ body.age-no-bar main > section:first-child {
   margin-top: clamp(8px, 2vh, 16px);
 }
 
+/* Make hero banner image smaller on mobile screens only */
+@media (max-width: 700px) {
+  /* Target the same image class/id you already use */
+  .hero img#heroImage,
+  .hero-simple img#heroImage {
+    width: 70%;          /* reduce size (was 100%) */
+    max-width: 420px;    /* keep it crisp but not huge */
+    height: auto;
+    margin: 0 auto;      /* keep it centered */
+    display: block;
+  }
+
+  /* Optional: tighten vertical spacing a bit */
+  .hero,
+  .hero-simple {
+    margin-top: clamp(8px, 2vh, 16px);
+  }
+}
