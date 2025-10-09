@@ -851,3 +851,73 @@ onReady(() => {
   initHeroParallax(); // restore
 });
 })();
+
+// === Landing micro-demo (voice + gentle SFX) ===
+(() => {
+  const openBtn = document.getElementById('demoOpenBtn');
+  const modal   = document.getElementById('demoModal');
+  const closeBtn= document.getElementById('demoCloseBtn');
+  const playV   = document.getElementById('demoPlayVoice');
+  const playSfx = document.getElementById('demoPlaySfx');
+  if (!openBtn || !modal) return;
+
+  let ctx, master;
+  function ensureCtx(){
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = 0.35; master.connect(ctx.destination);
+  }
+  function playChime(){
+    ensureCtx();
+    const t = ctx.currentTime;
+    [784, 988, 1319].forEach((f, i) => {
+      const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.setValueAtTime(f, t + i*0.08);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + i*0.08);
+      g.gain.exponentialRampToValueAtTime(0.22, t + i*0.08 + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.08 + 0.6);
+      o.connect(g).connect(master); o.start(t + i*0.08); o.stop(t + i*0.08 + 0.65);
+    });
+  }
+  function makeNoiseBuffer(){
+    const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const d = b.getChannelData(0);
+    for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * 0.6;
+    return b;
+  }
+  function playPlip(){
+    ensureCtx();
+    const t = ctx.currentTime;
+    [0, 0.18].forEach((d, i) => {
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(i ? 660 : 520, t + d);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + d);
+      g.gain.exponentialRampToValueAtTime(0.2, t + d + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.25);
+      o.connect(g).connect(master); o.start(t + d); o.stop(t + d + 0.26);
+    });
+  }
+  function playVoiceLine(){
+    ensureCtx();
+    const t = ctx.currentTime;
+    const g = ctx.createGain(); g.gain.value = 0.0; g.connect(master);
+    const freqs = [220, 277, 330];
+    freqs.forEach((f, i) => {
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(f, t + i*0.02);
+      const og = ctx.createGain(); og.gain.value = 0.06; o.connect(og).connect(g); o.start(); setTimeout(()=>o.stop(), 1800);
+    });
+    g.gain.linearRampToValueAtTime(0.14, t + 0.25);
+    g.gain.linearRampToValueAtTime(0.0,  t + 1.8);
+  }
+
+  function open(){ modal.classList.remove('hidden'); }
+  function close(){ modal.classList.add('hidden'); }
+
+  openBtn.addEventListener('click', open);
+  closeBtn?.addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+  playV?.addEventListener('click', () => { playVoiceLine(); });
+  playSfx?.addEventListener('click', () => { playPlip(); setTimeout(playChime, 260); });
+
+  document.addEventListener('keydown', (e) => { if (!modal.classList.contains('hidden') && e.key === 'Escape') close(); });
+})();
+
