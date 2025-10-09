@@ -77,7 +77,7 @@
     <!-- Controls -->
     <section class="soundbar">
       <div>
-        <div class="status" id="micStatus">Microphone: off</div>
+        <div class="status" id="micStatus">Microphone: idle</div>
         <div class="hint" id="micHint">Tap “Start listening” and read the story aloud.</div>
         <div class="sfx-row" id="manualSfx">
           <button class="btn ghost" data-sfx="whoosh">Whoosh</button>
@@ -99,6 +99,16 @@
       <!-- Ambience -->
       <div class="inline-field">
         <label for="amb" class="muted">Ambience</label>
+        <select id="amb">
+          <option value="auto" selected>Auto</option>
+          <option value="off">Off</option>
+          <option value="forest">Forest</option>
+          <option value="ocean">Ocean</option>
+          <option value="rain">Rain</option>
+          <option value="night">Night</option>
+          <option value="castle">Castle</option>
+          <option value="pad">Soft pad</option>
+        </select>
       </div>
 
       <div class="inline-field">
@@ -308,9 +318,19 @@
       if (val === 'auto') return startAmbience(pickAmbienceFromStory(storyEl.textContent || ''));
       startAmbience(val);
     }
-    const storedAmb = SS.getItem("yw_ambience") || "pad";
-startAmbience(storedAmb);
-    ambSel.addEventListener('change', e => applyAmbienceSelection(e.target.value));
+    const storedAmb = SS.getItem("yw_ambience") || "auto";
+    if (ambSel) {
+      ambSel.value = storedAmb;
+      applyAmbienceSelection(ambSel.value);
+      ambSel.addEventListener('change', e => {
+        const v = e.target.value;
+        SS.setItem("yw_ambience", v);
+        applyAmbienceSelection(v);
+      });
+    } else {
+      // Fallback if the select is ever missing
+      applyAmbienceSelection(storedAmb);
+    }
 
     /* ==========================================
        Option 1: Story follower + prefix trigger
@@ -419,9 +439,24 @@ startAmbience(storedAmb);
     const boxEv     = document.getElementById('sttEvents');
     const btnClear  = document.getElementById('sttClear');
 
-    function logEv(msg){ const t = new Date().toLocaleTimeString(); boxEv.textContent += `[${t}] ${msg}\n`; boxEv.scrollTop = boxEv.scrollHeight; }
+    function logEv(msg){
+      const t = new Date().toLocaleTimeString();
+      boxEv.textContent += `[${t}] ${msg}\n`;
+      boxEv.scrollTop = boxEv.scrollHeight;
+    }
 
-    // Free-vocab matchers (kept as a fallback alongside follower)
+    // --- One-time mic permission nudge (stops tracks immediately)
+    let micPrimed = false;
+    async function ensureMicPermission() {
+      if (micPrimed) return;
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation:true, noiseSuppression:true }
+      });
+      stream.getTracks().forEach(t => t.stop());
+      micPrimed = true;
+    }
+
+    // Free-vocab matchers (fallback)
     const effectMatchers = [
       { name:'whoosh',  rx:/\b(fly|whoosh|soar(?:ed)?|uçtu|r[üu]zgar)\b/iu },
       { name:'plip',    rx:/\b(rain|raindrop|raindrops|plip(?:-?plop)?|shower|ya[ğg]mur)\b/iu },
@@ -440,76 +475,94 @@ startAmbience(storedAmb);
     const MAX_WINDOW_CHARS = 200;
     let debounceTimer = null;
     let lastTokenSeen = "";
+    let rec = null;
 
-    function startMic(){
-      if (!SpeechRec){ micStatus.textContent = 'Microphone: unsupported in this browser'; logEv('SpeechRecognition not available'); return; }
-
-      const lang = (langSel?.value || 'en-GB');
-      const rec = new SpeechRec();
-      rec.lang = lang;
-      rec.continuous = true;
-      rec.interimResults = true;
-      rec.maxAlternatives = 1;
-
-      rec.onstart = () => { micStatus.textContent = `Microphone: listening… (${lang})`; micBtn.textContent = 'Stop listening'; logEv('onstart'); };
-      rec.onresult = (e) => {
-        const finals=[], interims=[];
-        for (let i=e.resultIndex; i<e.results.length; i++){
-          const r = e.results[i]; const t = r[0]?.transcript || '';
-          (r.isFinal ? finals : interims).push(t);
-        }
-
-        // Interim (live) — token-first + follower prefix
-        const interimText = interims.join(' ').trim();
-        boxInter.textContent = (interimChk?.checked ? interimText : '');
-        if (interimText) {
-          // react to newest token (free-vocab)
-          const toks = interimText.trim().split(/\s+/).slice(-6);
-          const lastTok = toks[toks.length - 1] || "";
-          if (lastTok && lastTok !== lastTokenSeen) {
-            lastTokenSeen = lastTok;
-            scanAndTriggerFree(lastTok);
-          }
-          // follower: align and fire early on the next trigger word
-          alignAndMaybeTrigger(interimText);
-
-          // small rolling window + tiny fallback to smooth chunking
-          interimWindow = (interimWindow + ' ' + interimText).slice(-MAX_WINDOW_CHARS);
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => alignAndMaybeTrigger(interimWindow), 60);
-        }
-
-        // Final (commit) — log + follower correction
-        if (finals.length){
-          const finalText = finals.join(' ').trim();
-          if (finalText){
-            boxFinal.textContent += (boxFinal.textContent ? '\n' : '') + finalText;
-            boxFinal.scrollTop = boxFinal.scrollHeight;
-            logEv(`final: "${finalText}"`);
-            // free-vocab safety + follower correction
-            scanAndTriggerFree(finalText);
-            alignAndMaybeTrigger(finalText);
-          }
-          interimWindow = '';
-          boxInter.textContent = '';
-        }
-      };
-      rec.onerror = (e) => logEv(`onerror: ${e?.error || 'unknown'}`);
-      rec.onend   = () => { logEv('onend'); micStatus.textContent = 'Microphone: off'; micBtn.textContent = 'Start listening'; };
-
-      // toggle handler
-      function stopMic(){
-        try { rec.stop(); } catch(_) {}
-        micStatus.textContent = 'Microphone: off';
-        micBtn.textContent = 'Start listening';
-        clearTimeout(debounceTimer);
-        document.getElementById("toggleMic").onclick = () => startMic();
+    async function startMic(){
+      if (!SpeechRec){
+        micStatus.textContent = 'Microphone: unsupported in this browser';
+        logEv('SpeechRecognition not available');
+        return;
       }
-      document.getElementById("toggleMic").onclick = stopMic;
 
-      try { rec.start(); } catch(err) { logEv(`start() error: ${err?.message || err}`); }
+      micBtn.disabled = true;
+      try {
+        if (ctx.state !== 'running') await ctx.resume();
+        await ensureMicPermission();
+
+        const lang = (langSel?.value || 'en-GB');
+        rec = new SpeechRec();
+        rec.lang = lang;
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.maxAlternatives = 1;
+
+        rec.onstart = () => {
+          micStatus.textContent = `Microphone: listening… (${lang})`;
+          micBtn.textContent = 'Stop listening';
+          micBtn.disabled = false;
+          logEv('onstart');
+        };
+        rec.onresult = (e) => {
+          const finals=[], interims=[];
+          for (let i=e.resultIndex; i<e.results.length; i++){
+            const r = e.results[i]; const t = r[0]?.transcript || '';
+            (r.isFinal ? finals : interims).push(t);
+          }
+
+          const interimText = interims.join(' ').trim();
+          boxInter.textContent = (interimChk?.checked ? interimText : '');
+          if (interimText) {
+            const toks = interimText.trim().split(/\s+/).slice(-6);
+            const lastTok = toks[toks.length - 1] || "";
+            if (lastTok && lastTok !== lastTokenSeen) {
+              lastTokenSeen = lastTok;
+              scanAndTriggerFree(lastTok);
+            }
+            alignAndMaybeTrigger(interimText);
+            interimWindow = (interimWindow + ' ' + interimText).slice(-MAX_WINDOW_CHARS);
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => alignAndMaybeTrigger(interimWindow), 60);
+          }
+
+          if (finals.length){
+            const finalText = finals.join(' ').trim();
+            if (finalText){
+              boxFinal.textContent += (boxFinal.textContent ? '\n' : '') + finalText;
+              boxFinal.scrollTop = boxFinal.scrollHeight;
+              logEv(`final: "${finalText}"`);
+              scanAndTriggerFree(finalText);
+              alignAndMaybeTrigger(finalText);
+            }
+            interimWindow = '';
+            boxInter.textContent = '';
+          }
+        };
+        rec.onerror = (e) => logEv(`onerror: ${e?.error || 'unknown'}`);
+        rec.onend   = () => {
+          logEv('onend');
+          micStatus.textContent = 'Microphone: idle';
+          micBtn.textContent = 'Start listening';
+          micBtn.onclick = startMic;
+          micBtn.disabled = false;
+        };
+
+        micBtn.onclick = stopMic;
+        rec.start();
+      } catch (err) {
+        logEv(`startMic() error: ${err?.message || err}`);
+        micStatus.textContent = 'Microphone: idle';
+        micBtn.textContent = 'Start listening';
+        micBtn.onclick = startMic;
+        micBtn.disabled = false;
+      }
     }
-    document.getElementById("toggleMic").onclick = () => startMic();
+
+    function stopMic(){
+      try { rec && rec.stop && rec.stop(); } catch(_) {}
+      // UI resets in onend
+    }
+
+    micBtn.onclick = startMic;
 
     document.getElementById("sttClear").addEventListener("click", () => {
       boxFinal.textContent=''; boxInter.textContent=''; boxEv.textContent='';
