@@ -5,6 +5,10 @@
    (Legacy stepper/simple UIs removed)
 ===================================================== */
 (() => {
+   // TEMP: always reset sign-in state when landing on index.html
+if (window.location.pathname.endsWith("index.html") || window.location.pathname === "/") {
+  try { localStorage.removeItem("yw_signed_in"); } catch (_) {}
+}
   const AGE_KEY = "yw_age_group";          // '0-2' | '3-5' | '5+'
   const DEFAULT_AGE = "0-2";
   const API_URL = "https://fairytale-api.vercel.app/api/generate-story";
