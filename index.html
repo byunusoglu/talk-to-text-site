@@ -46,51 +46,115 @@
   <button class="age-btn" data-age="5+" data-target="create.html">5+</button>
 </div>
 
-<section class="hero-simple" aria-label="Hero">
-  <div class="hero-copy">
-    <h1 id="heroTitle">Tonight’s bedtime hero? Your kid.</h1>
-    <p id="heroDesc">Turn your child’s imagination into their favourite storytime moment — every night.</p>
-    <button class="btn" id="heroCta">Create story</button>
+<!-- MICRO DEMO (inline modal) -->
+<section id="demoModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="demoTitle">
+  <div class="modal-card">
+    <button class="modal-close" id="demoCloseBtn" aria-label="Close">✕</button>
+    <h2 id="demoTitle">How it feels in 10 seconds</h2>
 
-    <!-- ✅ Replace this block -->
-    <div class="product-badges" aria-label="Available formats">
-      <div class="product-badge" role="img" aria-label="Digital Story">
-        <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
-          <rect x="4" y="3" width="16" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
-          <circle cx="12" cy="18" r="1" fill="currentColor"/>
-        </svg>
-        <span>Digital</span>
+    <div class="demo-rows">
+      <div class="demo-row">
+        <div class="demo-tag">Parent says</div>
+        <div class="demo-bubble">“Arthur loves the moon and puppies.”</div>
       </div>
-      <div class="product-badge" role="img" aria-label="Printed Book">
-        <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
-          <path d="M4 5.5C4 4.67 4.67 4 5.5 4H19v14.5c0 .83-.67 1.5-1.5 1.5H6.5A2.5 2.5 0 0 1 4 17.5V5.5z"
-                fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-          <path d="M8 4v15" stroke="currentColor" stroke-width="1.2" opacity=".55"/>
-        </svg>
-        <span>Printed</span>
+      <div class="demo-row">
+        <div class="demo-tag">StoryBuds creates</div>
+        <div class="demo-bubble">
+          Once upon a time, Arthur followed a silver moonbeam… <em>(plip-plop)</em>
+        </div>
       </div>
-      <div class="product-badge" role="img" aria-label="Animated Movie">
-        <svg viewBox="0 0 24 24" class="badge-icon" aria-hidden="true">
-          <rect x="3" y="5" width="18" height="14" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
-          <polygon points="10,9 16,12 10,15" fill="currentColor"></polygon>
-        </svg>
-        <span>Animated</span>
+      <div class="demo-actions">
+        <button class="btn" id="demoPlayVoice">Play voice line</button>
+        <button class="btn ghost" id="demoPlaySfx">Play gentle SFX</button>
       </div>
+      <p class="muted" style="margin-top:8px">Screen-optional: you can just listen together.</p>
     </div>
-    <!-- ✅ End of replacement -->
   </div>
-
-<div class="hero-art-wrapper">
-  <img
-    id="heroImage"
-    src="momdaughterbanner.png"
-    alt="StoryBuds hero"
-    loading="eager"
-    decoding="async"
-    class="hero-art"
-  />
-</div>
 </section>
+
+<!-- HOW IT WORKS -->
+<section class="section fade-up" aria-label="How it works">
+  <h2>How it works</h2>
+  <p class="formats-sub">Made for quick moments in the day and calm wind-downs at night.</p>
+  <div class="hiw-grid">
+    <article class="hiw-card">
+      <div class="hiw-emoji">🎤</div>
+      <h3>Talk together</h3>
+      <p>Tell us a few things your child loves — kittens, rainbows, the moon.</p>
+    </article>
+    <article class="hiw-card">
+      <div class="hiw-emoji">🪄</div>
+      <h3>We craft it</h3>
+      <p>A fresh fairytale appears, personalised with their name and moments.</p>
+    </article>
+    <article class="hiw-card">
+      <div class="hiw-emoji">🌙</div>
+      <h3>Read or listen</h3>
+      <p>Play a gentle voice with ambience & soft sound effects — or print it.</p>
+    </article>
+  </div>
+</section>
+
+<!-- WHY DIFFERENT -->
+<section class="section fade-up" aria-label="Why StoryBuds is different">
+  <h2>What makes us different</h2>
+  <div class="diff-table">
+    <div class="diff-row">
+      <div class="diff-col diff-other">Generic AI stories</div>
+      <div class="diff-col diff-us"><strong>Personal stories from your words</strong></div>
+    </div>
+    <div class="diff-row">
+      <div class="diff-col diff-other">Screen required</div>
+      <div class="diff-col diff-us"><strong>Screen-optional audio mode</strong></div>
+    </div>
+    <div class="diff-row">
+      <div class="diff-col diff-other">No sound design</div>
+      <div class="diff-col diff-us"><strong>Calming ambience & gentle SFX</strong></div>
+    </div>
+    <div class="diff-row">
+      <div class="diff-col diff-other">Generic characters</div>
+      <div class="diff-col diff-us"><strong>Your child’s name & family moments</strong></div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFITS BY MOMENT -->
+<section class="section fade-up" aria-label="Daytime & bedtime benefits">
+  <h2>Made for daytime & bedtime</h2>
+  <div class="benefits-grid">
+    <article class="benefit">
+      <h3>Bedtime routine</h3>
+      <p>Short, soothing stories with gentle pacing to help them wind down.</p>
+    </article>
+    <article class="benefit">
+      <h3>Daytime quiet time</h3>
+      <p>Engaging, screen-free listening for after nursery or rainy afternoons.</p>
+    </article>
+    <article class="benefit">
+      <h3>On the go</h3>
+      <p>Car rides and waiting rooms feel calmer with a quick 3–5 min tale.</p>
+    </article>
+    <article class="benefit">
+      <h3>Language & confidence</h3>
+      <p>Stories use names and topics they love — boosting attention and speech.</p>
+    </article>
+  </div>
+</section>
+
+<!-- SCIENCE & SAFETY -->
+<section class="section fade-up" aria-label="Science & Safety">
+  <h2>Calm by design</h2>
+  <p class="formats-sub">
+    Voices and sounds are tuned for gentle listening. You control volume, voices, and ambience. No scary content.
+  </p>
+</section>
+
+<!-- MID-PAGE CTA -->
+<section class="section fade-up" aria-label="Try it now">
+  <h2>Make your next story together</h2>
+  <button class="btn" onclick="window.location.href='create.html'">Create your free story</button>
+</section>
+
 
 
 
