@@ -1728,3 +1728,25 @@ html.scroll-locked { overscroll-behavior: contain; }
 
 /* Small fix so modals and toasts appear above everything */
 .toast, .modal, #gateOverlay { z-index: 1000; }
+
+/* Hide age group UI (kept logic in JS) */
+.age-buttons,
+#ageBar,
+[data-age="buttons"] {
+  display: none !important;
+}
+
+/* When age bar is hidden, tighten vertical spacing */
+body.age-no-bar .hero,
+body.age-no-bar .hero-simple {
+  /* nudge the hero up a bit since the age bar is gone */
+  margin-top: clamp(8px, 2vh, 16px);
+}
+
+/* Optional: close the gap between hero and next section */
+body.age-no-bar .after-hero,
+body.age-no-bar .section-first,
+body.age-no-bar main > section:first-child {
+  margin-top: clamp(8px, 2vh, 16px);
+}
+
