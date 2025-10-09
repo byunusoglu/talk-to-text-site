@@ -9,7 +9,7 @@
   <script defer src="script.js"></script>
 
   <style>
-    /* === Local layout polish === */
+    /* === Local layout polish (kept) === */
     .detail-wrap { max-width: 980px; margin: 20px auto; padding: 0 16px; }
     .soundbar {
       position: sticky; top: 68px; z-index: 10;
@@ -38,6 +38,29 @@
     .stt-meter-row { display:flex; align-items:center; gap:12px; margin-top:10px; }
     .stt-meter { flex:1; height:10px; background:#f2f2f6; border-radius:999px; overflow:hidden; border:1px solid #eee9fb; }
     .stt-meter span { display:block; height:100%; width:0%; background:#8E44EC; transition: width .08s linear; }
+
+    /* Hide heavy UI by default — "production mode" */
+    .dev-only { display: none !important; }
+
+    /* Sticky single CTA for production */
+    .sticky-listen {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 18px;
+      z-index: 20;
+      border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      font-weight: 800;
+    }
+
+    /* Short helper hint under title */
+    .listen-hint {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 6px 0 0;
+      text-align: center;
+    }
 
     @media (max-width:900px){
       .soundbar{ grid-template-columns:1fr; }
@@ -73,9 +96,13 @@
 
   <main class="detail-wrap">
     <h1>Read with Sounds <span class="badge-beta">Beta</span></h1>
+    <p class="listen-hint">Tap “Start listening” and read the story aloud — sound effects will follow you.</p>
 
-    <!-- Controls -->
-    <section class="soundbar">
+    <!-- ✅ Production CTA: the only visible control by default -->
+    <button class="btn sticky-listen" id="toggleMic">▶️ Start listening</button>
+
+    <!-- Controls (kept in DOM for logic, but hidden by default) -->
+    <section class="soundbar dev-only" id="soundbar">
       <div>
         <div class="status" id="micStatus">Microphone: idle</div>
         <div class="hint" id="micHint">Tap “Start listening” and read the story aloud.</div>
@@ -111,13 +138,14 @@
         </select>
       </div>
 
+      <!-- A separate mic button just for debug view (different id) -->
       <div class="inline-field">
-        <button class="btn" id="toggleMic">Start listening</button>
+        <button class="btn" id="toggleMicDebug">Start listening (debug)</button>
       </div>
     </section>
 
     <!-- Debug -->
-    <section class="stt-debug" aria-label="Speech recognition debug">
+    <section class="stt-debug dev-only" aria-label="Speech recognition debug" id="sttDebug">
       <div class="stt-controls">
         <div class="inline-field">
           <label for="sttLang" class="muted">Recognition language</label>
@@ -161,9 +189,23 @@
     const storyEl = document.getElementById("storyContent");
     storyEl.innerHTML = SS.getItem("yw_story_html") || '<p class="muted">No story found. Please generate a story first.</p>';
 
+    // Show full controls in ?debug=1 mode
+    const url = new URL(location.href);
+    const isDebug = url.searchParams.get("debug") === "1";
+    if (isDebug) {
+      document.getElementById('soundbar')?.classList.remove('dev-only');
+      document.getElementById('sttDebug')?.classList.remove('dev-only');
+      // Nudge sticky CTA a bit higher when debug bars appear
+      document.getElementById('toggleMic')?.style.setProperty('bottom','88px');
+    }
+
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const master = ctx.createGain(); master.gain.value = 0.35; master.connect(ctx.destination);
-    document.getElementById('vol').addEventListener('input', e => { master.gain.value = parseFloat(e.target.value || "0.35"); });
+    // Volume slider may be hidden; guard listener
+    (function(){
+      const vol = document.getElementById('vol');
+      if (vol) vol.addEventListener('input', e => { master.gain.value = parseFloat(e.target.value || "0.35"); });
+    })();
 
     const deaccent = (s) => (s || "").normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
@@ -229,17 +271,21 @@
       setTimeout(() => { try { g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3); } catch(_){} }, 2400);
     }
 
-    // Manual SFX
-    document.getElementById("manualSfx").addEventListener("click", (e) => {
-      const id = e.target.closest('[data-sfx]')?.dataset.sfx; if (!id) return;
-      if (id === "whoosh")  return playWhoosh();
-      if (id === "plip")    return playPlip();
-      if (id === "chime")   return playChime();
-      if (id === "bark")    return playBarkSoft();
-      if (id === "wind")    return playWindGust();
-      if (id === "lullaby") return playLullabyPhrase();
-      if (id === "stop")    return stopAmbience();
-    });
+    // Manual SFX (exists in DOM but hidden by default)
+    (function(){
+      const row = document.getElementById("manualSfx");
+      if (!row) return;
+      row.addEventListener("click", (e) => {
+        const id = e.target.closest('[data-sfx]')?.dataset.sfx; if (!id) return;
+        if (id === "whoosh")  return playWhoosh();
+        if (id === "plip")    return playPlip();
+        if (id === "chime")   return playChime();
+        if (id === "bark")    return playBarkSoft();
+        if (id === "wind")    return playWindGust();
+        if (id === "lullaby") return playLullabyPhrase();
+        if (id === "stop")    return stopAmbience();
+      });
+    })();
 
     /* ====== Ambience (auto + crossfade) ====== */
     let amb = { node: null, gain: null, kind: 'off' };
@@ -328,7 +374,6 @@
         applyAmbienceSelection(v);
       });
     } else {
-      // Fallback if the select is ever missing
       applyAmbienceSelection(storedAmb);
     }
 
@@ -342,7 +387,6 @@
       .replace(/\s+/g,' ')
       .trim();
 
-    // Triggers we care about and mapping to effects
     const TRIGGERS = new Set(['magic','sparkle','rain','wind','dog','puppy','star','sleep','fly']);
     const EFFECT_FOR = {
       magic:'chime', sparkle:'chime', star:'chime',
@@ -350,14 +394,10 @@
       sleep:'lullaby', fly:'whoosh'
     };
 
-    // Tokenize story and maintain a soft cursor (rough reading progress)
     const TOKENS = RAW_TEXT ? RAW_TEXT.split(' ') : [];
     let cursor = 0;
-
-    // How early to fire for a word (prefix length)
     const MIN_PREFIX = (w) => Math.min(3, Math.max(2, Math.floor(w.length * 0.35)));
 
-    // Cooldowns shared with SR path
     let lastEffectAt = 0;
     const COOLDOWN_GLOBAL_MS = 380;
     const lastAtByEffect = Object.create(null);
@@ -384,13 +424,11 @@
       if (canTrigger(name, eff.cd)) eff.fn();
     }
 
-    // Align interim tail to the script near the cursor and fire on prefix
     function alignAndMaybeTrigger(interimTail) {
       if (!TOKENS.length) return;
       const words = interimTail.toLowerCase().split(/\s+/).filter(Boolean).slice(-12);
       if (!words.length) return;
 
-      // Search in a local window around cursor for best overlap
       const WINDOW = 30;
       let bestIdx = cursor, bestHit = 0;
       const start = Math.max(0, cursor - WINDOW);
@@ -399,17 +437,14 @@
       for (let i = start; i < end; i++) {
         const sliceStart = Math.max(0, i - words.length + 1);
         const slice = TOKENS.slice(sliceStart, i + 1);
-        // quick overlap score: count exact matches aligned at the end
         let hit = 0;
         const offset = Math.max(0, words.length - slice.length);
         for (let k = 0; k < slice.length; k++) if (slice[k] === words[offset + k]) hit++;
         if (hit > bestHit) { bestHit = hit; bestIdx = i; }
       }
 
-      // Nudge cursor slowly toward best match
       if (bestIdx > cursor) cursor = Math.min(bestIdx, cursor + 3);
 
-      // Look ahead for the next trigger word and fire on prefix
       for (let j = cursor; j < Math.min(cursor + 20, TOKENS.length); j++) {
         const w = TOKENS[j];
         if (!TRIGGERS.has(w)) continue;
@@ -420,32 +455,34 @@
 
         if (lastWord.startsWith(prefix)) {
           const eff = EFFECT_FOR[w];
-          if (eff) triggerEffect(eff);     // fire early at word start
-          cursor = Math.min(j + 1, TOKENS.length - 1); // advance past it
+          if (eff) triggerEffect(eff);
+          cursor = Math.min(j + 1, TOKENS.length - 1);
           break;
         }
-        if (j - cursor > 8) break; // don’t scan too far
+        if (j - cursor > 8) break;
       }
     }
 
     /* ====== Speech Recognition (low-latency interim + follower) ====== */
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const micBtn    = document.getElementById('toggleMic');
+
+    // Prefer the production sticky button; fall back to the debug one if present
+    const micBtn = document.getElementById('toggleMic') || document.getElementById('toggleMicDebug');
     const micStatus = document.getElementById('micStatus');
     const langSel   = document.getElementById('sttLang');
     const interimChk= document.getElementById('sttInterimChk');
     const boxFinal  = document.getElementById('sttFinal');
     const boxInter  = document.getElementById('sttInterim');
     const boxEv     = document.getElementById('sttEvents');
-    const btnClear  = document.getElementById('sttClear');
 
     function logEv(msg){
       const t = new Date().toLocaleTimeString();
-      boxEv.textContent += `[${t}] ${msg}\n`;
-      boxEv.scrollTop = boxEv.scrollHeight;
+      if (boxEv) {
+        boxEv.textContent += `[${t}] ${msg}\n`;
+        boxEv.scrollTop = boxEv.scrollHeight;
+      }
     }
 
-    // --- One-time mic permission nudge (stops tracks immediately)
     let micPrimed = false;
     async function ensureMicPermission() {
       if (micPrimed) return;
@@ -456,7 +493,6 @@
       micPrimed = true;
     }
 
-    // Free-vocab matchers (fallback)
     const effectMatchers = [
       { name:'whoosh',  rx:/\b(fly|whoosh|soar(?:ed)?|uçtu|r[üu]zgar)\b/iu },
       { name:'plip',    rx:/\b(rain|raindrop|raindrops|plip(?:-?plop)?|shower|ya[ğg]mur)\b/iu },
@@ -470,7 +506,6 @@
       for (const {name, rx} of effectMatchers){ if (rx.test(clean)) { triggerEffect(name); break; } }
     }
 
-    // Low-latency interim scanning
     let interimWindow = "";
     const MAX_WINDOW_CHARS = 200;
     let debounceTimer = null;
@@ -479,12 +514,12 @@
 
     async function startMic(){
       if (!SpeechRec){
-        micStatus.textContent = 'Microphone: unsupported in this browser';
+        if (micStatus) micStatus.textContent = 'Microphone: unsupported in this browser';
         logEv('SpeechRecognition not available');
         return;
       }
 
-      micBtn.disabled = true;
+      if (micBtn) micBtn.disabled = true;
       try {
         if (ctx.state !== 'running') await ctx.resume();
         await ensureMicPermission();
@@ -497,9 +532,8 @@
         rec.maxAlternatives = 1;
 
         rec.onstart = () => {
-          micStatus.textContent = `Microphone: listening… (${lang})`;
-          micBtn.textContent = 'Stop listening';
-          micBtn.disabled = false;
+          if (micStatus) micStatus.textContent = `Microphone: listening… (${lang})`;
+          if (micBtn) { micBtn.textContent = 'Stop listening'; micBtn.disabled = false; }
           logEv('onstart');
         };
         rec.onresult = (e) => {
@@ -510,7 +544,7 @@
           }
 
           const interimText = interims.join(' ').trim();
-          boxInter.textContent = (interimChk?.checked ? interimText : '');
+          if (boxInter) boxInter.textContent = (interimChk?.checked ? interimText : '');
           if (interimText) {
             const toks = interimText.trim().split(/\s+/).slice(-6);
             const lastTok = toks[toks.length - 1] || "";
@@ -527,33 +561,31 @@
           if (finals.length){
             const finalText = finals.join(' ').trim();
             if (finalText){
-              boxFinal.textContent += (boxFinal.textContent ? '\n' : '') + finalText;
-              boxFinal.scrollTop = boxFinal.scrollHeight;
+              if (boxFinal) {
+                boxFinal.textContent += (boxFinal.textContent ? '\n' : '') + finalText;
+                boxFinal.scrollTop = boxFinal.scrollHeight;
+              }
               logEv(`final: "${finalText}"`);
               scanAndTriggerFree(finalText);
               alignAndMaybeTrigger(finalText);
             }
             interimWindow = '';
-            boxInter.textContent = '';
+            if (boxInter) boxInter.textContent = '';
           }
         };
         rec.onerror = (e) => logEv(`onerror: ${e?.error || 'unknown'}`);
         rec.onend   = () => {
           logEv('onend');
-          micStatus.textContent = 'Microphone: idle';
-          micBtn.textContent = 'Start listening';
-          micBtn.onclick = startMic;
-          micBtn.disabled = false;
+          if (micStatus) micStatus.textContent = 'Microphone: idle';
+          if (micBtn) { micBtn.textContent = 'Start listening'; micBtn.onclick = startMic; micBtn.disabled = false; }
         };
 
-        micBtn.onclick = stopMic;
+        if (micBtn) micBtn.onclick = stopMic;
         rec.start();
       } catch (err) {
         logEv(`startMic() error: ${err?.message || err}`);
-        micStatus.textContent = 'Microphone: idle';
-        micBtn.textContent = 'Start listening';
-        micBtn.onclick = startMic;
-        micBtn.disabled = false;
+        if (micStatus) micStatus.textContent = 'Microphone: idle';
+        if (micBtn) { micBtn.textContent = 'Start listening'; micBtn.onclick = startMic; micBtn.disabled = false; }
       }
     }
 
@@ -562,31 +594,43 @@
       // UI resets in onend
     }
 
-    micBtn.onclick = startMic;
+    if (micBtn) micBtn.onclick = startMic;
 
-    document.getElementById("sttClear").addEventListener("click", () => {
-      boxFinal.textContent=''; boxInter.textContent=''; boxEv.textContent='';
-    });
+    (function(){
+      const clearBtn = document.getElementById("sttClear");
+      if (!clearBtn) return;
+      clearBtn.addEventListener("click", () => {
+        const boxFinal  = document.getElementById('sttFinal');
+        const boxInter  = document.getElementById('sttInterim');
+        const boxEv     = document.getElementById('sttEvents');
+        if (boxFinal) boxFinal.textContent='';
+        if (boxInter) boxInter.textContent='';
+        if (boxEv)    boxEv.textContent='';
+      });
+    })();
 
-    // Mic level test
-    const meterBar = document.getElementById("sttMeterBar");
-    document.getElementById("sttMicTest").addEventListener("click", async () => {
-      try{
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true } });
-        const src = ctx.createMediaStreamSource(stream);
-        const analyser = ctx.createAnalyser(); analyser.fftSize = 512; src.connect(analyser);
-        const data = new Uint8Array(analyser.fftSize);
-        (function loop(){
-          analyser.getByteTimeDomainData(data);
-          let sum=0; for (let i=0;i<data.length;i++){ const d=data[i]-128; sum+=d*d; }
-          const rms = Math.sqrt(sum/data.length);
-          const pct = Math.min(100, Math.max(0, (rms/35)*100));
-          meterBar.style.width = pct.toFixed(0) + '%';
-          requestAnimationFrame(loop);
-        })();
-        logEv('Mic test running — speak and watch the bar');
-      } catch(err){ logEv('Mic test error: ' + (err?.message || err)); }
-    });
+    (function(){
+      const meterBar = document.getElementById("sttMeterBar");
+      const btn = document.getElementById("sttMicTest");
+      if (!btn || !meterBar) return;
+      btn.addEventListener("click", async () => {
+        try{
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true } });
+          const src = ctx.createMediaStreamSource(stream);
+          const analyser = ctx.createAnalyser(); analyser.fftSize = 512; src.connect(analyser);
+          const data = new Uint8Array(analyser.fftSize);
+          (function loop(){
+            analyser.getByteTimeDomainData(data);
+            let sum=0; for (let i=0;i<data.length;i++){ const d=data[i]-128; sum+=d*d; }
+            const rms = Math.sqrt(sum/data.length);
+            const pct = Math.min(100, Math.max(0, (rms/35)*100));
+            meterBar.style.width = pct.toFixed(0) + '%';
+            requestAnimationFrame(loop);
+          })();
+          logEv('Mic test running — speak and watch the bar');
+        } catch(err){ logEv('Mic test error: ' + (err?.message || err)); }
+      });
+    })();
 
     // One-time resume for mobile autoplay policies
     document.body.addEventListener("click", () => ctx.resume && ctx.resume(), { once:true });
