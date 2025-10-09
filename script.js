@@ -244,6 +244,8 @@ function makePreviewHtml(md, maxLines = 10) {
       try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
       try { SS.setItem(K_STORY_MD, md); } catch (_) {}
       try { SS.setItem(K_STORY_HTML, html); } catch (_) {}
+       // store ambience chosen by API (for storydetail auto-play)
+try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
 
       goCheckout();
     } catch (err) {
