@@ -155,6 +155,63 @@
     }
   }
 
+   /* ---------------------------------------------
+   Menu helpers + initChrome (auto-close on outside click)
+--------------------------------------------- */
+
+// Find your menu element robustly
+function getMenuEl() {
+  return document.getElementById("menu")
+      || document.querySelector('[data-nav="menu"]')
+      || document.querySelector(".nav-menu")
+      || document.querySelector("#mobileMenu")
+      || null;
+}
+
+// Close menu when clicking/touching outside or pressing Esc
+function wireMenuAutoClose(menuBtn, menu) {
+  if (!menuBtn || !menu) return;
+
+  function isOpen() { return !menu.classList.contains('hidden'); }
+  function close()   { menu.classList.add('hidden'); }
+
+  const outside = (e) => {
+    if (!isOpen()) return;
+    const t = e.target;
+    if (menu.contains(t) || menuBtn.contains(t)) return; // click inside → ignore
+    close();
+  };
+
+  document.addEventListener('click', outside, { passive: true });
+  document.addEventListener('touchstart', outside, { passive: true });
+  document.addEventListener('keydown', (e) => {
+    if (!isOpen()) return;
+    if (e.key === 'Escape') { e.preventDefault(); close(); }
+  });
+}
+
+// REPLACE your current initChrome() with this:
+function initChrome() {
+  const menuBtn = document.getElementById('menuBtn');
+  const menu = getMenuEl();
+  if (menuBtn && menu) {
+    menuBtn.addEventListener('click', () => {
+      menu.classList.toggle('hidden');
+    });
+    wireMenuAutoClose(menuBtn, menu);
+  }
+
+  const yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  const cartCountEl = document.getElementById("cartCount");
+  if (cartCountEl) cartCountEl.classList.add("hidden");
+
+  // Re-hydrate once to win races with other DOM scripts
+  setTimeout(hydrateTopbarAuth, 0);
+}
+
+
   /* ---------------------------------------------
      Guard: signed-in users → /home.html from landing
   --------------------------------------------- */
@@ -1036,6 +1093,30 @@
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
   }
+
+   // ------------------------------------------------
+// Fix: back/forward navigation sometimes shows blank page
+// ------------------------------------------------
+window.addEventListener('pageshow', function (e) {
+  document.body.classList.remove('fade-out');
+  document.documentElement.classList.remove('scroll-locked');
+
+  // Defensive reset if scroll-lock was left active
+  if (document.body.style.position === 'fixed') {
+    const prevTop = document.body.dataset.prevTop || '';
+    document.body.style.position = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.top = prevTop;
+    delete document.body.dataset.prevTop;
+    if (prevTop) {
+      const y = Math.abs(parseInt(prevTop, 10)) || 0;
+      window.scrollTo(0, y);
+    }
+  }
+});
+
 
   /* ---------------------------------------------
      Boot — called on every page
