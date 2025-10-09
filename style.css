@@ -1768,3 +1768,24 @@ body.age-no-bar main > section:first-child {
     margin-top: clamp(8px, 2vh, 16px);
   }
 }
+
+/* Tighter spacing around hero image and title on mobile only */
+@media (max-width: 700px) {
+  /* Reduce the gap between the top bar and the banner image */
+  .hero,
+  .hero-simple {
+    padding-top: 6vh; /* was roughly 12vh on many setups */
+  }
+
+  /* Reduce the gap between the banner image and the title/CTA section */
+  .hero img#heroImage,
+  .hero-simple img#heroImage {
+    margin-bottom: 1.5rem; /* was ~3rem by default */
+  }
+
+  /* Optional: if there’s extra whitespace above title block */
+  .hero-content,
+  .hero-text {
+    margin-top: 0.5rem; /* tighten the title start */
+  }
+}
