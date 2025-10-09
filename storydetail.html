@@ -99,16 +99,6 @@
       <!-- Ambience -->
       <div class="inline-field">
         <label for="amb" class="muted">Ambience</label>
-        <select id="amb">
-          <option value="auto" selected>Auto</option>
-          <option value="forest">Forest</option>
-          <option value="ocean">Ocean</option>
-          <option value="night">Night</option>
-          <option value="castle">Castle</option>
-          <option value="rain">Rain</option>
-          <option value="pad">Calm Pad</option>
-          <option value="off">Off</option>
-        </select>
       </div>
 
       <div class="inline-field">
@@ -318,7 +308,8 @@
       if (val === 'auto') return startAmbience(pickAmbienceFromStory(storyEl.textContent || ''));
       startAmbience(val);
     }
-    applyAmbienceSelection('auto');
+    const storedAmb = SS.getItem("yw_ambience") || "pad";
+startAmbience(storedAmb);
     ambSel.addEventListener('change', e => applyAmbienceSelection(e.target.value));
 
     /* ==========================================
