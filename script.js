@@ -28,6 +28,7 @@
   --------------------------------------------- */
   const AGE_KEY = "yw_age_group";          // '0-2' | '3-5' | '5+'
   const DEFAULT_AGE = "0-2";
+   const AGE_UI_DISABLED = true; // hide age tags, default to 0–2
   const API_URL = "https://fairytale-api.vercel.app/api/generate-story";
 
   // keys used on navigation to checkout
@@ -436,37 +437,60 @@ function initChrome() {
   /* ---------------------------------------------
      Landing: age buttons + hover preview
   --------------------------------------------- */
-  function initAgeButtons() {
-    paintSelectedAge();
-    updateHeroForAge(getAge());
-    document.addEventListener("click", (e) => {
-      const btn = e.target.closest(".age-btn");
-      if (!btn) return;
-      const raw = (btn.dataset.age || "").trim();
-      const val = (raw === "0-2" || raw === "3-5" || raw === "5+") ? raw : DEFAULT_AGE;
-      setAge(val);
-      $$(".age-btn").forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-      updateHeroForAge(val);
-    }, { passive: false });
+function initAgeButtons() {
+  if (AGE_UI_DISABLED) {
+    // Force default selection and update hero
+    setAge(DEFAULT_AGE);
+    updateHeroForAge(DEFAULT_AGE);
+
+    // Hide/remove the age bar if it exists
+    const bar =
+      document.querySelector('.age-buttons') ||
+      document.getElementById('ageBar') ||
+      document.querySelector('[data-age="buttons"]');
+    if (bar) bar.classList.add('hidden');
+
+    // Add a body marker so CSS can tighten layout spacing
+    document.body.classList.add('age-no-bar');
+    return; // skip wiring any age button events
   }
 
-  function initAgePreview() {
-    const isPointerFine = window.matchMedia("(pointer: fine)").matches;
-    if (!isPointerFine) return;
-    let restoreTimer = null;
-    $$(".age-btn").forEach(btn => {
-      btn.addEventListener("mouseenter", () => {
-        const hoverAge = (btn.dataset.age || "").trim();
-        if (!hoverAge) return;
-        updateHeroForAge(hoverAge);
-        if (restoreTimer) { clearTimeout(restoreTimer); restoreTimer = null; }
-      });
-      btn.addEventListener("mouseleave", () => {
-        restoreTimer = setTimeout(() => updateHeroForAge(getAge()), 120);
-      });
+  // (original behavior, kept for later re-enable)
+  paintSelectedAge();
+  updateHeroForAge(getAge());
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".age-btn");
+    if (!btn) return;
+    const raw = (btn.dataset.age || "").trim();
+    const val = (raw === "0-2" || raw === "3-5" || raw === "5+") ? raw : DEFAULT_AGE;
+    setAge(val);
+    $$(".age-btn").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    updateHeroForAge(val);
+  }, { passive: false });
+}
+
+
+function initAgePreview() {
+  // Disable hover swaps when age UI is hidden
+  if (AGE_UI_DISABLED) return;
+
+  const isPointerFine = window.matchMedia("(pointer: fine)").matches;
+  if (!isPointerFine) return;
+  let restoreTimer = null;
+  $$(".age-btn").forEach(btn => {
+    btn.addEventListener("mouseenter", () => {
+      const hoverAge = (btn.dataset.age || "").trim();
+      if (!hoverAge) return;
+      updateHeroForAge(hoverAge);
+      if (restoreTimer) { clearTimeout(restoreTimer); restoreTimer = null; }
     });
-  }
+    btn.addEventListener("mouseleave", () => {
+      restoreTimer = setTimeout(() => updateHeroForAge(getAge()), 120);
+    });
+  });
+}
+
 
   /* ---------------------------------------------
      API call + stash story + go checkout
