@@ -1,40 +1,17 @@
 "use strict";
 
 /* =====================================================
-   Your World — unified interactions (API story on checkout)
-   (Legacy stepper/simple UIs removed)
+   StoryBuds — unified interactions (Local-first Accounts + Existing UX)
+   - Preserves: age selector, hero parallax, wizard, API call, checkout,
+               testimonials, scroll morph, audio micro-demo, etc.
+   - Adds:     accounts (localStorage), auth modal, signed-in routing,
+               topbar hydration, real gate unlock.
 ===================================================== */
 (() => {
-// --- Reset auth when we are truly on the public landing page (GitHub Pages-safe)
-(() => {
-  const p = window.location.pathname || "";
 
-  // true for "/", "/index.html", "/something/", "/something/index.html"
-  const looksLikeLanding =
-    /(?:^|\/)(index\.html?)?$/.test(p) || /\/[^/]+\/?$/.test(p);
-
-  // also true if the DOM has our landing markers (defensive)
-  const hasLandingMarkers =
-    !!document.querySelector('.age-buttons') &&
-    !!document.getElementById('heroCta');
-
-  if (looksLikeLanding || hasLandingMarkers) {
-    try { localStorage.removeItem("yw_signed_in"); } catch (_) {}
-    // Optional: also clear any accidental auto-login leftovers
-    // try { sessionStorage.removeItem("yw_story_html"); } catch (_) {}
-  }
-})();
-  const AGE_KEY = "yw_age_group";          // '0-2' | '3-5' | '5+'
-  const DEFAULT_AGE = "0-2";
-  const API_URL = "https://fairytale-api.vercel.app/api/generate-story";
-  const SS = window.sessionStorage;
-
-  // keys used on navigation to checkout
-  const K_TRANSCRIPT = "yw_transcript";
-  const K_STORY_MD   = "yw_story_markdown";
-  const K_STORY_HTML = "yw_story_html";
-
-  // ---------- tiny DOM helpers ----------
+  /* ---------------------------------------------
+     Tiny DOM helpers + boot
+  --------------------------------------------- */
   const $  = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const onReady = (fn) => (document.readyState === "loading"
@@ -44,8 +21,248 @@
     try { document.body.classList.add("fade-out"); } catch (_) {}
     setTimeout(cb, delay);
   };
+  const SS = window.sessionStorage;
 
-  // ---------- age persistence ----------
+  /* ---------------------------------------------
+     App constants
+  --------------------------------------------- */
+  const AGE_KEY = "yw_age_group";          // '0-2' | '3-5' | '5+'
+  const DEFAULT_AGE = "0-2";
+  const API_URL = "https://fairytale-api.vercel.app/api/generate-story";
+
+  // keys used on navigation to checkout
+  const K_TRANSCRIPT = "yw_transcript";
+  const K_STORY_MD   = "yw_story_markdown";
+  const K_STORY_HTML = "yw_story_html";
+
+  // Preload hero images for fast swaps
+  ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
+    .forEach(src => { const img = new Image(); img.src = src; });
+
+  // Try transparent cut-out first; fall back to current assets
+  const HERO_BY_AGE = {
+    "0-2": {
+      imageCut: "momdaughter_cut.png",
+      image:    "momdaughterbanner.png",
+      title: "Tonight’s bedtime hero? Your kid.",
+      desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
+      cta:   "Create story"
+    },
+    "3-5": {
+      imageCut: "childsdream_cut.png",
+      image:    "childsdreambanner.png",
+      title: "Create magical bedtime stories together.",
+      desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
+      cta:   "Create story"
+    },
+    "5+": {
+      imageCut: "grownbanner_cut.png",
+      image:    "grownbanner.png",
+      title: "Create superhero stories together.",
+      desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
+      cta:   "Create story"
+    }
+  };
+
+  /* ---------------------------------------------
+     Local-first Accounts (email+password)
+  --------------------------------------------- */
+  const USERS_KEY  = "yw_users";        // { [email]: { pwHash, createdAt } }
+  const AUTH_KEY   = "yw_signed_in";    // "1" or null
+  const AUTH_EMAIL = "yw_user_email";   // current user email
+
+  const isSignedIn = () => {
+    try { return localStorage.getItem(AUTH_KEY) === "1"; } catch(_) { return false; }
+  };
+  const currentEmail = () => {
+    try { return localStorage.getItem(AUTH_EMAIL) || ""; } catch(_) { return ""; }
+  };
+  function setSignedIn(v) { try { localStorage.setItem(AUTH_KEY, v ? "1" : "0"); } catch(_){} }
+
+  async function sha256(text) {
+    const buf = new TextEncoder().encode(text);
+    const hashBuf = await crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+  function readUsers() {
+    try { return JSON.parse(localStorage.getItem(USERS_KEY) || "{}"); } catch(_) { return {}; }
+  }
+  function writeUsers(obj) {
+    try { localStorage.setItem(USERS_KEY, JSON.stringify(obj)); } catch(_) {}
+  }
+  async function createUser(email, password) {
+    const users = readUsers();
+    const key = (email||"").trim().toLowerCase();
+    if (!key) throw new Error("EMAIL_REQUIRED");
+    if (users[key]) throw new Error("EMAIL_EXISTS");
+    const pwHash = await sha256(password || "");
+    users[key] = { pwHash, createdAt: Date.now() };
+    writeUsers(users);
+    localStorage.setItem(AUTH_KEY, "1");
+    localStorage.setItem(AUTH_EMAIL, key);
+    return key;
+  }
+  async function signIn(email, password) {
+    const users = readUsers();
+    const key = (email||"").trim().toLowerCase();
+    const rec = users[key];
+    if (!rec) throw new Error("NO_SUCH_USER");
+    const pwHash = await sha256(password || "");
+    if (pwHash !== rec.pwHash) throw new Error("BAD_PASSWORD");
+    localStorage.setItem(AUTH_KEY, "1");
+    localStorage.setItem(AUTH_EMAIL, key);
+    return key;
+  }
+  function signOut() {
+    try {
+      localStorage.removeItem(AUTH_KEY);
+      localStorage.removeItem(AUTH_EMAIL);
+    } catch(_) {}
+  }
+
+  /* ---------------------------------------------
+     Chrome hydration (logo + menu links)
+  --------------------------------------------- */
+  function hydrateTopbarAuth() {
+    // Logo routing
+    const logoA = document.querySelector('a.logo');
+    if (logoA) logoA.setAttribute("href", isSignedIn() ? "home.html" : "index.html");
+
+    // Hamburger / top menu (expects #menu, degrades gracefully)
+    const menu = $("#menu");
+    if (!menu) return;
+
+    menu.innerHTML = "";
+    if (isSignedIn()) {
+      menu.insertAdjacentHTML("beforeend",
+        `<a href="home.html" aria-current="page">Home</a>
+         <a href="create.html">Create Stories</a>
+         <a href="#" id="menuSignOut">Sign Out</a>`);
+      $("#menuSignOut")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        signOut();
+        fadeOutAnd(()=>{ window.location.href = "index.html"; }, 120);
+      });
+    } else {
+      menu.insertAdjacentHTML("beforeend",
+        `<a href="index.html" aria-current="page">Home</a>
+         <a href="create.html">Create Stories</a>
+         <a href="#" id="menuAuth">Sign In / Up</a>`);
+      $("#menuAuth")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        openAuthModal(); // default to Sign Up
+      });
+    }
+  }
+
+  /* ---------------------------------------------
+     Guard: signed-in users → /home.html from landing
+  --------------------------------------------- */
+  function guardLandingRedirect() {
+    const path = (location.pathname || "").toLowerCase();
+    const isIndexPath = path.endsWith("/index.html") || path.endsWith("/") || path === "";
+    const hasLandingMarkers = !!document.querySelector('.age-buttons') && !!document.getElementById('heroCta');
+    if ((isIndexPath || hasLandingMarkers) && isSignedIn()) {
+      fadeOutAnd(()=>{ window.location.href = "home.html"; }, 80);
+    }
+  }
+
+  /* ---------------------------------------------
+     Auth Modal (Sign Up / Sign In) — works anywhere
+  --------------------------------------------- */
+  function openAuthModal(defaultMode = "signup") {
+    const id = "authModal";
+    let modal = document.getElementById(id);
+
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = id;
+      modal.className = "modal";
+      modal.innerHTML = `
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+          <button class="modal-close" id="authCloseBtn" aria-label="Close">✕</button>
+          <h2 id="authTitle">Welcome to StoryBuds</h2>
+          <div class="demo-rows" style="gap:12px">
+            <div>
+              <label style="font-weight:700">Email</label>
+              <input id="authEmail" type="email" placeholder="you@example.com"
+                style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
+            </div>
+            <div>
+              <label style="font-weight:700">Password</label>
+              <input id="authPass" type="password" placeholder="••••••••"
+                style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn" id="authPrimaryBtn">Create free account</button>
+              <button class="btn ghost" id="authSwitch">Have an account? Sign In</button>
+            </div>
+            <p class="muted" style="margin:6px 0 0">No payment needed. You’ll save your stories.</p>
+          </div>
+        </div>`;
+
+      document.body.appendChild(modal);
+
+      const close = () => modal.classList.add("hidden");
+      modal.addEventListener("click", (e)=> { if (e.target === modal) close(); });
+      $("#authCloseBtn")?.addEventListener("click", close);
+
+      function setMode(mode) {
+        const title   = $("#authTitle");
+        const primary = $("#authPrimaryBtn");
+        const switcher= $("#authSwitch");
+
+        if (mode === "signin") {
+          if (title)   title.textContent = "Welcome back";
+          if (primary) primary.textContent = "Sign In";
+          if (switcher) switcher.textContent = "New here? Create an account";
+
+          if (primary) primary.onclick = async () => {
+            const email = $("#authEmail")?.value.trim();
+            const pass  = $("#authPass")?.value;
+            try {
+              await signIn(email, pass);
+              close();
+              fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
+            } catch (err) {
+              alert(err?.message === "BAD_PASSWORD" ? "Wrong password."
+                : err?.message === "NO_SUCH_USER" ? "No account with that email."
+                : "Could not sign in.");
+            }
+          };
+          if (switcher) switcher.onclick = () => setMode("signup");
+        } else {
+          if (title)   title.textContent = "Welcome to StoryBuds";
+          if (primary) primary.textContent = "Create free account";
+          if (switcher) switcher.textContent = "Have an account? Sign In";
+
+          if (primary) primary.onclick = async () => {
+            const email = $("#authEmail")?.value.trim();
+            const pass  = $("#authPass")?.value;
+            if (!email || !pass) { alert("Please enter email and password."); return; }
+            try {
+              await createUser(email, pass);
+              close();
+              fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
+            } catch (err) {
+              alert(err?.message === "EMAIL_EXISTS" ? "That email is already registered."
+                : "Could not create account.");
+            }
+          };
+          if (switcher) switcher.onclick = () => setMode("signin");
+        }
+      }
+
+      modal.classList.remove("hidden");
+      setMode(defaultMode);
+    } else {
+      modal.classList.remove("hidden");
+    }
+  }
+
+  /* ---------------------------------------------
+     Age persistence + hero content
+  --------------------------------------------- */
   const setAge = (val) => { try { localStorage.setItem(AGE_KEY, String(val)); } catch (_) {} };
   const getAge = () => {
     try { return localStorage.getItem(AGE_KEY) || DEFAULT_AGE; }
@@ -55,44 +272,6 @@
     const current = getAge().toLowerCase();
     $$(".age-btn").forEach(b => b.classList.toggle("selected",
       (b.dataset.age || "").toLowerCase() === current));
-  };
-
-  // Preload hero images for fast swaps
-  ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
-    .forEach(src => { const img = new Image(); img.src = src; });
-
-   // Try transparent cut-out first; fall back to current assets
-const HERO_BY_AGE = {
-  "0-2": {
-    imageCut: "momdaughter_cut.png",
-    image:    "momdaughterbanner.png",
-    title: "Tonight’s bedtime hero? Your kid.",
-    desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
-    cta:   "Create story"
-  },
-  "3-5": {
-    imageCut: "childsdream_cut.png",
-    image:    "childsdreambanner.png",
-    title: "Create magical bedtime stories together.",
-    desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
-    cta:   "Create story"
-  },
-  "5+": {
-    imageCut: "grownbanner_cut.png",
-    image:    "grownbanner.png",
-    title: "Create superhero stories together.",
-    desc:  "Turn your child’s imagination into their favourite storytime moment — every night.",
-    cta:   "Create story"
-  }
-};
-
-     // --- Auth + personalisation helpers ---
-  const AUTH_KEY = "yw_signed_in";
-  const isSignedIn = () => {
-    try { return localStorage.getItem(AUTH_KEY) === "1"; } catch (_) { return false; }
-  };
-  const setSignedIn = (v) => {
-    try { localStorage.setItem(AUTH_KEY, v ? "1" : "0"); } catch (_) {}
   };
 
   // Pull child's first name from the transcript we already stash
@@ -106,50 +285,52 @@ const HERO_BY_AGE = {
     } catch (_) { return ""; }
   }
 
+  // helper: prefer cut-out if it exists on the server
+  async function pickBestSrc(cfg) {
+    const trySrc = async (src) => {
+      try {
+        const res = await fetch(src, { method: "HEAD" });
+        return res.ok ? src : null;
+      } catch { return null; }
+    };
+    return (await trySrc(cfg.imageCut)) || cfg.image;
+  }
 
-// helper: prefer cut-out if it exists on the server
-async function pickBestSrc(cfg) {
-  const trySrc = async (src) => {
+  async function updateHeroForAge(ageRaw) {
     try {
-      const res = await fetch(src, { method: "HEAD" });
-      return res.ok ? src : null;
-    } catch { return null; }
-  };
-  return (await trySrc(cfg.imageCut)) || cfg.image;
-}
+      const age = (ageRaw || DEFAULT_AGE).trim();
+      const cfg = HERO_BY_AGE[age] || HERO_BY_AGE[DEFAULT_AGE];
 
-async function updateHeroForAge(ageRaw) {
-  try {
-    const age = (ageRaw || DEFAULT_AGE).trim();
-    const cfg = HERO_BY_AGE[age] || HERO_BY_AGE[DEFAULT_AGE];
+      const imgEl  = document.getElementById("heroImage");
+      const title  = document.getElementById("heroTitle");
+      const desc   = document.getElementById("heroDesc");
+      const cta    = document.getElementById("heroCta");
 
-    const imgEl  = document.getElementById("heroImage");
-    const title  = document.getElementById("heroTitle");
-    const desc   = document.getElementById("heroDesc");
-    const cta    = document.getElementById("heroCta");
+      if (imgEl && cfg) {
+        const src = await pickBestSrc(cfg);
+        imgEl.parentElement?.setAttribute('data-parallax', 'on');
+        imgEl.src = src;
+        imgEl.alt = cfg.title || "StoryBuds hero";
+      }
+      if (title) title.textContent = cfg.title;
+      if (desc)  desc.textContent  = cfg.desc;
+      if (cta) {
+        cta.textContent = cfg.cta;
+        cta.onclick = () => fadeOutAnd(() => { window.location.href = "create.html"; });
+      }
+    } catch (_) {}
+  }
 
-    if (imgEl && cfg) {
-      const src = await pickBestSrc(cfg);
-      imgEl.parentElement?.setAttribute('data-parallax', 'on');
-      imgEl.src = src;
-      imgEl.alt = cfg.title || "StoryBuds hero";
-    }
-    if (title) title.textContent = cfg.title;
-    if (desc)  desc.textContent  = cfg.desc;
-    if (cta) {
-      cta.textContent = cfg.cta;
-      cta.onclick = () => fadeOutAnd(() => { window.location.href = "create.html"; });
-    }
-  } catch (_) {}
-}
-
-  
-  // ---------- page guards ----------
+  /* ---------------------------------------------
+     Page guards
+  --------------------------------------------- */
   const isCreateChatPage = () => Boolean($('#chatWizard'));
   const isCheckoutPage   = () => Boolean($('#storyContent') && $('#productsTrack'));
   const goCheckout       = () => fadeOutAnd(() => { window.location.href = "checkout.html"; });
 
-  // ---------- markdown → minimal HTML (safe-ish) ----------
+  /* ---------------------------------------------
+     Markdown → minimal HTML (safe-ish)
+  --------------------------------------------- */
   const mdToHtml = (md) => {
     if (!md) return "";
     return md
@@ -161,48 +342,43 @@ async function updateHeroForAge(ageRaw) {
       .replace(/(^|>)(?!<h\d|<p|<\/p>)([^\n]+)(?=\n|$)/g, "$1<p>$2</p>");
   };
 
-   // --- Build a 10-line preview from Markdown (counting non-empty lines) ---
-// --- Build a ~10-line preview from Markdown (favoring body paragraphs) ---
-function makePreviewHtml(md, maxLines = 10) {
-  if (!md) return "";
+  // Build ~10-line preview from Markdown (skip headings so clamp height is used by body)
+  function makePreviewHtml(md, maxLines = 10) {
+    if (!md) return "";
 
-  // 1) Remove the very first H1 (title) and any immediate blank lines after it.
-  let cleaned = md.replace(/^\s*# [^\n]*\n+(\s*\n)*/m, "");
+    // 1) Remove the very first H1 (title) and any immediate blank lines after it.
+    let cleaned = md.replace(/^\s*# [^\n]*\n+(\s*\n)*/m, "");
 
-  // 2) Split into lines and build a preview that SKIPS H2/H3 headings
-  //    so headings don't "consume" the clamp height.
-  const lines = cleaned.split(/\r?\n/);
-  const out = [];
-  let taken = 0;
+    // 2) Build preview skipping H2/H3 headings
+    const lines = cleaned.split(/\r?\n/);
+    const out = [];
+    let taken = 0;
 
-  for (const ln of lines) {
-    // Skip section headings in the preview
-    if (/^\s*##{1,2}\s+/.test(ln)) continue;
-
-    out.push(ln);
-    if (ln.trim().length) taken++;
-    if (taken >= maxLines) break;
-  }
-
-  // Fallback: if we somehow collected nothing, just take the first maxLines
-  if (!taken) {
-    out.length = 0;
-    taken = 0;
     for (const ln of lines) {
+      if (/^\s*##{1,2}\s+/.test(ln)) continue; // skip headings
       out.push(ln);
       if (ln.trim().length) taken++;
       if (taken >= maxLines) break;
     }
+
+    // Fallback if empty
+    if (!taken) {
+      out.length = 0;
+      taken = 0;
+      for (const ln of lines) {
+        out.push(ln);
+        if (ln.trim().length) taken++;
+        if (taken >= maxLines) break;
+      }
+    }
+
+    const previewMd = out.join("\n") + "\n\n…";
+    return mdToHtml(previewMd);
   }
 
-  // 3) Add a graceful ellipsis and convert to HTML
-  const previewMd = out.join("\n") + "\n\n…";
-  return mdToHtml(previewMd);
-}
-
-
-
-  // ---------- Landing: age buttons ----------
+  /* ---------------------------------------------
+     Landing: age buttons + hover preview
+  --------------------------------------------- */
   function initAgeButtons() {
     paintSelectedAge();
     updateHeroForAge(getAge());
@@ -218,7 +394,6 @@ function makePreviewHtml(md, maxLines = 10) {
     }, { passive: false });
   }
 
-  // Hover preview (kept)
   function initAgePreview() {
     const isPointerFine = window.matchMedia("(pointer: fine)").matches;
     if (!isPointerFine) return;
@@ -236,13 +411,12 @@ function makePreviewHtml(md, maxLines = 10) {
     });
   }
 
-  // ---------- API call + stash story + go checkout ----------
+  /* ---------------------------------------------
+     API call + stash story + go checkout
+  --------------------------------------------- */
   async function generateStoryAndNavigate(transcript) {
     if (!transcript) throw new Error("Missing transcript");
-    const body = {
-      transcript,
-      ageGroup: getAge()
-    };
+    const body = { transcript, ageGroup: getAge() };
     try {
       const btn = $('#chatGenerate') || $('#generateBtn');
       const spinner = $('#genSpinner');
@@ -263,8 +437,8 @@ function makePreviewHtml(md, maxLines = 10) {
       try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
       try { SS.setItem(K_STORY_MD, md); } catch (_) {}
       try { SS.setItem(K_STORY_HTML, html); } catch (_) {}
-       // store ambience chosen by API (for storydetail auto-play)
-try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
+      // ambience chosen by API (for storydetail auto-play)
+      try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
 
       goCheckout();
     } catch (err) {
@@ -278,7 +452,9 @@ try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
     }
   }
 
-  // ---------- Conversational Wizard ----------
+  /* ---------------------------------------------
+     Conversational Wizard
+  --------------------------------------------- */
   function initCreateChatWizard() {
     const elStream = $('#chatStream');
     const elForm   = $('#chatForm');
@@ -354,187 +530,217 @@ try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
     });
   }
 
-
-// --- Gate: show overlay + handle preview vs blur ---
-function showGate(personName) {
-  const storyEl   = document.getElementById("storyContent");
-  const gate      = document.getElementById("gateOverlay");
-  const glow      = document.getElementById("blurGlow");
-  const reader    = document.querySelector(".story-reader");
-  const badge     = document.getElementById("personalBadge");
-  const badgeText = document.getElementById("personalBadgeText");
-  const gateTitle = document.getElementById("gateTitle");
-  const gateDesc  = document.getElementById("gateDesc");
-
-  const btnGoogle = document.getElementById("gateGoogle");
-  const btnEmail  = document.getElementById("gateEmailBtn");
-  const formWrap  = document.getElementById("gateEmailForm");
-  const backBtn   = document.getElementById("gateBackBtn");
-  const btnRow    = document.getElementById("gateButtons"); // may not exist (legacy-safe)
-
-  // Personalised badge + copy
-  if (personName && badge && badgeText) {
-    badgeText.textContent = `Personalised for ${personName}`;
-    badge.classList.remove("hidden");
-       reader?.classList.add("has-badge");
-  }
-  if (personName && gateDesc) {
-    gateDesc.textContent = `Create your free account to finish ${personName}’s bedtime story and save it.`;
-  }
-  if (gateTitle) gateTitle.textContent = "Continue reading for free";
-
-  // Give room for the gate card (so it doesn't cover preview lines)
-  reader?.classList.add("gated");
-
-  // If we're showing a 10-line preview, skip extra blur/glow
-  const isPreviewLines = storyEl?.dataset.preview === "lines";
-  if (!isPreviewLines) {
-    storyEl?.classList.add("blur-bottom");
-    glow?.classList.remove("hidden");
-  } else {
-    storyEl?.classList.remove("blur-bottom");
-    glow?.classList.add("hidden");
-  }
-
-  // Show overlay
-  gate?.classList.remove("hidden");
-
-  // Wire actions (use direct handlers to avoid duplicate listeners)
-  if (btnGoogle) {
-    btnGoogle.onclick = (e) => { e.preventDefault(); unlockGate(); };
-  }
-  if (btnEmail) {
-    btnEmail.onclick = (e) => {
-      e.preventDefault();
-      formWrap?.classList.remove("hidden");
-      btnEmail.classList.add("hidden");
-      btnRow?.classList.add("hidden");
-    };
-  }
-  if (backBtn) {
-    backBtn.onclick = (e) => {
-      e.preventDefault();
-      formWrap?.classList.add("hidden");
-      btnEmail?.classList.remove("hidden");
-      btnRow?.classList.remove("hidden");
-    };
-  }
-  if (formWrap) {
-    formWrap.onsubmit = (e) => {
-      e.preventDefault();
-      unlockGate();
-    };
-  }
-}
-
-  
-function unlockGate() {
-  // Mark signed-in for future visits
-  setSignedIn(true);
-
-  const storyEl = document.getElementById("storyContent");
-  const reader  = document.querySelector(".story-reader");
-  const gate    = document.getElementById("gateOverlay");
-  const glow    = document.getElementById("blurGlow");
-
-  // If we have the full story, swap it in; otherwise we’ll just redirect
-  const fullHtml =
-    (typeof SS !== "undefined" && SS && (SS.getItem(K_STORY_HTML) || SS.getItem("yw_story_html"))) || "";
-
-  if (storyEl && fullHtml) {
-    storyEl.innerHTML = fullHtml;
-  }
-
-  // Clear any preview/blur state and hide gate
-  storyEl?.classList.remove("preview-clamp", "blur-bottom");
-  if (storyEl?.dataset) delete storyEl.dataset.preview;
-  reader?.classList.remove("gated");
-  gate?.classList.add("hidden");
-  glow?.classList.add("hidden");
-
-  // Tiny confirmation toast
-  try {
-    const note = document.createElement("div");
-    note.textContent = "✨ Account created! Taking you to your home.";
-    note.style.cssText =
-      "position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999;";
-    document.body.appendChild(note);
-    setTimeout(() => note.remove(), 900);
-  } catch (_) {}
-
-  // Smooth transition to home
-  try { document.body.classList.add("fade-out"); } catch (_) {}
-  setTimeout(() => {
-    window.location.href = "home.html";   // ← change to your true home if different
-  }, 600);
-}
-
-   // ---------- Checkout: render story + products ----------
-let cartCount = 0;
-function initCheckout() {
-  const storyEl = $('#storyContent');
-  if (!storyEl) return;
-
-  const html = SS.getItem(K_STORY_HTML);
-  const md   = SS.getItem(K_STORY_MD);
-
-  // ---- Decide what to render based on auth state ----
-  if (!isSignedIn()) {
-    // Always show a preview for signed-out users
-    if (md) {
-      const previewHtml = makePreviewHtml(md, 10); // first ~10 non-empty lines
-      storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
-    } else {
-      // No markdown? Show a minimal teaser so we NEVER leak the full html
-      storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
-    }
-    storyEl.dataset.preview = "lines";
-    storyEl.classList.add("preview-clamp");
-
-    // Gate overlay for conversion
-    const childName = getChildName();
-    if (html || md) showGate(childName);
-  } else {
-    // Signed in → full story
-    storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
-    delete storyEl.dataset.preview;
-    storyEl.classList.remove("preview-clamp");
-
-    // Hide gate overlays just in case
-    document.getElementById("gateOverlay")?.classList.add("hidden");
-    document.getElementById("blurGlow")?.classList.add("hidden");
-
-    // Personalised badge
-    const childName = getChildName();
-    const reader = document.querySelector(".story-reader");
-    const badge = document.getElementById("personalBadge");
+  /* ---------------------------------------------
+     Gate: show overlay + handle preview vs blur
+     (updated to real accounts)
+  --------------------------------------------- */
+  function showGate(personName) {
+    const storyEl   = document.getElementById("storyContent");
+    const gate      = document.getElementById("gateOverlay");
+    const glow      = document.getElementById("blurGlow");
+    const reader    = document.querySelector(".story-reader");
+    const badge     = document.getElementById("personalBadge");
     const badgeText = document.getElementById("personalBadgeText");
-    if (childName && badge && badgeText) {
-      badgeText.textContent = `Just for ${childName}`;
+    const gateTitle = document.getElementById("gateTitle");
+    const gateDesc  = document.getElementById("gateDesc");
+
+    const btnGoogle = document.getElementById("gateGoogle");
+    const btnEmail  = document.getElementById("gateEmailBtn");
+    const formWrap  = document.getElementById("gateEmailForm");
+    const backBtn   = document.getElementById("gateBackBtn");
+    const btnRow    = document.getElementById("gateButtons"); // may not exist (legacy-safe)
+
+    // Personalised badge + copy
+    if (personName && badge && badgeText) {
+      badgeText.textContent = `Personalised for ${personName}`;
       badge.classList.remove("hidden");
       reader?.classList.add("has-badge");
     }
+    if (personName && gateDesc) {
+      gateDesc.textContent = `Create your free account to finish ${personName}’s bedtime story and save it.`;
+    }
+    if (gateTitle) gateTitle.textContent = "Continue reading for free";
+
+    // Give room for the gate card
+    reader?.classList.add("gated");
+
+    // If we're showing a 10-line preview, skip extra blur/glow
+    const isPreviewLines = storyEl?.dataset.preview === "lines";
+    if (!isPreviewLines) {
+      storyEl?.classList.add("blur-bottom");
+      glow?.classList.remove("hidden");
+    } else {
+      storyEl?.classList.remove("blur-bottom");
+      glow?.classList.add("hidden");
+    }
+
+    gate?.classList.remove("hidden");
+
+    // Prototype Google → create throwaway alias
+    if (btnGoogle) {
+      btnGoogle.onclick = async (e) => {
+        e.preventDefault();
+        try {
+          const alias = `user+${Date.now()}@storybuds.local`;
+          const pw = crypto.getRandomValues(new Uint32Array(1))[0].toString(16);
+          await createUser(alias, pw);
+          doUnlockAfterAuth();
+        } catch {
+          // unlikely; fallback
+          doUnlockAfterAuth();
+        }
+      };
+    }
+
+    // Toggle email form
+    if (btnEmail) {
+      btnEmail.onclick = (e) => {
+        e.preventDefault();
+        formWrap?.classList.remove("hidden");
+        btnEmail.classList.add("hidden");
+        btnRow?.classList.add("hidden");
+      };
+    }
+    if (backBtn) {
+      backBtn.onclick = (e) => {
+        e.preventDefault();
+        formWrap?.classList.add("hidden");
+        btnEmail?.classList.remove("hidden");
+        btnRow?.classList.remove("hidden");
+      };
+    }
+
+    // Email form submit
+    if (formWrap) {
+      formWrap.onsubmit = async (e) => {
+        e.preventDefault();
+        const email = $("#gateEmail")?.value.trim();
+        const pass  = $("#gatePass")?.value;
+        if (!email || !pass) { alert("Please enter email and password."); return; }
+
+        // quick test mode: password starting with "signin:" means sign-in
+        try {
+          if (pass.startsWith("signin:")) {
+            await signIn(email, pass.replace(/^signin:/, ""));
+          } else {
+            await createUser(email, pass);
+          }
+          doUnlockAfterAuth();
+        } catch (err) {
+          alert(err?.message === "EMAIL_EXISTS"  ? "That email is already registered. Use the Sign In option."
+               : err?.message === "NO_SUCH_USER" ? "No account found. Create an account."
+               : err?.message === "BAD_PASSWORD" ? "Wrong password."
+               : "Could not authenticate.");
+        }
+      };
+    }
+
+    function doUnlockAfterAuth() { unlockGate(); }
   }
 
-  // Optional raw markdown debug (if the element exists)
-  const rawMdEl = $('#storyMarkdown');
-  if (rawMdEl && md) rawMdEl.textContent = md;
+  function unlockGate() {
+    // Mark signed-in (defensive)
+    setSignedIn(true);
 
-  // ---- Products carousel (age-aware) ----
-  const productsTrack = $('#productsTrack');
-  if (productsTrack) {
-    const age = getAge();
-    const products = getProductsForAge(age);
-    renderProducts(productsTrack, products);
+    const storyEl = document.getElementById("storyContent");
+    const reader  = document.querySelector(".story-reader");
+    const gate    = document.getElementById("gateOverlay");
+    const glow    = document.getElementById("blurGlow");
+
+    // Restore full HTML if we cached it earlier
+    const fullHtml = (SS && (SS.getItem(K_STORY_HTML) || SS.getItem("yw_story_html"))) || "";
+
+    if (storyEl && fullHtml) {
+      storyEl.innerHTML = fullHtml;
+    }
+
+    storyEl?.classList.remove("preview-clamp", "blur-bottom");
+    if (storyEl?.dataset) delete storyEl.dataset.preview;
+    reader?.classList.remove("gated");
+    gate?.classList.add("hidden");
+    glow?.classList.add("hidden");
+
+    // Tiny confirmation toast
+    try {
+      const note = document.createElement("div");
+      note.textContent = "✨ Account ready! Taking you to your home.";
+      note.style.cssText =
+        "position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999;";
+      document.body.appendChild(note);
+      setTimeout(() => note.remove(), 900);
+    } catch (_) {}
+
+    // Smooth transition to home
+    try { document.body.classList.add("fade-out"); } catch (_) {}
+    setTimeout(() => { window.location.href = "home.html"; }, 600);
   }
 
-  // init cart badge as hidden
-  const cartCountEl = document.getElementById("cartCount");
-  if (cartCountEl) cartCountEl.classList.add("hidden");
-}
+  /* ---------------------------------------------
+     Checkout: render story + products
+  --------------------------------------------- */
+  let cartCount = 0;
+  function initCheckout() {
+    const storyEl = $('#storyContent');
+    if (!storyEl) return;
 
+    const html = SS.getItem(K_STORY_HTML);
+    const md   = SS.getItem(K_STORY_MD);
 
-  // ---------- Products data per age ----------
+    // Decide what to render based on auth state
+    if (!isSignedIn()) {
+      // Always show a preview for signed-out users
+      if (md) {
+        const previewHtml = makePreviewHtml(md, 10); // first ~10 non-empty lines
+        storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
+      } else {
+        storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
+      }
+      storyEl.dataset.preview = "lines";
+      storyEl.classList.add("preview-clamp");
+
+      // Gate overlay for conversion
+      const childName = getChildName();
+      if (html || md) showGate(childName);
+    } else {
+      // Signed in → full story
+      storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
+      delete storyEl.dataset.preview;
+      storyEl.classList.remove("preview-clamp");
+
+      // Hide gate overlays just in case
+      document.getElementById("gateOverlay")?.classList.add("hidden");
+      document.getElementById("blurGlow")?.classList.add("hidden");
+
+      // Personalised badge
+      const childName = getChildName();
+      const reader = document.querySelector(".story-reader");
+      const badge = document.getElementById("personalBadge");
+      const badgeText = document.getElementById("personalBadgeText");
+      if (childName && badge && badgeText) {
+        badgeText.textContent = `Just for ${childName}`;
+        badge.classList.remove("hidden");
+        reader?.classList.add("has-badge");
+      }
+    }
+
+    // Optional raw markdown debug (if the element exists)
+    const rawMdEl = $('#storyMarkdown');
+    if (rawMdEl && md) rawMdEl.textContent = md;
+
+    // Products carousel (age-aware)
+    const productsTrack = $('#productsTrack');
+    if (productsTrack) {
+      const age = getAge();
+      const products = getProductsForAge(age);
+      renderProducts(productsTrack, products);
+    }
+
+    // init cart badge as hidden
+    const cartCountEl = document.getElementById("cartCount");
+    if (cartCountEl) cartCountEl.classList.add("hidden");
+  }
+
+  // Products data per age
   function getProductsForAge(age) {
     const base = [
       { id: "bk1", name: "Bedtime Book", price: "£9.99" },
@@ -592,7 +798,9 @@ function initCheckout() {
     }
   }
 
-  // ---------- minor chrome ----------
+  /* ---------------------------------------------
+     Minor chrome
+  --------------------------------------------- */
   function initChrome() {
     const menuBtn = $('#menuBtn');
     const menu = $('#menu');
@@ -602,40 +810,40 @@ function initCheckout() {
     if (cartCountEl) cartCountEl.classList.add("hidden");
   }
 
-function initMobileCta() {
-  const cta = $("#mobileCta");
-  const hero = $(".hero"); // anchor to split hero root
-  if (!cta || !hero) return;
-  function onScroll() {
-    const rect = hero.getBoundingClientRect();
-    const show = window.scrollY > (rect.height * 0.45);
-    cta.classList.toggle("show", show);
+  function initMobileCta() {
+    const cta = $("#mobileCta");
+    const hero = $(".hero");
+    if (!cta || !hero) return;
+    function onScroll() {
+      const rect = hero.getBoundingClientRect();
+      const show = window.scrollY > (rect.height * 0.45);
+      cta.classList.toggle("show", show);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
   }
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
-}
 
-function initHeroParallax() {
-  const wrap = document.querySelector('.hero-visual[data-parallax="on"]');
-  const img = document.getElementById('heroImage');
-  if (!wrap || !img) return;
+  function initHeroParallax() {
+    const wrap = document.querySelector('.hero-visual[data-parallax="on"]');
+    const img = document.getElementById('heroImage');
+    if (!wrap || !img) return;
 
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const isNarrow = window.matchMedia('(max-width: 700px)').matches;
-  if (reduce || isNarrow) { wrap.removeAttribute('data-parallax'); return; }
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isNarrow = window.matchMedia('(max-width: 700px)').matches;
+    if (reduce || isNarrow) { wrap.removeAttribute('data-parallax'); return; }
 
-  function onScroll() {
-    const rect = wrap.getBoundingClientRect();
-    const vh = window.innerHeight || 1;
-    const center = vh / 2;
-    const dist = Math.max(-40, Math.min(40, (rect.top + rect.height/2) - center));
-    const t = (dist / center) * 6; // ±6px max
-    img.style.transform = `translateY(${t.toFixed(2)}px)`;
+    function onScroll() {
+      const rect = wrap.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const center = vh / 2;
+      const dist = Math.max(-40, Math.min(40, (rect.top + rect.height/2) - center));
+      const t = (dist / center) * 6; // ±6px max
+      img.style.transform = `translateY(${t.toFixed(2)}px)`;
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    onScroll();
   }
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll, { passive: true });
-  onScroll();
-}
 
   function initTestimonials() {
     const wrap = $("#testimonials");
@@ -672,187 +880,214 @@ function initHeroParallax() {
     }, 6000);
   }
 
- // --- Scroll morph: Real → Animated (soft stop + center-based reveal)
-function initScrollMorph() {
-  const wrap = document.getElementById('morph');
-  if (!wrap) return;
+  // Scroll morph: Real → Animated (soft stop + center-based reveal)
+  function initScrollMorph() {
+    const wrap = document.getElementById('morph');
+    if (!wrap) return;
 
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
 
-  let holdActive = false;
-  let lockedY = 0;
-  let lastScrollY = window.scrollY;
-  let direction = 'down';   // 'down' | 'up'
-  let armed = true;         // can we trigger a hold?
-  let rearmEdge = null;     // 'past' (need reveal≈1) | 'before' (need reveal≈0)
-  let holdStart = 0;
+    let holdActive = false;
+    let lockedY = 0;
+    let lastScrollY = window.scrollY;
+    let direction = 'down';   // 'down' | 'up'
+    let armed = true;         // can we trigger a hold?
+    let rearmEdge = null;     // 'past' (need reveal≈1) | 'before' (need reveal≈0)
+    let holdStart = 0;
 
-  // ---------- helpers ----------
-  const stage = wrap.querySelector('.morph-stage');
-  if (!stage) return;
+    // helpers
+    const stage = wrap.querySelector('.morph-stage');
+    if (!stage) return;
 
-  function setVars(reveal, parallax) {
-    // set on stage so descendants reliably inherit during sticky/lock
-    stage.style.setProperty('--reveal', String(reveal));
-    stage.style.setProperty('--parallax', String(parallax));
-  }
-
-function computeReveal() {
-  const s = stage.getBoundingClientRect();
-  const vh = window.innerHeight || 1;
-  const center = vh / 2;
-  const stageCenter = s.top + s.height / 2;
-
-  const dist = Math.abs(stageCenter - center);
-
-  // WIDER radius → fade spans more scroll distance
-  // was vh * 0.5; now vh * 0.9 for a slower, longer transition
-const R = vh * 1.2;
-
-  // linear map: 1 at center → 0 at/beyond radius
-  let r = 1 - Math.min(1, dist / R);
-
-  // optional tiny easing for smoothness (uncomment to taste)
-  // r = Math.pow(r, 0.9);
-
-  const parallax = 12 * (1 - r);
-  setVars(r, parallax);
-  return { reveal: r, vh };
-}
-
-  // ---------- lock mechanics (unchanged: single soft stop per pass) ----------
-  function lockScrollAt(y) {
-    if (holdActive) return;
-    holdActive = true;
-    lockedY = Math.max(0, Math.round(y));
-    window.scrollTo(0, lockedY);
-
-    document.documentElement.classList.add('scroll-locked');
-    document.body.dataset.prevTop = document.body.style.top || '';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${lockedY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.width = '100%';
-
-    wrap.classList.add('hold');
-  }
-
-  function unlockScroll() {
-    if (!holdActive) return;
-
-    wrap.classList.remove('hold');
-    document.documentElement.classList.remove('scroll-locked');
-
-    document.body.style.position = '';
-    document.body.style.left = '';
-    document.body.style.right = '';
-    document.body.style.width = '';
-    document.body.style.top = document.body.dataset.prevTop || '';
-    delete document.body.dataset.prevTop;
-
-    window.scrollTo(0, lockedY);
-    holdActive = false;
-
-    // hysteresis: only re-arm after leaving the section (direction-aware)
-    rearmEdge = (direction === 'down') ? 'past' : 'before';
-    armed = false;
-  }
-
-  const reengageRelease = (e) => {
-    if (!holdActive) return;
-    e.preventDefault();
-    if (Date.now() - holdStart > 220) unlockScroll();
-  };
-  const onKey = (e) => {
-    if (!holdActive) return;
-    if (['Escape','Enter',' ','ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(e.key)) {
-      e.preventDefault();
-      unlockScroll();
-    }
-  };
-
-  function startHoldCentered() {
-    const s = stage.getBoundingClientRect();
-    const vh = window.innerHeight || 1;
-    const targetY = window.scrollY + s.top + s.height / 2 - (vh / 2);
-
-    lockScrollAt(targetY);
-    holdStart = Date.now();
-
-    window.addEventListener('wheel', reengageRelease, { passive: false });
-    window.addEventListener('touchmove', reengageRelease, { passive: false });
-    window.addEventListener('keydown', onKey);
-
-    const onVis = () => { if (document.visibilityState === 'hidden') unlockScroll(); };
-    document.addEventListener('visibilitychange', onVis);
-    const id = setInterval(() => {
-      if (!holdActive) {
-        clearInterval(id);
-        window.removeEventListener('wheel', reengageRelease, { passive: false });
-        window.removeEventListener('touchmove', reengageRelease, { passive: false });
-        window.removeEventListener('keydown', onKey);
-        document.removeEventListener('visibilitychange', onVis);
-      }
-    }, 200);
-  }
-
-  // ---------- main loop ----------
-  function update() {
-    const y = window.scrollY;
-    direction = (y > lastScrollY) ? 'down' : (y < lastScrollY) ? 'up' : direction;
-    lastScrollY = y;
-
-    const { reveal } = computeReveal();
-
-    // re-arm only after clearly leaving the section
-    if (!armed && !holdActive) {
-      if ((rearmEdge === 'past'   && reveal >= 0.98) ||
-          (rearmEdge === 'before' && reveal <= 0.02)) {
-        armed = true;
-        rearmEdge = null;
-      }
+    function setVars(reveal, parallax) {
+      stage.style.setProperty('--reveal', String(reveal));
+      stage.style.setProperty('--parallax', String(parallax));
     }
 
-    // keep position clamped while locked (kills inertia)
-    if (holdActive && Math.abs(window.scrollY - lockedY) > 0) {
+    function computeReveal() {
+      const s = stage.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const center = vh / 2;
+      const stageCenter = s.top + s.height / 2;
+
+      const dist = Math.abs(stageCenter - center);
+
+      // Wider radius for slower, longer transition
+      const R = vh * 1.2;
+
+      // linear map: 1 at center → 0 at/beyond radius
+      let r = 1 - Math.min(1, dist / R);
+
+      const parallax = 12 * (1 - r);
+      setVars(r, parallax);
+      return { reveal: r, vh };
+    }
+
+    function lockScrollAt(y) {
+      if (holdActive) return;
+      holdActive = true;
+      lockedY = Math.max(0, Math.round(y));
       window.scrollTo(0, lockedY);
-      return;
+
+      document.documentElement.classList.add('scroll-locked');
+      document.body.dataset.prevTop = document.body.style.top || '';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${lockedY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+
+      wrap.classList.add('hold');
     }
 
-    // trigger a single soft stop when near the center band and armed
-    // only while we're meaningfully inside the section (reveal ~ [0.1, 0.9])
-    const centerBandPx = Math.min(60, (window.innerHeight || 1) * 0.08);
-    const s = stage.getBoundingClientRect();
-    const center = (window.innerHeight || 1) / 2;
-    const centerDist = Math.abs((s.top + s.height / 2) - center);
-    if (!holdActive && armed && reveal > 0.1 && reveal < 0.9 && centerDist < centerBandPx) {
-      startHoldCentered();
+    function unlockScroll() {
+      if (!holdActive) return;
+
+      wrap.classList.remove('hold');
+      document.documentElement.classList.remove('scroll-locked');
+
+      document.body.style.position = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.top = document.body.dataset.prevTop || '';
+      delete document.body.dataset.prevTop;
+
+      window.scrollTo(0, lockedY);
+      holdActive = false;
+
+      // hysteresis: only re-arm after leaving the section (direction-aware)
+      rearmEdge = (direction === 'down') ? 'past' : 'before';
+      armed = false;
     }
+
+    const reengageRelease = (e) => {
+      if (!holdActive) return;
+      e.preventDefault();
+      if (Date.now() - holdStart > 220) unlockScroll();
+    };
+    const onKey = (e) => {
+      if (!holdActive) return;
+      if (['Escape','Enter',' ','ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(e.key)) {
+        e.preventDefault();
+        unlockScroll();
+      }
+    };
+
+    function startHoldCentered() {
+      const s = stage.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const targetY = window.scrollY + s.top + s.height / 2 - (vh / 2);
+
+      lockScrollAt(targetY);
+      holdStart = Date.now();
+
+      window.addEventListener('wheel', reengageRelease, { passive: false });
+      window.addEventListener('touchmove', reengageRelease, { passive: false });
+      window.addEventListener('keydown', onKey);
+
+      const onVis = () => { if (document.visibilityState === 'hidden') unlockScroll(); };
+      document.addEventListener('visibilitychange', onVis);
+      const id = setInterval(() => {
+        if (!holdActive) {
+          clearInterval(id);
+          window.removeEventListener('wheel', reengageRelease, { passive: false });
+          window.removeEventListener('touchmove', reengageRelease, { passive: false });
+          window.removeEventListener('keydown', onKey);
+          document.removeEventListener('visibilitychange', onVis);
+        }
+      }, 200);
+    }
+
+    function update() {
+      const y = window.scrollY;
+      direction = (y > lastScrollY) ? 'down' : (y < lastScrollY) ? 'up' : direction;
+      lastScrollY = y;
+
+      const { reveal } = computeReveal();
+
+      // re-arm only after clearly leaving the section
+      if (!armed && !holdActive) {
+        if ((rearmEdge === 'past'   && reveal >= 0.98) ||
+            (rearmEdge === 'before' && reveal <= 0.02)) {
+          armed = true;
+          rearmEdge = null;
+        }
+      }
+
+      // keep position clamped while locked (kills inertia)
+      if (holdActive && Math.abs(window.scrollY - lockedY) > 0) {
+        window.scrollTo(0, lockedY);
+        return;
+      }
+
+      // trigger a single soft stop near center band and armed
+      const centerBandPx = Math.min(60, (window.innerHeight || 1) * 0.08);
+      const s = stage.getBoundingClientRect();
+      const center = (window.innerHeight || 1) / 2;
+      const centerDist = Math.abs((s.top + s.height / 2) - center);
+      if (!holdActive && armed && reveal > 0.1 && reveal < 0.9 && centerDist < centerBandPx) {
+        startHoldCentered();
+      }
+    }
+
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
   }
 
-  update();
-  window.addEventListener('scroll', update, { passive: true });
-  window.addEventListener('resize', update);
-}
+  /* ---------------------------------------------
+     Boot — called on every page
+  --------------------------------------------- */
+  onReady(() => {
+    hydrateTopbarAuth();
+    guardLandingRedirect();
 
+    initChrome();
+    initAgeButtons();
+    initAgePreview();
+    initMobileCta();
 
-  // ---------- boot ----------
-onReady(() => {
-  initChrome();
-  initAgeButtons();
-  initAgePreview();
-  initMobileCta();
-  if (isCreateChatPage()) initCreateChatWizard();
-  if (isCheckoutPage())   initCheckout();
-  initTestimonials();
-  initScrollMorph();
-  initHeroParallax(); // restore
-});
+    if (isCreateChatPage()) initCreateChatWizard();
+    if (isCheckoutPage())   initCheckout();
+
+    initTestimonials();
+    initScrollMorph();
+    initHeroParallax(); // restore
+
+    // If a page wants to open auth immediately (e.g., CTA), wire .js-open-auth
+    $$(".js-open-auth").forEach(btn => {
+      btn.addEventListener("click", (e)=> {
+        e.preventDefault();
+        openAuthModal("signup");
+      });
+    });
+    // If a page has a ".js-open-signin" trigger, open in sign-in mode
+    $$(".js-open-signin").forEach(btn => {
+      btn.addEventListener("click", (e)=> {
+        e.preventDefault();
+        openAuthModal("signin");
+      });
+    });
+  });
+
+  // Expose small API for inline handlers if needed
+  window.StoryBuds = {
+    openAuthModal,
+    showGate,
+    unlockGate,
+    signOut,
+    isSignedIn,
+    currentEmail
+  };
+
 })();
 
-// === Landing micro-demo (voice + gentle SFX) ===
+/* =====================================================
+   Landing micro-demo (voice + gentle SFX)
+   (kept as-is; no auth dependency)
+===================================================== */
 (() => {
   const openBtn = document.getElementById('demoOpenBtn');
   const modal   = document.getElementById('demoModal');
@@ -920,4 +1155,3 @@ onReady(() => {
 
   document.addEventListener('keydown', (e) => { if (!modal.classList.contains('hidden') && e.key === 'Escape') close(); });
 })();
-
