@@ -1643,3 +1643,88 @@ html.scroll-locked { overscroll-behavior: contain; }
   .benefits-grid { grid-template-columns: 1fr; }
 }
 
+/* ===============================
+   StoryBuds — Auth + Gate helpers
+   =============================== */
+
+/* Utilities */
+.hidden { display: none !important; }
+.fade-out { opacity: 0; transition: opacity .18s ease; }
+
+/* Modal */
+.modal {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 12, 20, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  opacity: 1; transition: opacity .18s ease;
+}
+.modal.hidden { opacity: 0; pointer-events: none; }
+.modal-card {
+  width: min(560px, 92vw);
+  background: #fff;
+  border-radius: 16px;
+  padding: clamp(16px, 3vw, 24px);
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  position: relative;
+}
+.modal-card h2 { margin: 0 0 10px; font-size: clamp(18px, 2.4vw, 22px); }
+.modal-close {
+  position: absolute; top: 10px; right: 10px;
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 0; background: #f2f1f6; cursor: pointer;
+}
+.modal .btn { padding: 10px 14px; border-radius: 12px; border: 0; cursor: pointer; }
+.modal .btn.ghost { background: transparent; border: 1px solid #e0dcec; }
+
+/* Gate: clamp + blur */
+.preview-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 10;        /* show first 10 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Optional soft glow at bottom; shown/hidden by JS via #blurGlow */
+#blurGlow {
+  height: 72px; margin-top: -72px;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(248,246,255,1) 60%, rgba(248,246,255,1) 100%);
+}
+@media (prefers-color-scheme: dark) {
+  #blurGlow { background: linear-gradient(180deg, transparent 0%, rgba(16,18,28,1) 60%, rgba(16,18,28,1) 100%); }
+}
+
+/* Alternative: add a gentle blur at the bottom if we aren't clamping lines */
+.blur-bottom {
+  position: relative;
+}
+.blur-bottom::after {
+  content: "";
+  position: absolute; left: 0; right: 0; bottom: 0; height: 120px;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 85%);
+  pointer-events: none;
+}
+@media (prefers-color-scheme: dark) {
+  .blur-bottom::after {
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(6,8,14,1) 85%);
+  }
+}
+
+/* Personalised badge used by gate */
+#personalBadge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; letter-spacing: .2px;
+  background: #f0ecff; color: #4b2bd6; border: 1px solid #e4ddff;
+}
+.story-reader.has-badge { margin-top: 8px; }
+#personalBadge svg, #personalBadge img { width: 14px; height: 14px; }
+
+/* Menu (only if your existing CSS doesn't already cover it) */
+#menu a { margin-right: 14px; text-decoration: none; }
+#menu a:last-child { margin-right: 0; }
+
+/* Small fix so modals and toasts appear above everything */
+.toast, .modal, #gateOverlay { z-index: 1000; }
