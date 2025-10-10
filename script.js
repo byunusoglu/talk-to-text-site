@@ -35,6 +35,8 @@
   const K_TRANSCRIPT = "yw_transcript";
   const K_STORY_MD   = "yw_story_markdown";
   const K_STORY_HTML = "yw_story_html";
+   const K_PENDING   = "yw_pending_transcript";   // <— new: pass data to checkout to generate there
+
 
   // Preload hero images for fast swaps
   ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
@@ -533,6 +535,28 @@ function initAgePreview() {
     }
   }
 
+   // Generate without navigating; stash results and return
+async function generateStoryInPlace(transcript) {
+  const body = { transcript, ageGroup: getAge() };
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+
+  const data = await res.json();
+  const md   = data?.markdown || data?.story || "";
+  const html = mdToHtml(md);
+
+  const SS = window.sessionStorage;
+  try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
+  try { SS.setItem(K_STORY_MD, md); } catch (_) {}
+  try { SS.setItem(K_STORY_HTML, html); } catch (_) {}
+  try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
+}
+
+
   /* ---------------------------------------------
      Conversational Wizard
   --------------------------------------------- */
@@ -760,66 +784,89 @@ function initAgePreview() {
      Checkout: render story + products
   --------------------------------------------- */
   let cartCount = 0;
-  function initCheckout() {
-    const storyEl = $('#storyContent');
-    if (!storyEl) return;
+function initCheckout() {
+  const $ = (s, r=document)=>r.querySelector(s);
+  const SS = window.sessionStorage;
 
-    const html = SS.getItem(K_STORY_HTML);
-    const md   = SS.getItem(K_STORY_MD);
+  const storyEl = $('#storyContent');
+  if (!storyEl) return;
 
-    // Decide what to render based on auth state
-    if (!isSignedIn()) {
-      // Always show a preview for signed-out users
-      if (md) {
-        const previewHtml = makePreviewHtml(md, 10); // first ~10 non-empty lines
-        storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
-      } else {
-        storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
+  const html = SS.getItem(K_STORY_HTML);
+  const md   = SS.getItem(K_STORY_MD);
+  const pending = SS.getItem(K_PENDING);
+
+  // If we have a pending transcript, show transition view and generate here
+  if (!html && !md && pending) {
+    storyEl.innerHTML = `
+      <div class="wait-wrap">
+        <div class="wait-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="muted" style="font-weight:700;">This may take a few seconds…</div>
+      </div>
+    `;
+
+    // Generate in place, then refresh DOM to reuse existing gate logic
+    (async ()=>{
+      try {
+        await generateStoryInPlace(pending);      // new helper below
+        SS.removeItem(K_PENDING);
+        window.location.reload();                 // reuse existing rendering + gate
+      } catch (err) {
+        console.error(err);
+        alert("Sorry, we couldn't create the story. Please try again.");
+        SS.removeItem(K_PENDING);
       }
-      storyEl.dataset.preview = "lines";
-      storyEl.classList.add("preview-clamp");
+    })();
 
-      // Gate overlay for conversion
-      const childName = getChildName();
-      if (html || md) showGate(childName);
-    } else {
-      // Signed in → full story
-      storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
-      delete storyEl.dataset.preview;
-      storyEl.classList.remove("preview-clamp");
-
-      // Hide gate overlays just in case
-      document.getElementById("gateOverlay")?.classList.add("hidden");
-      document.getElementById("blurGlow")?.classList.add("hidden");
-
-      // Personalised badge
-      const childName = getChildName();
-      const reader = document.querySelector(".story-reader");
-      const badge = document.getElementById("personalBadge");
-      const badgeText = document.getElementById("personalBadgeText");
-      if (childName && badge && badgeText) {
-        badgeText.textContent = `Just for ${childName}`;
-        badge.classList.remove("hidden");
-        reader?.classList.add("has-badge");
-      }
-    }
-
-    // Optional raw markdown debug (if the element exists)
-    const rawMdEl = $('#storyMarkdown');
-    if (rawMdEl && md) rawMdEl.textContent = md;
-
-    // Products carousel (age-aware)
-    const productsTrack = $('#productsTrack');
-    if (productsTrack) {
-      const age = getAge();
-      const products = getProductsForAge(age);
-      renderProducts(productsTrack, products);
-    }
-
-    // init cart badge as hidden
-    const cartCountEl = document.getElementById("cartCount");
-    if (cartCountEl) cartCountEl.classList.add("hidden");
+    return; // stop here; we'll reload after generation
   }
+
+  // === Your existing behavior (signed-out preview/gate OR full story) ===
+  if (!isSignedIn()) {
+    if (md) {
+      const previewHtml = makePreviewHtml(md, 10);
+      storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
+    } else {
+      storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
+    }
+    storyEl.dataset.preview = "lines";
+    storyEl.classList.add("preview-clamp");
+
+    const childName = getChildName();
+    if (html || md) showGate(childName);
+  } else {
+    storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
+    delete storyEl.dataset.preview;
+    storyEl.classList.remove("preview-clamp");
+    document.getElementById("gateOverlay")?.classList.add("hidden");
+    document.getElementById("blurGlow")?.classList.add("hidden");
+
+    const childName = getChildName();
+    const reader = document.querySelector(".story-reader");
+    const badge = document.getElementById("personalBadge");
+    const badgeText = document.getElementById("personalBadgeText");
+    if (childName && badge && badgeText) {
+      badgeText.textContent = `Just for ${childName}`;
+      badge.classList.remove("hidden");
+      reader?.classList.add("has-badge");
+    }
+  }
+
+  // Optional raw markdown debug (unchanged)
+  const rawMdEl = $('#storyMarkdown');
+  if (rawMdEl && md) rawMdEl.textContent = md;
+
+  // Products (unchanged)
+  const productsTrack = $('#productsTrack');
+  if (productsTrack) {
+    const age = getAge();
+    const products = getProductsForAge(age);
+    renderProducts(productsTrack, products);
+  }
+
+  const cartCountEl = document.getElementById("cartCount");
+  if (cartCountEl) cartCountEl.classList.add("hidden");
+}
+
 
   // Products data per age
   function getProductsForAge(age) {
@@ -1141,6 +1188,90 @@ window.addEventListener('pageshow', function (e) {
   }
 });
 
+   /* ===========================
+   Quick Create Overlay (index)
+   =========================== */
+function openQuickCreate() {
+  const $ = (s, r=document)=>r.querySelector(s);
+
+  const ov   = $('#quickCreate');
+  const step = (name) => $(`.qc-step[data-step="${name}"]`, ov);
+
+  const sPlace      = step('place');
+  const sPetsYN     = step('pets-yn');
+  const sPetDetails = step('pet-details');
+  const sKid        = step('kid');
+
+  if (!ov || !sPlace || !sPetsYN || !sKid) return;
+  ov.classList.remove('hidden');
+
+  // local state
+  const state = { place:'', pets:'', petType:'', petName:'', kidName:'', kidGender:'', kidAge:'' };
+
+  // reset UI
+  [sPlace, sPetsYN, sPetDetails, sKid].forEach(el=>el.classList.add('hidden'));
+  sPlace.classList.remove('hidden');
+
+  // close
+  $('#qcClose')?.addEventListener('click', ()=> ov.classList.add('hidden'), { once:true });
+
+  // step: place
+  sPlace.querySelectorAll('.qc-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.place = (btn.dataset.place || '').toLowerCase();
+      sPlace.classList.add('hidden'); sPetsYN.classList.remove('hidden');
+    });
+  });
+
+  // step: pets yes/no
+  sPetsYN.querySelectorAll('.qc-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.pets = (btn.dataset.pets || '').toLowerCase();
+      sPetsYN.classList.add('hidden');
+      if (state.pets === 'yes') {
+        sPetDetails.classList.remove('hidden');
+      } else {
+        sKid.classList.remove('hidden');
+      }
+    });
+  });
+
+  // step: pet details
+  $('#qcPetNext')?.addEventListener('click', ()=>{
+    state.petType = ($('#qcPetType')?.value || '').trim();
+    state.petName = ($('#qcPetName')?.value || '').trim();
+    sPetDetails.classList.add('hidden'); sKid.classList.remove('hidden');
+  });
+
+  // step: kid + create
+  $('#qcCreate')?.addEventListener('click', ()=>{
+    state.kidName   = ($('#qcKidName')?.value || '').trim();
+    state.kidGender = ($('#qcKidGender')?.value || '').trim();
+    state.kidAge    = ($('#qcKidAge')?.value || '').trim();
+
+    // Build transcript (works with your /api/generate-story system prompt):contentReference[oaicite:7]{index=7}
+    const lines = [
+      `Child name: ${state.kidName || 'Unknown'}`,
+      `Child gender: ${state.kidGender || '—'}`,
+      `Child age: ${state.kidAge || '—'}`,
+      `Place: ${state.place || 'home'}`,
+    ];
+    if (state.pets === 'yes') {
+      lines.push(`Pet: ${state.petType || 'pet'} named ${state.petName || '—'}`);
+    } else {
+      lines.push(`Pet: none`);
+    }
+    const transcript = lines.join('\n');
+
+    try { sessionStorage.setItem(K_PENDING, transcript); } catch (_) {}
+
+    // Redirect immediately; checkout will show a "please wait" and generate there
+    document.body.classList.add("fade-out");
+    setTimeout(()=>{ window.location.href = "checkout.html"; }, 100);
+  });
+}
+
+
 
   /* ---------------------------------------------
      Boot — called on every page
@@ -1175,6 +1306,16 @@ window.addEventListener('pageshow', function (e) {
         openAuthModal("signin");
       });
     });
+
+     // Force hero CTA to open the overlay (override any previous handlers)
+const heroCta = document.getElementById('heroCta');
+if (heroCta) {
+  heroCta.onclick = (e) => { e.preventDefault(); openQuickCreate(); };
+}
+// Optional: any element with .js-open-create opens it too
+document.querySelectorAll('.js-open-create').forEach(btn=>{
+  btn.addEventListener('click', (e)=>{ e.preventDefault(); openQuickCreate(); });
+});
   });
 
   // Expose small API for inline handlers if needed
