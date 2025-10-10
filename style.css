@@ -1769,23 +1769,23 @@ body.age-no-bar main > section:first-child {
   }
 }
 
-/* Tighter spacing around hero image and title on mobile only */
+/* === Mobile hero tightening === */
 @media (max-width: 700px) {
-  /* Reduce the gap between the top bar and the banner image */
-  .hero,
-  .hero-simple {
-    padding-top: 6vh; /* was roughly 12vh on many setups */
+  /* Reduce space above the banner image */
+  .hero-simple,
+  .hero {
+    padding-top: 4vh !important;   /* was around 8–12vh */
   }
 
-  /* Reduce the gap between the banner image and the title/CTA section */
+  /* Reduce gap below the banner image before text starts */
   .hero img#heroImage,
   .hero-simple img#heroImage {
-    margin-bottom: 1.5rem; /* was ~3rem by default */
+    margin-bottom: 0.8rem !important;  /* half of previous spacing */
   }
 
-  /* Optional: if there’s extra whitespace above title block */
-  .hero-content,
-  .hero-text {
-    margin-top: 0.5rem; /* tighten the title start */
+  /* Tighten text and button stack */
+  .hero-simple .hero-copy {
+    gap: 10px !important;
+    margin-top: 0.4rem !important;
   }
 }
