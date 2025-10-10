@@ -385,5 +385,74 @@
   <a class="mobile-cta" id="mobileCta" href="create.html" aria-label="Create your story">
     ✨ Create your story
   </a>
+  <!-- Quick Create Overlay -->
+<section id="quickCreate" class="qc-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="qcTitle">
+  <div class="qc-card">
+    <button class="qc-close" id="qcClose" aria-label="Close">✕</button>
+
+    <!-- Step: Place -->
+    <div class="qc-step" data-step="place">
+      <h2 id="qcTitle">Pick the place</h2>
+      <div class="qc-chips">
+        <button class="qc-chip" data-place="forest">🌲 Forest</button>
+        <button class="qc-chip" data-place="castle">🏰 Castle</button>
+        <button class="qc-chip" data-place="home">🏠 Home</button>
+      </div>
+    </div>
+
+    <!-- Step: Pets (yes/no) -->
+    <div class="qc-step hidden" data-step="pets-yn">
+      <h2>Any pets?</h2>
+      <div class="qc-chips">
+        <button class="qc-chip" data-pets="yes">Yes</button>
+        <button class="qc-chip" data-pets="no">No</button>
+      </div>
+    </div>
+
+    <!-- Step: Pet details (only if yes) -->
+    <div class="qc-step hidden" data-step="pet-details">
+      <h2>Tell us about the pet</h2>
+      <div class="qc-fields">
+        <label>Type (e.g., dog, cat)
+          <input id="qcPetType" type="text" placeholder="Dog" />
+        </label>
+        <label>Name
+          <input id="qcPetName" type="text" placeholder="Charlie" />
+        </label>
+      </div>
+      <div class="qc-actions">
+        <button class="btn" id="qcPetNext">Next</button>
+      </div>
+    </div>
+
+    <!-- Step: Kid details -->
+    <div class="qc-step hidden" data-step="kid">
+      <h2>About the kid</h2>
+      <div class="qc-fields">
+        <label>Child’s name
+          <input id="qcKidName" type="text" placeholder="Arthur" />
+        </label>
+        <label>Gender
+          <select id="qcKidGender">
+            <option value="" disabled selected>Select</option>
+            <option>Boy</option>
+            <option>Girl</option>
+            <option>Non-binary</option>
+            <option>Prefer not to say</option>
+          </select>
+        </label>
+        <label>Age
+          <input id="qcKidAge" type="number" min="0" max="12" placeholder="4" />
+        </label>
+      </div>
+      <div class="qc-actions">
+        <button class="btn" id="qcCreate">Create my first free story</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+  
 </body>
 </html>
