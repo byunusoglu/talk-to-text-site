@@ -1780,7 +1780,7 @@ body.age-no-bar main > section:first-child {
   /* Reduce gap below the banner image before text starts */
   .hero img#heroImage,
   .hero-simple img#heroImage {
-    margin-bottom: 0.4rem !important;  /* half of previous spacing */
+    margin-bottom: 0.1rem !important;  /* half of previous spacing */
   }
 
   /* Tighten text and button stack */
