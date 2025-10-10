@@ -1811,3 +1811,72 @@ body.age-no-bar main > section:first-child {
     margin-top: 0.4rem !important;
   }
 }
+
+/* === Quick Create overlay === */
+.qc-overlay {
+  position: fixed; inset: 0;
+  display: grid; place-items: center;
+  background: rgba(10,7,20,0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  animation: fadeIn .2s ease both;
+}
+.qc-overlay.hidden { display: none; }
+
+.qc-card {
+  width: min(560px, 92vw);
+  background: #fff;
+  border: 1px solid #eee9fb;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.18);
+  padding: 18px;
+  animation: qcDrop .25s ease both;
+}
+@keyframes qcDrop { from { transform: translateY(6px); opacity: .9; } to { transform: translateY(0); opacity: 1; } }
+
+.qc-close {
+  position: absolute; right: 14px; top: 12px;
+  background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer;
+}
+
+.qc-step h2 { margin: 4px 0 10px; color: var(--plum-dark); }
+
+.qc-chips {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.qc-chip {
+  border: 1px solid #e6dcfa; background: #fff;
+  padding: 10px 14px; border-radius: 999px; cursor: pointer;
+  font-weight: 700; color: #3a3450;
+}
+.qc-chip:hover { background: #fbf9ff; }
+
+.qc-fields { display: grid; gap: 10px; margin-top: 8px; }
+.qc-fields input, .qc-fields select {
+  width: 100%; border: 1px solid #e0dcec; border-radius: 12px; padding: 10px 12px; font-size: 16px;
+}
+.qc-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+
+.hidden { display: none !important; }
+
+/* === Checkout "Please wait" transition view === */
+.wait-wrap {
+  display: grid; place-items: center; gap: 10px;
+  min-height: 220px; background: rgba(255,255,255,0.9);
+  border: 1px solid #eee9fb; border-radius: 16px; box-shadow: var(--shadow);
+  padding: 20px; text-align: center;
+}
+.wait-dots {
+  display: inline-grid; grid-auto-flow: column; gap: 6px;
+}
+.wait-dots span {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #8E44EC; opacity: .25; animation: dotPulse 1.2s infinite ease-in-out;
+}
+.wait-dots span:nth-child(2){ animation-delay: .15s; }
+.wait-dots span:nth-child(3){ animation-delay: .3s; }
+@keyframes dotPulse {
+  0%, 100% { transform: translateY(0); opacity: .25; }
+  50%      { transform: translateY(-6px); opacity: 1;  }
+}
+
