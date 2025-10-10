@@ -1789,3 +1789,25 @@ body.age-no-bar main > section:first-child {
     margin-top: 0.4rem !important;
   }
 }
+
+/* Hide "Available in digital, printed..." line in hero */
+.hero-simple .formats-sub {
+  display: none !important;
+}
+
+/* Compact hero spacing after removing the formats-sub line */
+.hero-simple .hero-copy {
+  gap: 14px; /* previously ~18px */
+}
+
+.hero-simple .hero-copy .btn {
+  margin-top: 6px;   /* was 8–10px */
+  margin-bottom: 8px;
+}
+
+@media (max-width: 700px) {
+  .hero-simple .hero-copy {
+    gap: 10px !important;
+    margin-top: 0.4rem !important;
+  }
+}
