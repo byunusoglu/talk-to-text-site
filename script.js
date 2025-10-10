@@ -1271,6 +1271,42 @@ function openQuickCreate() {
   });
 }
 
+   // Force the hero CTA to open the overlay, no matter who re-binds it later
+function forceHeroToOverlay() {
+  const btn = document.getElementById('heroCta');
+  if (!btn) return;
+
+  // Capture-phase listener beats .onclick set by updateHeroForAge()
+  const handler = (e) => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    openQuickCreate();
+  };
+
+  // Add once in capture so downstream handlers can't redirect
+  btn.addEventListener('click', handler, { capture: true });
+  // Best-effort: neutralize any pre-set onclick
+  try { btn.onclick = null; } catch (_) {}
+}
+
+// On the landing page, intercept any "create.html" button/link and open the overlay instead
+function interceptCreateNavigationOnLanding() {
+  const path = (location.pathname || "").toLowerCase();
+  const isLanding = path.endsWith("/index.html") || path.endsWith("/") || path === "";
+
+  if (!isLanding) return;
+
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    const el = t.closest('a[href$="create.html"], a[href$="/create.html"], button[onclick*="create.html"]');
+    if (!el) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    openQuickCreate();
+  }, { capture: true });
+}
+
 
 
   /* ---------------------------------------------
@@ -1316,6 +1352,8 @@ if (heroCta) {
 document.querySelectorAll('.js-open-create').forEach(btn=>{
   btn.addEventListener('click', (e)=>{ e.preventDefault(); openQuickCreate(); });
 });
+     forceHeroToOverlay();
+interceptCreateNavigationOnLanding();
   });
 
   // Expose small API for inline handlers if needed
