@@ -23,6 +23,75 @@
   };
   const SS = window.sessionStorage;
 
+   /* ===== Real Auth client (Sign Up only for now) ===== */
+const YW_API_BASE = "https://imaginee-y9nk.onrender.com/api/v1"; // partner's base
+const YW_JWT_KEY  = "yw_jwt";   // where we stash the token for now (localStorage)
+let   YW_JWT_MEM  = "";         // in-memory copy to avoid frequent storage reads
+
+function setJwt(token) {
+  YW_JWT_MEM = token || "";
+  try { localStorage.setItem(YW_JWT_KEY, YW_JWT_MEM); } catch(_) {}
+}
+function getJwt() {
+  if (YW_JWT_MEM) return YW_JWT_MEM;
+  try { YW_JWT_MEM = localStorage.getItem(YW_JWT_KEY) || ""; } catch(_) {}
+  return YW_JWT_MEM;
+}
+
+// Pull child fields from our transcript if available
+function deriveChildFromTranscript() {
+  const SS = window.sessionStorage;
+  const raw = (SS.getItem("yw_transcript") || "").toString();
+
+  const read = (labelRx) => {
+    const m = raw.match(labelRx);
+    return m && m[1] ? m[1].trim() : "";
+  };
+
+  const childName = read(/Child name:\s*([^\n]+)/i);
+  const genderRaw = read(/Child gender:\s*([^\n]+)/i) || read(/Gender:\s*([^\n]+)/i);
+  const ageRaw    = read(/Child age:\s*([^\n]+)/i) || read(/Age:\s*([^\n]+)/i);
+
+  let gender = (genderRaw || "").toLowerCase();
+  if (["boy","male","erkek"].includes(gender)) gender = "male";
+  else if (["girl","female","kız","kiz"].includes(gender)) gender = "female";
+  else if (["non-binary","nonbinary"].includes(gender)) gender = "non-binary";
+  else if (!gender) gender = "prefer-not-to-say";
+
+  // Birth year from age if possible
+  let birthYear = "";
+  const age = parseInt((ageRaw || "").replace(/\D/g, ""), 10);
+  if (!isNaN(age)) {
+    const now = new Date();
+    birthYear = String(now.getUTCFullYear() - Math.min(Math.max(age, 0), 12));
+  }
+  return { childName, birthYear, gender };
+}
+
+// Real API call
+async function apiSignup({ childName, email, password, birthYear, gender }) {
+  // Validate minimums; backend expects all of these.
+  if (!childName || !birthYear || !gender) {
+    throw new Error("MISSING_CHILD_FIELDS"); // we'll handle by asking inline
+  }
+  const res = await fetch(`${YW_API_BASE}/auth/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ childName, email, password, birthYear: Number(birthYear), gender })
+  });
+  const data = await res.json().catch(()=> ({}));
+  if (!res.ok) {
+    const msg = data?.message || data?.error || `Signup failed (${res.status})`;
+    throw new Error(msg);
+  }
+  const token = data?.token || "";
+  if (!token) throw new Error("NO_TOKEN");
+  setJwt(token);
+  return data;
+}
+
+
+   
   /* ---------------------------------------------
      App constants
   --------------------------------------------- */
@@ -716,29 +785,71 @@ async function generateStoryInPlace(transcript) {
     }
 
     // Email form submit
-    if (formWrap) {
-      formWrap.onsubmit = async (e) => {
-        e.preventDefault();
-        const email = $("#gateEmail")?.value.trim();
-        const pass  = $("#gatePass")?.value;
-        if (!email || !pass) { alert("Please enter email and password."); return; }
+    // Email form submit  (REPLACE the whole original block)
+if (formWrap) {
+  // Inject child fields row on demand
+  let extraInjected = false;
+  const ensureExtraFields = () => {
+    if (extraInjected) return;
+    extraInjected = true;
+    const extra = document.createElement("div");
+    extra.className = "gate-email";
+    extra.innerHTML = `
+      <label>Child’s name
+        <input type="text" id="gateChildName" placeholder="Mia" />
+      </label>
+      <label>Birth year
+        <input type="number" id="gateBirthYear" placeholder="2019" min="2008" max="${new Date().getUTCFullYear()}" />
+      </label>
+      <label>Gender
+        <select id="gateGender">
+          <option value="">Select</option>
+          <option value="female">Girl</option>
+          <option value="male">Boy</option>
+          <option value="non-binary">Non-binary</option>
+          <option value="prefer-not-to-say">Prefer not to say</option>
+        </select>
+      </label>
+    `;
+    formWrap.appendChild(extra);
+  };
 
-        // quick test mode: password starting with "signin:" means sign-in
-        try {
-          if (pass.startsWith("signin:")) {
-            await signIn(email, pass.replace(/^signin:/, ""));
-          } else {
-            await createUser(email, pass);
-          }
-          doUnlockAfterAuth();
-        } catch (err) {
-          alert(err?.message === "EMAIL_EXISTS"  ? "That email is already registered. Use the Sign In option."
-               : err?.message === "NO_SUCH_USER" ? "No account found. Create an account."
-               : err?.message === "BAD_PASSWORD" ? "Wrong password."
-               : "Could not authenticate.");
-        }
-      };
+  formWrap.onsubmit = async (e) => {
+    e.preventDefault();
+    const email = $("#gateEmail")?.value.trim();
+    const pass  = $("#gatePass")?.value || "";
+
+    if (!email || !pass) { alert("Please enter email and password."); return; }
+
+    // Grab from transcript first
+    let { childName, birthYear, gender } = deriveChildFromTranscript();
+
+    // If any required field missing, reveal extra inputs and read them
+    if (!childName || !birthYear || !gender) {
+      ensureExtraFields();
+      childName = childName || ($("#gateChildName")?.value.trim() || "");
+      birthYear = birthYear || ($("#gateBirthYear")?.value.trim() || "");
+      gender    = gender    || ($("#gateGender")?.value || "");
+      if (!childName || !birthYear || !gender) {
+        alert("Please provide your child’s name, birth year, and gender.");
+        return;
+      }
     }
+
+    try {
+      // Real API call
+      await apiSignup({ childName, email, password: pass, birthYear, gender });
+      // Reuse your existing unlock + redirect flow
+      unlockGate();
+    } catch (err) {
+      const msg = err?.message || String(err);
+      alert(msg.includes("E11000") || msg.toLowerCase().includes("exists")
+        ? "This email is already registered. Please sign in instead."
+        : msg);
+    }
+  };
+}
+
 
     function doUnlockAfterAuth() { unlockGate(); }
   }
