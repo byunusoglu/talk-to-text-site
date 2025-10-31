@@ -74,7 +74,7 @@ async function apiSignup({ childName, email, password, birthYear, gender }) {
   if (!childName || !birthYear || !gender) {
     throw new Error("MISSING_CHILD_FIELDS"); // we'll handle by asking inline
   }
-  const res = await fetch(`${YW_API_BASE}/auth/signup`, {
+  const res = await fetch(`${YW_API_BASE}/users/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ childName, email, password, birthYear: Number(birthYear), gender })
