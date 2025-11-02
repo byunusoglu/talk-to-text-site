@@ -80,9 +80,9 @@ function getUser()    { return SESSION_USER;  }
       body: JSON.stringify({ email, password }),
        credentials: "include"
     });
-     console.log("res":res);
+    // console.log("res":res);
     const data = await res.json().catch(()=>({}));
-     console.log("data":data);
+   //  console.log("data":data);
     if (!res.ok) {
       const msg = data?.message || data?.error || `Login failed (${res.status})`;
       throw new Error(msg);
