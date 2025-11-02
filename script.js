@@ -50,10 +50,6 @@ async function refreshSession() {
 function isSignedIn() { return !!SESSION_USER; }
 function getUser()    { return SESSION_USER;  }
 
-
-  function setUser(u){ try { localStorage.setItem(AUTH_USER_KEY, JSON.stringify(u||{})); } catch(_){} }
-  function getUser(){ try { return JSON.parse(localStorage.getItem(AUTH_USER_KEY)||"{}"); } catch(_) { return {}; } }
-
   // ---- API wrappers ----
   async function apiSignup({ childName, email, password, birthYear, gender }) {
     const res = await fetch(`${API_BASE}/users/signup`, {
