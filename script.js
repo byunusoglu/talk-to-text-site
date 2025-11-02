@@ -566,7 +566,6 @@
   /* ---------------------------------------------
      API call + stash story + go checkout
   --------------------------------------------- */
-  const API_URL = "https://fairytale-api.vercel.app/api/generate-story";
 
   async function generateStoryAndNavigate(transcript) {
     if (!transcript) throw new Error("Missing transcript");
