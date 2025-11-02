@@ -93,13 +93,16 @@ function getUser()    { return SESSION_USER;  }
     return { token, user };
   }
 
-  async function apiGetMe() {
-    const token = getToken();
-    if (!token) throw new Error("NO_TOKEN");
-     const res = await fetch(`${API_BASE}/users/me`, {
-  method: "GET",
-  credentials: "include"        // ✅ include cookies
-});
+// simplified version for cookie-based auth
+async function apiGetMe() {
+  const res = await fetch(`${API_BASE}/users/me`, {
+    method: "GET",
+    credentials: "include", // always include cookies
+  });
+  if (!res.ok) throw new Error("API 401");
+  return res.json();
+}
+
     if (!res.ok) throw new Error(`GetMe failed (${res.status})`);
     const data = await res.json();
     const user = data?.data?.user || {};
