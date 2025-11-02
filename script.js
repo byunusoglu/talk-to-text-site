@@ -103,13 +103,6 @@ async function apiGetMe() {
   return res.json();
 }
 
-    if (!res.ok) throw new Error(`GetMe failed (${res.status})`);
-    const data = await res.json();
-    const user = data?.data?.user || {};
-    setUser(user);
-    return user;
-  }
-
 async function signOut() {
   await fetch(`${API_BASE}/users/logout`, { method: "POST", credentials: "include" });
   SESSION_USER = null;
