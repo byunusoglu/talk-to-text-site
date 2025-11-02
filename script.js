@@ -1,10 +1,10 @@
 "use strict";
 
 /* =====================================================
-   StoryBuds — unified interactions (Local-first Accounts + Existing UX)
+   StoryBuds — unified interactions (REAL Auth + Existing UX)
    - Preserves: age selector, hero parallax, wizard, API call, checkout,
                testimonials, scroll morph, audio micro-demo, etc.
-   - Adds:     accounts (localStorage), auth modal, signed-in routing,
+   - Adds:     real JWT auth, auth modal (Sign Up + Sign In),
                topbar hydration, real gate unlock.
 ===================================================== */
 (() => {
@@ -23,89 +23,121 @@
   };
   const SS = window.sessionStorage;
 
-   /* ===== Real Auth client (Sign Up only for now) ===== */
-const YW_API_BASE = "https://imaginee-y9nk.onrender.com/api/v1"; // partner's base
-const YW_JWT_KEY  = "yw_jwt";   // where we stash the token for now (localStorage)
-let   YW_JWT_MEM  = "";         // in-memory copy to avoid frequent storage reads
+  /* ---------------------------------------------
+     REAL Auth client (JWT)
+  --------------------------------------------- */
+  const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
+  const AUTH_TOKEN_KEY = "yw_jwt";     // where JWT is stored (localStorage)
+  const AUTH_USER_KEY  = "yw_user_json";
 
-function setJwt(token) {
-  YW_JWT_MEM = token || "";
-  try { localStorage.setItem(YW_JWT_KEY, YW_JWT_MEM); } catch(_) {}
-}
-function getJwt() {
-  if (YW_JWT_MEM) return YW_JWT_MEM;
-  try { YW_JWT_MEM = localStorage.getItem(YW_JWT_KEY) || ""; } catch(_) {}
-  return YW_JWT_MEM;
-}
-
-// Pull child fields from our transcript if available
-function deriveChildFromTranscript() {
-  const SS = window.sessionStorage;
-  const raw = (SS.getItem("yw_transcript") || "").toString();
-
-  const read = (labelRx) => {
-    const m = raw.match(labelRx);
-    return m && m[1] ? m[1].trim() : "";
-  };
-
-  const childName = read(/Child name:\s*([^\n]+)/i);
-  const genderRaw = read(/Child gender:\s*([^\n]+)/i) || read(/Gender:\s*([^\n]+)/i);
-  const ageRaw    = read(/Child age:\s*([^\n]+)/i) || read(/Age:\s*([^\n]+)/i);
-
-  let gender = (genderRaw || "").toLowerCase();
-  if (["boy","male","erkek"].includes(gender)) gender = "male";
-  else if (["girl","female","kız","kiz"].includes(gender)) gender = "female";
-  else if (["non-binary","nonbinary"].includes(gender)) gender = "non-binary";
-  else if (!gender) gender = "prefer-not-to-say";
-
-  // Birth year from age if possible
-  let birthYear = "";
-  const age = parseInt((ageRaw || "").replace(/\D/g, ""), 10);
-  if (!isNaN(age)) {
-    const now = new Date();
-    birthYear = String(now.getUTCFullYear() - Math.min(Math.max(age, 0), 12));
+  function getToken() {
+    try { return localStorage.getItem(AUTH_TOKEN_KEY) || ""; } catch(_) { return ""; }
   }
-  return { childName, birthYear, gender };
-}
-
-// Real API call
-async function apiSignup({ childName, email, password, birthYear, gender }) {
-  // Validate minimums; backend expects all of these.
-  if (!childName || !birthYear || !gender) {
-    throw new Error("MISSING_CHILD_FIELDS"); // we'll handle by asking inline
+  function setToken(t) {
+    try { localStorage.setItem(AUTH_TOKEN_KEY, t || ""); } catch(_) {}
   }
-  const res = await fetch(`${YW_API_BASE}/users/signup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ childName, email, password, birthYear: Number(birthYear), gender })
-  });
-  const data = await res.json().catch(()=> ({}));
-  if (!res.ok) {
-    const msg = data?.message || data?.error || `Signup failed (${res.status})`;
-    throw new Error(msg);
+  function clearToken() {
+    try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch(_) {}
   }
-  const token = data?.token || "";
-  if (!token) throw new Error("NO_TOKEN");
-  setJwt(token);
-  return data;
-}
+  function isSignedIn() { return !!getToken(); }
 
+  function setUser(u){ try { localStorage.setItem(AUTH_USER_KEY, JSON.stringify(u||{})); } catch(_){} }
+  function getUser(){ try { return JSON.parse(localStorage.getItem(AUTH_USER_KEY)||"{}"); } catch(_) { return {}; } }
 
-   
+  // ---- API wrappers ----
+  async function apiSignup({ childName, email, password, birthYear, gender }) {
+    const res = await fetch(`${API_BASE}/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ childName, email, password, birthYear, gender })
+    });
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) {
+      const msg = data?.message || data?.error || `Signup failed (${res.status})`;
+      throw new Error(msg);
+    }
+    const token = data?.token || "";
+    const user  = data?.data?.user || {};
+    if (!token) throw new Error("No token returned by signup");
+    setToken(token);
+    setUser(user);
+    return { token, user };
+  }
+
+  async function apiLogin({ email, password }) {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) {
+      const msg = data?.message || data?.error || `Login failed (${res.status})`;
+      throw new Error(msg);
+    }
+    const token = data?.token || "";
+    const user  = data?.data?.user || {};
+    if (!token) throw new Error("No token returned by login");
+    setToken(token);
+    setUser(user);
+    return { token, user };
+  }
+
+  async function apiGetMe() {
+    const token = getToken();
+    if (!token) throw new Error("NO_TOKEN");
+    const res = await fetch(`${API_BASE}/users/me`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`GetMe failed (${res.status})`);
+    const data = await res.json();
+    const user = data?.data?.user || {};
+    setUser(user);
+    return user;
+  }
+
+  function signOut(){
+    clearToken();
+    setUser(null);
+  }
+
+  // Helper: try to derive child fields from transcript if present
+  function deriveChildFromTranscript() {
+    const raw = (SS.getItem("yw_transcript") || "").toString();
+    const read = (rx) => { const m = raw.match(rx); return m && m[1] ? m[1].trim() : ""; };
+
+    const childName = read(/Child name:\s*([^\n]+)/i);
+    const genderRaw = read(/Child gender:\s*([^\n]+)/i) || read(/Gender:\s*([^\n]+)/i);
+    const ageRaw    = read(/Child age:\s*([^\n]+)/i) || read(/Age:\s*([^\n]+)/i);
+
+    let gender = (genderRaw || "").toLowerCase();
+    if (["boy","male","erkek"].includes(gender)) gender = "male";
+    else if (["girl","female","kız","kiz"].includes(gender)) gender = "female";
+    else if (["non-binary","nonbinary"].includes(gender)) gender = "non-binary";
+    else if (!gender) gender = "prefer-not-to-say";
+
+    let birthYear = "";
+    const age = parseInt((ageRaw || "").replace(/\D/g, ""), 10);
+    if (!isNaN(age)) {
+      const now = new Date();
+      birthYear = String(now.getUTCFullYear() - Math.min(Math.max(age, 0), 12));
+    }
+    return { childName, birthYear, gender };
+  }
+
   /* ---------------------------------------------
      App constants
   --------------------------------------------- */
   const AGE_KEY = "yw_age_group";          // '0-2' | '3-5' | '5+'
   const DEFAULT_AGE = "0-2";
-   const AGE_UI_DISABLED = true; // hide age tags, default to 0–2
+  const AGE_UI_DISABLED = true; // hide age tags, default to 0–2
   const API_URL = "https://fairytale-api.vercel.app/api/generate-story";
 
   // keys used on navigation to checkout
   const K_TRANSCRIPT = "yw_transcript";
   const K_STORY_MD   = "yw_story_markdown";
   const K_STORY_HTML = "yw_story_html";
-   const K_PENDING   = "yw_pending_transcript";   // <— new: pass data to checkout to generate there
-
+  const K_PENDING    = "yw_pending_transcript";   // pass data to checkout to generate there
 
   // Preload hero images for fast swaps
   ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
@@ -135,62 +167,6 @@ async function apiSignup({ childName, email, password, birthYear, gender }) {
       cta:   "Create story"
     }
   };
-
-  /* ---------------------------------------------
-     Local-first Accounts (email+password)
-  --------------------------------------------- */
-  const USERS_KEY  = "yw_users";        // { [email]: { pwHash, createdAt } }
-  const AUTH_KEY   = "yw_signed_in";    // "1" or null
-  const AUTH_EMAIL = "yw_user_email";   // current user email
-
-  const isSignedIn = () => {
-    try { return localStorage.getItem(AUTH_KEY) === "1"; } catch(_) { return false; }
-  };
-  const currentEmail = () => {
-    try { return localStorage.getItem(AUTH_EMAIL) || ""; } catch(_) { return ""; }
-  };
-  function setSignedIn(v) { try { localStorage.setItem(AUTH_KEY, v ? "1" : "0"); } catch(_){} }
-
-  async function sha256(text) {
-    const buf = new TextEncoder().encode(text);
-    const hashBuf = await crypto.subtle.digest("SHA-256", buf);
-    return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,"0")).join("");
-  }
-  function readUsers() {
-    try { return JSON.parse(localStorage.getItem(USERS_KEY) || "{}"); } catch(_) { return {}; }
-  }
-  function writeUsers(obj) {
-    try { localStorage.setItem(USERS_KEY, JSON.stringify(obj)); } catch(_) {}
-  }
-  async function createUser(email, password) {
-    const users = readUsers();
-    const key = (email||"").trim().toLowerCase();
-    if (!key) throw new Error("EMAIL_REQUIRED");
-    if (users[key]) throw new Error("EMAIL_EXISTS");
-    const pwHash = await sha256(password || "");
-    users[key] = { pwHash, createdAt: Date.now() };
-    writeUsers(users);
-    localStorage.setItem(AUTH_KEY, "1");
-    localStorage.setItem(AUTH_EMAIL, key);
-    return key;
-  }
-  async function signIn(email, password) {
-    const users = readUsers();
-    const key = (email||"").trim().toLowerCase();
-    const rec = users[key];
-    if (!rec) throw new Error("NO_SUCH_USER");
-    const pwHash = await sha256(password || "");
-    if (pwHash !== rec.pwHash) throw new Error("BAD_PASSWORD");
-    localStorage.setItem(AUTH_KEY, "1");
-    localStorage.setItem(AUTH_EMAIL, key);
-    return key;
-  }
-  function signOut() {
-    try {
-      localStorage.removeItem(AUTH_KEY);
-      localStorage.removeItem(AUTH_EMAIL);
-    } catch(_) {}
-  }
 
   /* ---------------------------------------------
      Chrome hydration (logo + menu links)
@@ -227,62 +203,57 @@ async function apiSignup({ childName, email, password, birthYear, gender }) {
     }
   }
 
-   /* ---------------------------------------------
-   Menu helpers + initChrome (auto-close on outside click)
---------------------------------------------- */
-
-// Find your menu element robustly
-function getMenuEl() {
-  return document.getElementById("menu")
-      || document.querySelector('[data-nav="menu"]')
-      || document.querySelector(".nav-menu")
-      || document.querySelector("#mobileMenu")
-      || null;
-}
-
-// Close menu when clicking/touching outside or pressing Esc
-function wireMenuAutoClose(menuBtn, menu) {
-  if (!menuBtn || !menu) return;
-
-  function isOpen() { return !menu.classList.contains('hidden'); }
-  function close()   { menu.classList.add('hidden'); }
-
-  const outside = (e) => {
-    if (!isOpen()) return;
-    const t = e.target;
-    if (menu.contains(t) || menuBtn.contains(t)) return; // click inside → ignore
-    close();
-  };
-
-  document.addEventListener('click', outside, { passive: true });
-  document.addEventListener('touchstart', outside, { passive: true });
-  document.addEventListener('keydown', (e) => {
-    if (!isOpen()) return;
-    if (e.key === 'Escape') { e.preventDefault(); close(); }
-  });
-}
-
-// REPLACE your current initChrome() with this:
-function initChrome() {
-  const menuBtn = document.getElementById('menuBtn');
-  const menu = getMenuEl();
-  if (menuBtn && menu) {
-    menuBtn.addEventListener('click', () => {
-      menu.classList.toggle('hidden');
-    });
-    wireMenuAutoClose(menuBtn, menu);
+  /* ---------------------------------------------
+     Menu helpers + initChrome (auto-close on outside click)
+  --------------------------------------------- */
+  function getMenuEl() {
+    return document.getElementById("menu")
+        || document.querySelector('[data-nav="menu"]')
+        || document.querySelector(".nav-menu")
+        || document.querySelector("#mobileMenu")
+        || null;
   }
 
-  const yearEl = document.getElementById('year');
-  if (yearEl) yearEl.textContent = new Date().getFullYear();
+  function wireMenuAutoClose(menuBtn, menu) {
+    if (!menuBtn || !menu) return;
 
-  const cartCountEl = document.getElementById("cartCount");
-  if (cartCountEl) cartCountEl.classList.add("hidden");
+    function isOpen() { return !menu.classList.contains('hidden'); }
+    function close()   { menu.classList.add('hidden'); }
 
-  // Re-hydrate once to win races with other DOM scripts
-  setTimeout(hydrateTopbarAuth, 0);
-}
+    const outside = (e) => {
+      if (!isOpen()) return;
+      const t = e.target;
+      if (menu.contains(t) || menuBtn.contains(t)) return;
+      close();
+    };
 
+    document.addEventListener('click', outside, { passive: true });
+    document.addEventListener('touchstart', outside, { passive: true });
+    document.addEventListener('keydown', (e) => {
+      if (!isOpen()) return;
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+    });
+  }
+
+  function initChrome() {
+    const menuBtn = document.getElementById('menuBtn');
+    const menu = getMenuEl();
+    if (menuBtn && menu) {
+      menuBtn.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+      });
+      wireMenuAutoClose(menuBtn, menu);
+    }
+
+    const yearEl = document.getElementById('year');
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+    const cartCountEl = document.getElementById("cartCount");
+    if (cartCountEl) cartCountEl.classList.add("hidden");
+
+    // Re-hydrate once to win races with other DOM scripts
+    setTimeout(hydrateTopbarAuth, 0);
+  }
 
   /* ---------------------------------------------
      Guard: signed-in users → /home.html from landing
@@ -308,27 +279,54 @@ function initChrome() {
       modal.id = id;
       modal.className = "modal";
       modal.innerHTML = `
-        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-          <button class="modal-close" id="authCloseBtn" aria-label="Close">✕</button>
-          <h2 id="authTitle">Welcome to StoryBuds</h2>
-          <div class="demo-rows" style="gap:12px">
-            <div>
-              <label style="font-weight:700">Email</label>
-              <input id="authEmail" type="email" placeholder="you@example.com"
-                style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
-            </div>
-            <div>
-              <label style="font-weight:700">Password</label>
-              <input id="authPass" type="password" placeholder="••••••••"
-                style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="btn" id="authPrimaryBtn">Create free account</button>
-              <button class="btn ghost" id="authSwitch">Have an account? Sign In</button>
-            </div>
-            <p class="muted" style="margin:6px 0 0">No payment needed. You’ll save your stories.</p>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <button class="modal-close" id="authCloseBtn" aria-label="Close">✕</button>
+    <h2 id="authTitle">Create your free account</h2>
+
+    <div class="demo-rows" style="gap:12px">
+      <!-- SIGN UP extra fields -->
+      <div data-auth="signup-fields">
+        <label style="font-weight:700">Child's name</label>
+        <input id="authChildName" type="text" placeholder="e.g., Mia"
+          style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
+        <div class="field-grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+          <div>
+            <label style="font-weight:700">Birth year</label>
+            <input id="authBirthYear" type="number" min="2010" max="2025" placeholder="2019"
+              style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
           </div>
-        </div>`;
+          <div>
+            <label style="font-weight:700">Gender</label>
+            <select id="authGender" style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
+              <option value="" disabled selected>Select</option>
+              <option value="female">Girl</option>
+              <option value="male">Boy</option>
+              <option value="non-binary">Non-binary</option>
+              <option value="prefer-not-to-say">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+        <hr style="border:none;border-top:1px solid #eee9fb;margin:8px 0">
+      </div>
+
+      <div>
+        <label style="font-weight:700">Email</label>
+        <input id="authEmail" type="email" placeholder="you@example.com"
+          style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
+      </div>
+      <div>
+        <label style="font-weight:700">Password</label>
+        <input id="authPass" type="password" placeholder="••••••••"
+          style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
+      </div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn" id="authPrimaryBtn">Create free account</button>
+        <button class="btn ghost" id="authSwitch">Have an account? Sign In</button>
+      </div>
+      <p class="muted" style="margin:6px 0 0">No payment needed. You’ll save your stories.</p>
+    </div>
+  </div>`;
 
       document.body.appendChild(modal);
 
@@ -340,42 +338,60 @@ function initChrome() {
         const title   = $("#authTitle");
         const primary = $("#authPrimaryBtn");
         const switcher= $("#authSwitch");
+        const signupFields = modal.querySelector('[data-auth="signup-fields"]');
 
         if (mode === "signin") {
           if (title)   title.textContent = "Welcome back";
           if (primary) primary.textContent = "Sign In";
           if (switcher) switcher.textContent = "New here? Create an account";
-
-          if (primary) primary.onclick = async () => {
-            const email = $("#authEmail")?.value.trim();
-            const pass  = $("#authPass")?.value;
-            try {
-              await signIn(email, pass);
-              close();
-              fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
-            } catch (err) {
-              alert(err?.message === "BAD_PASSWORD" ? "Wrong password."
-                : err?.message === "NO_SUCH_USER" ? "No account with that email."
-                : "Could not sign in.");
-            }
-          };
-          if (switcher) switcher.onclick = () => setMode("signup");
-        } else {
-          if (title)   title.textContent = "Welcome to StoryBuds";
-          if (primary) primary.textContent = "Create free account";
-          if (switcher) switcher.textContent = "Have an account? Sign In";
+          if (signupFields) signupFields.style.display = "none";
 
           if (primary) primary.onclick = async () => {
             const email = $("#authEmail")?.value.trim();
             const pass  = $("#authPass")?.value;
             if (!email || !pass) { alert("Please enter email and password."); return; }
             try {
-              await createUser(email, pass);
+              await apiLogin({ email, password: pass });
+              try { await apiGetMe(); } catch(_){}
               close();
               fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
             } catch (err) {
-              alert(err?.message === "EMAIL_EXISTS" ? "That email is already registered."
-                : "Could not create account.");
+              alert(err?.message || "Could not sign in.");
+            }
+          };
+          if (switcher) switcher.onclick = () => setMode("signup");
+        } else {
+          if (title)   title.textContent = "Create your free account";
+          if (primary) primary.textContent = "Create free account";
+          if (switcher) switcher.textContent = "Have an account? Sign In";
+          if (signupFields) signupFields.style.display = "";
+
+          if (primary) primary.onclick = async () => {
+            // Try to auto-fill from transcript; allow user to override via fields
+            const guess = deriveChildFromTranscript();
+            const childName = $("#authChildName")?.value?.trim() || guess.childName;
+            const birthYear = $("#authBirthYear")?.value?.trim() || guess.birthYear;
+            const gender    = $("#authGender")?.value || guess.gender;
+            const email     = $("#authEmail")?.value?.trim();
+            const password  = $("#authPass")?.value;
+
+            if (!childName || !birthYear || !gender || !email || !password) {
+              alert("Please fill all fields.");
+              return;
+            }
+
+            try {
+              await apiSignup({ childName, email, password, birthYear, gender });
+              try { await apiGetMe(); } catch(_){}
+              close();
+              fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
+            } catch (err) {
+              const msg = err?.message || "Could not create account.";
+              alert(
+                /already|exists/i.test(msg)
+                  ? "This email is already registered. Please sign in instead."
+                  : msg
+              );
             }
           };
           if (switcher) switcher.onclick = () => setMode("signin");
@@ -403,18 +419,17 @@ function initChrome() {
       (b.dataset.age || "").toLowerCase() === current));
   };
 
-  // Pull child's first name from the transcript we already stash
+  // Pull child's first name from transcript (for badges)
   function getChildName() {
     try {
       const raw = SS.getItem(K_TRANSCRIPT) || "";
-      // Expecting lines like: "Child name: Arthur"
       const m = raw.match(/Child name:\s*([^\n]+)/i);
       const name = (m && m[1] ? m[1].trim() : "").replace(/[^A-Za-zÇĞİÖŞÜçğıöşü' -]/g, "");
       return name || "";
     } catch (_) { return ""; }
   }
 
-  // helper: prefer cut-out if it exists on the server
+  // prefer cut-out if it exists
   async function pickBestSrc(cfg) {
     const trySrc = async (src) => {
       try {
@@ -471,26 +486,19 @@ function initChrome() {
       .replace(/(^|>)(?!<h\d|<p|<\/p>)([^\n]+)(?=\n|$)/g, "$1<p>$2</p>");
   };
 
-  // Build ~10-line preview from Markdown (skip headings so clamp height is used by body)
   function makePreviewHtml(md, maxLines = 10) {
     if (!md) return "";
-
-    // 1) Remove the very first H1 (title) and any immediate blank lines after it.
     let cleaned = md.replace(/^\s*# [^\n]*\n+(\s*\n)*/m, "");
-
-    // 2) Build preview skipping H2/H3 headings
     const lines = cleaned.split(/\r?\n/);
     const out = [];
     let taken = 0;
 
     for (const ln of lines) {
-      if (/^\s*##{1,2}\s+/.test(ln)) continue; // skip headings
+      if (/^\s*##{1,2}\s+/.test(ln)) continue;
       out.push(ln);
       if (ln.trim().length) taken++;
       if (taken >= maxLines) break;
     }
-
-    // Fallback if empty
     if (!taken) {
       out.length = 0;
       taken = 0;
@@ -500,7 +508,6 @@ function initChrome() {
         if (taken >= maxLines) break;
       }
     }
-
     const previewMd = out.join("\n") + "\n\n…";
     return mdToHtml(previewMd);
   }
@@ -508,64 +515,59 @@ function initChrome() {
   /* ---------------------------------------------
      Landing: age buttons + hover preview
   --------------------------------------------- */
-function initAgeButtons() {
-  if (AGE_UI_DISABLED) {
-    // Force default selection and update hero
-    setAge(DEFAULT_AGE);
-    updateHeroForAge(DEFAULT_AGE);
+  function initAgeButtons() {
+    if (AGE_UI_DISABLED) {
+      setAge(DEFAULT_AGE);
+      updateHeroForAge(DEFAULT_AGE);
 
-    // Hide/remove the age bar if it exists
-    const bar =
-      document.querySelector('.age-buttons') ||
-      document.getElementById('ageBar') ||
-      document.querySelector('[data-age="buttons"]');
-    if (bar) bar.classList.add('hidden');
+      const bar =
+        document.querySelector('.age-buttons') ||
+        document.getElementById('ageBar') ||
+        document.querySelector('[data-age="buttons"]');
+      if (bar) bar.classList.add('hidden');
 
-    // Add a body marker so CSS can tighten layout spacing
-    document.body.classList.add('age-no-bar');
-    return; // skip wiring any age button events
+      document.body.classList.add('age-no-bar');
+      return;
+    }
+
+    paintSelectedAge();
+    updateHeroForAge(getAge());
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".age-btn");
+      if (!btn) return;
+      const raw = (btn.dataset.age || "").trim();
+      const val = (raw === "0-2" || raw === "3-5" || raw === "5+") ? raw : DEFAULT_AGE;
+      setAge(val);
+      $$(".age-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      updateHeroForAge(val);
+    }, { passive: false });
   }
 
-  // (original behavior, kept for later re-enable)
-  paintSelectedAge();
-  updateHeroForAge(getAge());
-  document.addEventListener("click", (e) => {
-    const btn = e.target.closest(".age-btn");
-    if (!btn) return;
-    const raw = (btn.dataset.age || "").trim();
-    const val = (raw === "0-2" || raw === "3-5" || raw === "5+") ? raw : DEFAULT_AGE;
-    setAge(val);
-    $$(".age-btn").forEach(b => b.classList.remove("selected"));
-    btn.classList.add("selected");
-    updateHeroForAge(val);
-  }, { passive: false });
-}
+  function initAgePreview() {
+    if (AGE_UI_DISABLED) return;
 
-
-function initAgePreview() {
-  // Disable hover swaps when age UI is hidden
-  if (AGE_UI_DISABLED) return;
-
-  const isPointerFine = window.matchMedia("(pointer: fine)").matches;
-  if (!isPointerFine) return;
-  let restoreTimer = null;
-  $$(".age-btn").forEach(btn => {
-    btn.addEventListener("mouseenter", () => {
-      const hoverAge = (btn.dataset.age || "").trim();
-      if (!hoverAge) return;
-      updateHeroForAge(hoverAge);
-      if (restoreTimer) { clearTimeout(restoreTimer); restoreTimer = null; }
+    const isPointerFine = window.matchMedia("(pointer: fine)").matches;
+    if (!isPointerFine) return;
+    let restoreTimer = null;
+    $$(".age-btn").forEach(btn => {
+      btn.addEventListener("mouseenter", () => {
+        const hoverAge = (btn.dataset.age || "").trim();
+        if (!hoverAge) return;
+        updateHeroForAge(hoverAge);
+        if (restoreTimer) { clearTimeout(restoreTimer); restoreTimer = null; }
+      });
+      btn.addEventListener("mouseleave", () => {
+        restoreTimer = setTimeout(() => updateHeroForAge(getAge()), 120);
+      });
     });
-    btn.addEventListener("mouseleave", () => {
-      restoreTimer = setTimeout(() => updateHeroForAge(getAge()), 120);
-    });
-  });
-}
-
+  }
 
   /* ---------------------------------------------
      API call + stash story + go checkout
   --------------------------------------------- */
+  const API_URL = "https://fairytale-api.vercel.app/api/generate-story";
+
   async function generateStoryAndNavigate(transcript) {
     if (!transcript) throw new Error("Missing transcript");
     const body = { transcript, ageGroup: getAge() };
@@ -589,7 +591,6 @@ function initAgePreview() {
       try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
       try { SS.setItem(K_STORY_MD, md); } catch (_) {}
       try { SS.setItem(K_STORY_HTML, html); } catch (_) {}
-      // ambience chosen by API (for storydetail auto-play)
       try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
 
       goCheckout();
@@ -604,27 +605,24 @@ function initAgePreview() {
     }
   }
 
-   // Generate without navigating; stash results and return
-async function generateStoryInPlace(transcript) {
-  const body = { transcript, ageGroup: getAge() };
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`API ${res.status}`);
+  async function generateStoryInPlace(transcript) {
+    const body = { transcript, ageGroup: getAge() };
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
 
-  const data = await res.json();
-  const md   = data?.markdown || data?.story || "";
-  const html = mdToHtml(md);
+    const data = await res.json();
+    const md   = data?.markdown || data?.story || "";
+    const html = mdToHtml(md);
 
-  const SS = window.sessionStorage;
-  try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
-  try { SS.setItem(K_STORY_MD, md); } catch (_) {}
-  try { SS.setItem(K_STORY_HTML, html); } catch (_) {}
-  try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
-}
-
+    try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
+    try { SS.setItem(K_STORY_MD, md); } catch (_) {}
+    try { SS.setItem(K_STORY_HTML, html); } catch (_) {}
+    try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
+  }
 
   /* ---------------------------------------------
      Conversational Wizard
@@ -705,8 +703,7 @@ async function generateStoryInPlace(transcript) {
   }
 
   /* ---------------------------------------------
-     Gate: show overlay + handle preview vs blur
-     (updated to real accounts)
+     Gate overlay (checkout preview → auth)
   --------------------------------------------- */
   function showGate(personName) {
     const storyEl   = document.getElementById("storyContent");
@@ -718,13 +715,11 @@ async function generateStoryInPlace(transcript) {
     const gateTitle = document.getElementById("gateTitle");
     const gateDesc  = document.getElementById("gateDesc");
 
-    const btnGoogle = document.getElementById("gateGoogle");
     const btnEmail  = document.getElementById("gateEmailBtn");
     const formWrap  = document.getElementById("gateEmailForm");
     const backBtn   = document.getElementById("gateBackBtn");
-    const btnRow    = document.getElementById("gateButtons"); // may not exist (legacy-safe)
+    const btnRow    = document.getElementById("gateButtons");
 
-    // Personalised badge + copy
     if (personName && badge && badgeText) {
       badgeText.textContent = `Personalised for ${personName}`;
       badge.classList.remove("hidden");
@@ -735,10 +730,8 @@ async function generateStoryInPlace(transcript) {
     }
     if (gateTitle) gateTitle.textContent = "Continue reading for free";
 
-    // Give room for the gate card
     reader?.classList.add("gated");
 
-    // If we're showing a 10-line preview, skip extra blur/glow
     const isPreviewLines = storyEl?.dataset.preview === "lines";
     if (!isPreviewLines) {
       storyEl?.classList.add("blur-bottom");
@@ -750,23 +743,6 @@ async function generateStoryInPlace(transcript) {
 
     gate?.classList.remove("hidden");
 
-    // Prototype Google → create throwaway alias
-    if (btnGoogle) {
-      btnGoogle.onclick = async (e) => {
-        e.preventDefault();
-        try {
-          const alias = `user+${Date.now()}@storybuds.local`;
-          const pw = crypto.getRandomValues(new Uint32Array(1))[0].toString(16);
-          await createUser(alias, pw);
-          doUnlockAfterAuth();
-        } catch {
-          // unlikely; fallback
-          doUnlockAfterAuth();
-        }
-      };
-    }
-
-    // Toggle email form
     if (btnEmail) {
       btnEmail.onclick = (e) => {
         e.preventDefault();
@@ -784,88 +760,72 @@ async function generateStoryInPlace(transcript) {
       };
     }
 
-    // Email form submit
-    // Email form submit  (REPLACE the whole original block)
-if (formWrap) {
-  // Inject child fields row on demand
-  let extraInjected = false;
-  const ensureExtraFields = () => {
-    if (extraInjected) return;
-    extraInjected = true;
-    const extra = document.createElement("div");
-    extra.className = "gate-email";
-    extra.innerHTML = `
-      <label>Child’s name
-        <input type="text" id="gateChildName" placeholder="Mia" />
-      </label>
-      <label>Birth year
-        <input type="number" id="gateBirthYear" placeholder="2019" min="2008" max="${new Date().getUTCFullYear()}" />
-      </label>
-      <label>Gender
-        <select id="gateGender">
-          <option value="">Select</option>
-          <option value="female">Girl</option>
-          <option value="male">Boy</option>
-          <option value="non-binary">Non-binary</option>
-          <option value="prefer-not-to-say">Prefer not to say</option>
-        </select>
-      </label>
-    `;
-    formWrap.appendChild(extra);
-  };
+    // Email form submit (real signup)
+    if (formWrap) {
+      let extraInjected = false;
+      const ensureExtraFields = () => {
+        if (extraInjected) return;
+        extraInjected = true;
+        const extra = document.createElement("div");
+        extra.className = "gate-email";
+        extra.innerHTML = `
+          <label>Child’s name
+            <input type="text" id="gateChildName" placeholder="Mia" />
+          </label>
+          <label>Birth year
+            <input type="number" id="gateBirthYear" placeholder="2019" min="2008" max="${new Date().getUTCFullYear()}" />
+          </label>
+          <label>Gender
+            <select id="gateGender">
+              <option value="">Select</option>
+              <option value="female">Girl</option>
+              <option value="male">Boy</option>
+              <option value="non-binary">Non-binary</option>
+              <option value="prefer-not-to-say">Prefer not to say</option>
+            </select>
+          </label>
+        `;
+        formWrap.appendChild(extra);
+      };
 
-  formWrap.onsubmit = async (e) => {
-    e.preventDefault();
-    const email = $("#gateEmail")?.value.trim();
-    const pass  = $("#gatePass")?.value || "";
+      formWrap.onsubmit = async (e) => {
+        e.preventDefault();
+        const email = $("#gateEmail")?.value.trim();
+        const pass  = $("#gatePass")?.value || "";
+        if (!email || !pass) { alert("Please enter email and password."); return; }
 
-    if (!email || !pass) { alert("Please enter email and password."); return; }
+        let { childName, birthYear, gender } = deriveChildFromTranscript();
+        if (!childName || !birthYear || !gender) {
+          ensureExtraFields();
+          childName = childName || ($("#gateChildName")?.value.trim() || "");
+          birthYear = birthYear || ($("#gateBirthYear")?.value.trim() || "");
+          gender    = gender    || ($("#gateGender")?.value || "");
+          if (!childName || !birthYear || !gender) {
+            alert("Please provide your child’s name, birth year, and gender.");
+            return;
+          }
+        }
 
-    // Grab from transcript first
-    let { childName, birthYear, gender } = deriveChildFromTranscript();
-
-    // If any required field missing, reveal extra inputs and read them
-    if (!childName || !birthYear || !gender) {
-      ensureExtraFields();
-      childName = childName || ($("#gateChildName")?.value.trim() || "");
-      birthYear = birthYear || ($("#gateBirthYear")?.value.trim() || "");
-      gender    = gender    || ($("#gateGender")?.value || "");
-      if (!childName || !birthYear || !gender) {
-        alert("Please provide your child’s name, birth year, and gender.");
-        return;
-      }
+        try {
+          await apiSignup({ childName, email, password: pass, birthYear, gender });
+          unlockGate();
+        } catch (err) {
+          const msg = err?.message || String(err);
+          alert(/already|exists|e11000/i.test(msg)
+            ? "This email is already registered. Please sign in instead."
+            : msg);
+        }
+      };
     }
-
-    try {
-      // Real API call
-      await apiSignup({ childName, email, password: pass, birthYear, gender });
-      // Reuse your existing unlock + redirect flow
-      unlockGate();
-    } catch (err) {
-      const msg = err?.message || String(err);
-      alert(msg.includes("E11000") || msg.toLowerCase().includes("exists")
-        ? "This email is already registered. Please sign in instead."
-        : msg);
-    }
-  };
-}
-
-
-    function doUnlockAfterAuth() { unlockGate(); }
   }
 
   function unlockGate() {
-    // Mark signed-in (defensive)
-    setSignedIn(true);
-
     const storyEl = document.getElementById("storyContent");
     const reader  = document.querySelector(".story-reader");
     const gate    = document.getElementById("gateOverlay");
     const glow    = document.getElementById("blurGlow");
 
-    // Restore full HTML if we cached it earlier
     const fullHtml = (SS && (SS.getItem(K_STORY_HTML) || SS.getItem("yw_story_html"))) || "";
-
     if (storyEl && fullHtml) {
       storyEl.innerHTML = fullHtml;
     }
@@ -876,7 +836,6 @@ if (formWrap) {
     gate?.classList.add("hidden");
     glow?.classList.add("hidden");
 
-    // Tiny confirmation toast
     try {
       const note = document.createElement("div");
       note.textContent = "✨ Account ready! Taking you to your home.";
@@ -886,7 +845,6 @@ if (formWrap) {
       setTimeout(() => note.remove(), 900);
     } catch (_) {}
 
-    // Smooth transition to home
     try { document.body.classList.add("fade-out"); } catch (_) {}
     setTimeout(() => { window.location.href = "home.html"; }, 600);
   }
@@ -895,91 +853,84 @@ if (formWrap) {
      Checkout: render story + products
   --------------------------------------------- */
   let cartCount = 0;
-function initCheckout() {
-  const $ = (s, r=document)=>r.querySelector(s);
-  const SS = window.sessionStorage;
+  function initCheckout() {
+    const $ = (s, r=document)=>r.querySelector(s);
+    const SS = window.sessionStorage;
 
-  const storyEl = $('#storyContent');
-  if (!storyEl) return;
+    const storyEl = $('#storyContent');
+    if (!storyEl) return;
 
-  const html = SS.getItem(K_STORY_HTML);
-  const md   = SS.getItem(K_STORY_MD);
-  const pending = SS.getItem(K_PENDING);
+    const html = SS.getItem(K_STORY_HTML);
+    const md   = SS.getItem(K_STORY_MD);
+    const pending = SS.getItem(K_PENDING);
 
-  // If we have a pending transcript, show transition view and generate here
-  if (!html && !md && pending) {
-    storyEl.innerHTML = `
-      <div class="wait-wrap">
-        <div class="wait-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-        <div class="muted" style="font-weight:700;">This may take a few seconds…</div>
-      </div>
-    `;
+    if (!html && !md && pending) {
+      storyEl.innerHTML = `
+        <div class="wait-wrap">
+          <div class="wait-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="muted" style="font-weight:700;">This may take a few seconds…</div>
+        </div>
+      `;
 
-    // Generate in place, then refresh DOM to reuse existing gate logic
-    (async ()=>{
-      try {
-        await generateStoryInPlace(pending);      // new helper below
-        SS.removeItem(K_PENDING);
-        window.location.reload();                 // reuse existing rendering + gate
-      } catch (err) {
-        console.error(err);
-        alert("Sorry, we couldn't create the story. Please try again.");
-        SS.removeItem(K_PENDING);
+      (async ()=>{
+        try {
+          await generateStoryInPlace(pending);
+          SS.removeItem(K_PENDING);
+          window.location.reload();
+        } catch (err) {
+          console.error(err);
+          alert("Sorry, we couldn't create the story. Please try again.");
+          SS.removeItem(K_PENDING);
+        }
+      })();
+
+      return;
+    }
+
+    if (!isSignedIn()) {
+      if (md) {
+        const previewHtml = makePreviewHtml(md, 10);
+        storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
+      } else {
+        storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
       }
-    })();
+      storyEl.dataset.preview = "lines";
+      storyEl.classList.add("preview-clamp");
 
-    return; // stop here; we'll reload after generation
-  }
-
-  // === Your existing behavior (signed-out preview/gate OR full story) ===
-  if (!isSignedIn()) {
-    if (md) {
-      const previewHtml = makePreviewHtml(md, 10);
-      storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
+      const childName = getChildName();
+      if (html || md) showGate(childName);
     } else {
-      storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
-    }
-    storyEl.dataset.preview = "lines";
-    storyEl.classList.add("preview-clamp");
+      storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
+      delete storyEl.dataset.preview;
+      storyEl.classList.remove("preview-clamp");
+      document.getElementById("gateOverlay")?.classList.add("hidden");
+      document.getElementById("blurGlow")?.classList.add("hidden");
 
-    const childName = getChildName();
-    if (html || md) showGate(childName);
-  } else {
-    storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
-    delete storyEl.dataset.preview;
-    storyEl.classList.remove("preview-clamp");
-    document.getElementById("gateOverlay")?.classList.add("hidden");
-    document.getElementById("blurGlow")?.classList.add("hidden");
-
-    const childName = getChildName();
-    const reader = document.querySelector(".story-reader");
-    const badge = document.getElementById("personalBadge");
-    const badgeText = document.getElementById("personalBadgeText");
-    if (childName && badge && badgeText) {
-      badgeText.textContent = `Just for ${childName}`;
-      badge.classList.remove("hidden");
-      reader?.classList.add("has-badge");
+      const childName = getChildName();
+      const reader = document.querySelector(".story-reader");
+      const badge = document.getElementById("personalBadge");
+      const badgeText = document.getElementById("personalBadgeText");
+      if (childName && badge && badgeText) {
+        badgeText.textContent = `Just for ${childName}`;
+        badge.classList.remove("hidden");
+        reader?.classList.add("has-badge");
+      }
     }
+
+    const rawMdEl = $('#storyMarkdown');
+    if (rawMdEl && md) rawMdEl.textContent = md;
+
+    const productsTrack = $('#productsTrack');
+    if (productsTrack) {
+      const age = getAge();
+      const products = getProductsForAge(age);
+      renderProducts(productsTrack, products);
+    }
+
+    const cartCountEl = document.getElementById("cartCount");
+    if (cartCountEl) cartCountEl.classList.add("hidden");
   }
 
-  // Optional raw markdown debug (unchanged)
-  const rawMdEl = $('#storyMarkdown');
-  if (rawMdEl && md) rawMdEl.textContent = md;
-
-  // Products (unchanged)
-  const productsTrack = $('#productsTrack');
-  if (productsTrack) {
-    const age = getAge();
-    const products = getProductsForAge(age);
-    renderProducts(productsTrack, products);
-  }
-
-  const cartCountEl = document.getElementById("cartCount");
-  if (cartCountEl) cartCountEl.classList.add("hidden");
-}
-
-
-  // Products data per age
   function getProductsForAge(age) {
     const base = [
       { id: "bk1", name: "Bedtime Book", price: "£9.99" },
@@ -1040,15 +991,6 @@ function initCheckout() {
   /* ---------------------------------------------
      Minor chrome
   --------------------------------------------- */
-  function initChrome() {
-    const menuBtn = $('#menuBtn');
-    const menu = $('#menu');
-    menuBtn?.addEventListener('click', () => menu?.classList.toggle('hidden'));
-    const yearEl = $('#year'); if (yearEl) yearEl.textContent = new Date().getFullYear();
-    const cartCountEl = document.getElementById("cartCount");
-    if (cartCountEl) cartCountEl.classList.add("hidden");
-  }
-
   function initMobileCta() {
     const cta = $("#mobileCta");
     const hero = $(".hero");
@@ -1130,12 +1072,11 @@ function initCheckout() {
     let holdActive = false;
     let lockedY = 0;
     let lastScrollY = window.scrollY;
-    let direction = 'down';   // 'down' | 'up'
-    let armed = true;         // can we trigger a hold?
-    let rearmEdge = null;     // 'past' (need reveal≈1) | 'before' (need reveal≈0)
+    let direction = 'down';
+    let armed = true;
+    let rearmEdge = null;
     let holdStart = 0;
 
-    // helpers
     const stage = wrap.querySelector('.morph-stage');
     if (!stage) return;
 
@@ -1149,15 +1090,9 @@ function initCheckout() {
       const vh = window.innerHeight || 1;
       const center = vh / 2;
       const stageCenter = s.top + s.height / 2;
-
       const dist = Math.abs(stageCenter - center);
-
-      // Wider radius for slower, longer transition
       const R = vh * 1.2;
-
-      // linear map: 1 at center → 0 at/beyond radius
       let r = 1 - Math.min(1, dist / R);
-
       const parallax = 12 * (1 - r);
       setVars(r, parallax);
       return { reveal: r, vh };
@@ -1196,7 +1131,6 @@ function initCheckout() {
       window.scrollTo(0, lockedY);
       holdActive = false;
 
-      // hysteresis: only re-arm after leaving the section (direction-aware)
       rearmEdge = (direction === 'down') ? 'past' : 'before';
       armed = false;
     }
@@ -1246,7 +1180,6 @@ function initCheckout() {
 
       const { reveal } = computeReveal();
 
-      // re-arm only after clearly leaving the section
       if (!armed && !holdActive) {
         if ((rearmEdge === 'past'   && reveal >= 0.98) ||
             (rearmEdge === 'before' && reveal <= 0.02)) {
@@ -1255,13 +1188,11 @@ function initCheckout() {
         }
       }
 
-      // keep position clamped while locked (kills inertia)
       if (holdActive && Math.abs(window.scrollY - lockedY) > 0) {
         window.scrollTo(0, lockedY);
         return;
       }
 
-      // trigger a single soft stop near center band and armed
       const centerBandPx = Math.min(60, (window.innerHeight || 1) * 0.08);
       const s = stage.getBoundingClientRect();
       const center = (window.innerHeight || 1) / 2;
@@ -1276,149 +1207,128 @@ function initCheckout() {
     window.addEventListener('resize', update);
   }
 
-   // ------------------------------------------------
-// Fix: back/forward navigation sometimes shows blank page
-// ------------------------------------------------
-window.addEventListener('pageshow', function (e) {
-  document.body.classList.remove('fade-out');
-  document.documentElement.classList.remove('scroll-locked');
+  // Fix: back/forward sometimes shows blank page
+  window.addEventListener('pageshow', function () {
+    document.body.classList.remove('fade-out');
+    document.documentElement.classList.remove('scroll-locked');
 
-  // Defensive reset if scroll-lock was left active
-  if (document.body.style.position === 'fixed') {
-    const prevTop = document.body.dataset.prevTop || '';
-    document.body.style.position = '';
-    document.body.style.left = '';
-    document.body.style.right = '';
-    document.body.style.width = '';
-    document.body.style.top = prevTop;
-    delete document.body.dataset.prevTop;
-    if (prevTop) {
-      const y = Math.abs(parseInt(prevTop, 10)) || 0;
-      window.scrollTo(0, y);
-    }
-  }
-});
-
-   /* ===========================
-   Quick Create Overlay (index)
-   =========================== */
-function openQuickCreate() {
-  const $ = (s, r=document)=>r.querySelector(s);
-
-  const ov   = $('#quickCreate');
-  const step = (name) => $(`.qc-step[data-step="${name}"]`, ov);
-
-  const sPlace      = step('place');
-  const sPetsYN     = step('pets-yn');
-  const sPetDetails = step('pet-details');
-  const sKid        = step('kid');
-
-  if (!ov || !sPlace || !sPetsYN || !sKid) return;
-  ov.classList.remove('hidden');
-
-  // local state
-  const state = { place:'', pets:'', petType:'', petName:'', kidName:'', kidGender:'', kidAge:'' };
-
-  // reset UI
-  [sPlace, sPetsYN, sPetDetails, sKid].forEach(el=>el.classList.add('hidden'));
-  sPlace.classList.remove('hidden');
-
-  // close
-  $('#qcClose')?.addEventListener('click', ()=> ov.classList.add('hidden'), { once:true });
-
-  // step: place
-  sPlace.querySelectorAll('.qc-chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      state.place = (btn.dataset.place || '').toLowerCase();
-      sPlace.classList.add('hidden'); sPetsYN.classList.remove('hidden');
-    });
-  });
-
-  // step: pets yes/no
-  sPetsYN.querySelectorAll('.qc-chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      state.pets = (btn.dataset.pets || '').toLowerCase();
-      sPetsYN.classList.add('hidden');
-      if (state.pets === 'yes') {
-        sPetDetails.classList.remove('hidden');
-      } else {
-        sKid.classList.remove('hidden');
+    if (document.body.style.position === 'fixed') {
+      const prevTop = document.body.dataset.prevTop || '';
+      document.body.style.position = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.top = prevTop;
+      delete document.body.dataset.prevTop;
+      if (prevTop) {
+        const y = Math.abs(parseInt(prevTop, 10)) || 0;
+        window.scrollTo(0, y);
       }
-    });
-  });
-
-  // step: pet details
-  $('#qcPetNext')?.addEventListener('click', ()=>{
-    state.petType = ($('#qcPetType')?.value || '').trim();
-    state.petName = ($('#qcPetName')?.value || '').trim();
-    sPetDetails.classList.add('hidden'); sKid.classList.remove('hidden');
-  });
-
-  // step: kid + create
-  $('#qcCreate')?.addEventListener('click', ()=>{
-    state.kidName   = ($('#qcKidName')?.value || '').trim();
-    state.kidGender = ($('#qcKidGender')?.value || '').trim();
-    state.kidAge    = ($('#qcKidAge')?.value || '').trim();
-
-    // Build transcript (works with your /api/generate-story system prompt):contentReference[oaicite:7]{index=7}
-    const lines = [
-      `Child name: ${state.kidName || 'Unknown'}`,
-      `Child gender: ${state.kidGender || '—'}`,
-      `Child age: ${state.kidAge || '—'}`,
-      `Place: ${state.place || 'home'}`,
-    ];
-    if (state.pets === 'yes') {
-      lines.push(`Pet: ${state.petType || 'pet'} named ${state.petName || '—'}`);
-    } else {
-      lines.push(`Pet: none`);
     }
-    const transcript = lines.join('\n');
-
-    try { sessionStorage.setItem(K_PENDING, transcript); } catch (_) {}
-
-    // Redirect immediately; checkout will show a "please wait" and generate there
-    document.body.classList.add("fade-out");
-    setTimeout(()=>{ window.location.href = "checkout.html"; }, 100);
   });
-}
 
-   // Force the hero CTA to open the overlay, no matter who re-binds it later
-function forceHeroToOverlay() {
-  const btn = document.getElementById('heroCta');
-  if (!btn) return;
+  /* ===========================
+     Quick Create Overlay (index)
+     =========================== */
+  function openQuickCreate() {
+    const $ = (s, r=document)=>r.querySelector(s);
 
-  // Capture-phase listener beats .onclick set by updateHeroForAge()
-  const handler = (e) => {
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    openQuickCreate();
-  };
+    const ov   = $('#quickCreate');
+    const step = (name) => $(`.qc-step[data-step="${name}"]`, ov);
 
-  // Add once in capture so downstream handlers can't redirect
-  btn.addEventListener('click', handler, { capture: true });
-  // Best-effort: neutralize any pre-set onclick
-  try { btn.onclick = null; } catch (_) {}
-}
+    const sPlace      = step('place');
+    const sPetsYN     = step('pets-yn');
+    const sPetDetails = step('pet-details');
+    const sKid        = step('kid');
 
-// On the landing page, intercept any "create.html" button/link and open the overlay instead
-function interceptCreateNavigationOnLanding() {
-  const path = (location.pathname || "").toLowerCase();
-  const isLanding = path.endsWith("/index.html") || path.endsWith("/") || path === "";
+    if (!ov || !sPlace || !sPetsYN || !sKid) return;
+    ov.classList.remove('hidden');
 
-  if (!isLanding) return;
+    const state = { place:'', pets:'', petType:'', petName:'', kidName:'', kidGender:'', kidAge:'' };
 
-  document.addEventListener('click', (e) => {
-    const t = e.target;
-    const el = t.closest('a[href$="create.html"], a[href$="/create.html"], button[onclick*="create.html"]');
-    if (!el) return;
+    [sPlace, sPetsYN, sPetDetails, sKid].forEach(el=>el.classList.add('hidden'));
+    sPlace.classList.remove('hidden');
 
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    openQuickCreate();
-  }, { capture: true });
-}
+    $('#qcClose')?.addEventListener('click', ()=> ov.classList.add('hidden'), { once:true });
 
+    sPlace.querySelectorAll('.qc-chip').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        state.place = (btn.dataset.place || '').toLowerCase();
+        sPlace.classList.add('hidden'); sPetsYN.classList.remove('hidden');
+      });
+    });
 
+    sPetsYN.querySelectorAll('.qc-chip').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        state.pets = (btn.dataset.pets || '').toLowerCase();
+        sPetsYN.classList.add('hidden');
+        if (state.pets === 'yes') {
+          sPetDetails.classList.remove('hidden');
+        } else {
+          sKid.classList.remove('hidden');
+        }
+      });
+    });
+
+    $('#qcPetNext')?.addEventListener('click', ()=>{
+      state.petType = ($('#qcPetType')?.value || '').trim();
+      state.petName = ($('#qcPetName')?.value || '').trim();
+      sPetDetails.classList.add('hidden'); sKid.classList.remove('hidden');
+    });
+
+    $('#qcCreate')?.addEventListener('click', ()=>{
+      state.kidName   = ($('#qcKidName')?.value || '').trim();
+      state.kidGender = ($('#qcKidGender')?.value || '').trim();
+      state.kidAge    = ($('#qcKidAge')?.value || '').trim();
+
+      const lines = [
+        `Child name: ${state.kidName || 'Unknown'}`,
+        `Child gender: ${state.kidGender || '—'}`,
+        `Child age: ${state.kidAge || '—'}`,
+        `Place: ${state.place || 'home'}`,
+      ];
+      if (state.pets === 'yes') {
+        lines.push(`Pet: ${state.petType || 'pet'} named ${state.petName || '—'}`);
+      } else {
+        lines.push(`Pet: none`);
+      }
+      const transcript = lines.join('\n');
+
+      try { sessionStorage.setItem(K_PENDING, transcript); } catch (_) {}
+
+      document.body.classList.add("fade-out");
+      setTimeout(()=>{ window.location.href = "checkout.html"; }, 100);
+    });
+  }
+
+  function forceHeroToOverlay() {
+    const btn = document.getElementById('heroCta');
+    if (!btn) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      openQuickCreate();
+    };
+    btn.addEventListener('click', handler, { capture: true });
+    try { btn.onclick = null; } catch (_) {}
+  }
+
+  function interceptCreateNavigationOnLanding() {
+    const path = (location.pathname || "").toLowerCase();
+    const isLanding = path.endsWith("/index.html") || path.endsWith("/") || path === "";
+
+    if (!isLanding) return;
+
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      const el = t.closest('a[href$="create.html"], a[href$="/create.html"], button[onclick*="create.html"]');
+      if (!el) return;
+
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      openQuickCreate();
+    }, { capture: true });
+  }
 
   /* ---------------------------------------------
      Boot — called on every page
@@ -1437,16 +1347,14 @@ function interceptCreateNavigationOnLanding() {
 
     initTestimonials();
     initScrollMorph();
-    initHeroParallax(); // restore
+    initHeroParallax();
 
-    // If a page wants to open auth immediately (e.g., CTA), wire .js-open-auth
     $$(".js-open-auth").forEach(btn => {
       btn.addEventListener("click", (e)=> {
         e.preventDefault();
         openAuthModal("signup");
       });
     });
-    // If a page has a ".js-open-signin" trigger, open in sign-in mode
     $$(".js-open-signin").forEach(btn => {
       btn.addEventListener("click", (e)=> {
         e.preventDefault();
@@ -1454,17 +1362,16 @@ function interceptCreateNavigationOnLanding() {
       });
     });
 
-     // Force hero CTA to open the overlay (override any previous handlers)
-const heroCta = document.getElementById('heroCta');
-if (heroCta) {
-  heroCta.onclick = (e) => { e.preventDefault(); openQuickCreate(); };
-}
-// Optional: any element with .js-open-create opens it too
-document.querySelectorAll('.js-open-create').forEach(btn=>{
-  btn.addEventListener('click', (e)=>{ e.preventDefault(); openQuickCreate(); });
-});
-     forceHeroToOverlay();
-interceptCreateNavigationOnLanding();
+    // Force hero CTA to open Quick Create overlay
+    const heroCta = document.getElementById('heroCta');
+    if (heroCta) {
+      heroCta.onclick = (e) => { e.preventDefault(); openQuickCreate(); };
+    }
+    document.querySelectorAll('.js-open-create').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{ e.preventDefault(); openQuickCreate(); });
+    });
+    forceHeroToOverlay();
+    interceptCreateNavigationOnLanding();
   });
 
   // Expose small API for inline handlers if needed
@@ -1473,8 +1380,7 @@ interceptCreateNavigationOnLanding();
     showGate,
     unlockGate,
     signOut,
-    isSignedIn,
-    currentEmail
+    isSignedIn
   };
 
 })();
