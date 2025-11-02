@@ -85,7 +85,7 @@ function getUser()    { return SESSION_USER;  }
     }
     const token = data?.token || "";
     const user  = data?.data?.user || {};
-    if (!token) throw new Error("No token returned by login");
+   // if (!token) throw new Error("No token returned by login");
     return { token, user };
   }
 
