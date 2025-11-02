@@ -46,7 +46,7 @@
 
   // ---- API wrappers ----
   async function apiSignup({ childName, email, password, birthYear, gender }) {
-    const res = await fetch(`${API_BASE}/auth/signup`, {
+    const res = await fetch(`${API_BASE}/users/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ childName, email, password, birthYear, gender })
@@ -301,7 +301,7 @@
               <option value="" disabled selected>Select</option>
               <option value="female">Girl</option>
               <option value="male">Boy</option>
-              <option value="non-binary">Non-binary</option>
+              <option value="other">Non-binary</option>
               <option value="prefer-not-to-say">Prefer not to say</option>
             </select>
           </div>
@@ -779,7 +779,7 @@
               <option value="">Select</option>
               <option value="female">Girl</option>
               <option value="male">Boy</option>
-              <option value="non-binary">Non-binary</option>
+              <option value="other">Non-binary</option>
               <option value="prefer-not-to-say">Prefer not to say</option>
             </select>
           </label>
