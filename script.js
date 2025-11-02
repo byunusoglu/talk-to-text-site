@@ -21,6 +21,9 @@
     try { document.body.classList.add("fade-out"); } catch (_) {}
     setTimeout(cb, delay);
   };
+
+
+   
   const SS = window.sessionStorage;
 
   /* ---------------------------------------------
@@ -357,7 +360,12 @@ async function signOut() {
               await apiLogin({ email, password: pass });
               try { await apiGetMe(); } catch(_){}
               close();
-              fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
+              //fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
+               fadeOutAnd(() => {
+  setTimeout(() => {
+    window.location.href = "home.html";
+  }, 5 * 60 * 1000); // 5 dakika delay
+}, 120);
             } catch (err) {
               alert(err?.message || "Could not sign in.");
             }
