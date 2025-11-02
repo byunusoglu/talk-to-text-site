@@ -1341,7 +1341,7 @@ async function signOut() {
   /* ---------------------------------------------
      Boot — called on every page
   --------------------------------------------- */
-  onReady(() => {
+  onReady(async () => {
      await refreshSession();
     hydrateTopbarAuth();
     guardLandingRedirect();
