@@ -27,19 +27,29 @@
      REAL Auth client (JWT)
   --------------------------------------------- */
   const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
-  const AUTH_TOKEN_KEY = "yw_jwt";     // where JWT is stored (localStorage)
-  const AUTH_USER_KEY  = "yw_user_json";
 
-  function getToken() {
-    try { return localStorage.getItem(AUTH_TOKEN_KEY) || ""; } catch(_) { return ""; }
+   // Session model for cookie-based auth
+let SESSION_READY = false;
+let SESSION_USER  = null;
+
+async function refreshSession() {
+  try {
+    const res = await fetch(`${API_BASE}/users/me`, { credentials: "include" });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    SESSION_USER = data?.data?.user || null;
+    SESSION_READY = true;
+    return true;
+  } catch {
+    SESSION_USER = null;
+    SESSION_READY = true;
+    return false;
   }
-  function setToken(t) {
-    try { localStorage.setItem(AUTH_TOKEN_KEY, t || ""); } catch(_) {}
-  }
-  function clearToken() {
-    try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch(_) {}
-  }
-  function isSignedIn() { return !!getToken(); }
+}
+
+function isSignedIn() { return !!SESSION_USER; }
+function getUser()    { return SESSION_USER;  }
+
 
   function setUser(u){ try { localStorage.setItem(AUTH_USER_KEY, JSON.stringify(u||{})); } catch(_){} }
   function getUser(){ try { return JSON.parse(localStorage.getItem(AUTH_USER_KEY)||"{}"); } catch(_) { return {}; } }
@@ -49,7 +59,8 @@
     const res = await fetch(`${API_BASE}/users/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ childName, email, password, birthYear, gender })
+      body: JSON.stringify({ childName, email, password, birthYear, gender }),
+       credentials: "include"
     });
     const data = await res.json().catch(()=>({}));
     if (!res.ok) {
@@ -59,8 +70,6 @@
     const token = data?.token || "";
     const user  = data?.data?.user || {};
     if (!token) throw new Error("No token returned by signup");
-    setToken(token);
-    setUser(user);
     return { token, user };
   }
 
@@ -68,7 +77,8 @@
     const res = await fetch(`${API_BASE}/users/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password }),
+       credentials: "include"
     });
     const data = await res.json().catch(()=>({}));
     if (!res.ok) {
@@ -78,17 +88,16 @@
     const token = data?.token || "";
     const user  = data?.data?.user || {};
     if (!token) throw new Error("No token returned by login");
-    setToken(token);
-    setUser(user);
     return { token, user };
   }
 
   async function apiGetMe() {
     const token = getToken();
     if (!token) throw new Error("NO_TOKEN");
-    const res = await fetch(`${API_BASE}/users/me`, {
-      headers: { "Authorization": `Bearer ${token}` }
-    });
+     const res = await fetch(`${API_BASE}/users/me`, {
+  method: "GET",
+  credentials: "include"        // ✅ include cookies
+});
     if (!res.ok) throw new Error(`GetMe failed (${res.status})`);
     const data = await res.json();
     const user = data?.data?.user || {};
@@ -96,10 +105,10 @@
     return user;
   }
 
-  function signOut(){
-    clearToken();
-    setUser(null);
-  }
+async function signOut() {
+  await fetch(`${API_BASE}/users/logout`, { method: "POST", credentials: "include" });
+  SESSION_USER = null;
+}
 
   // Helper: try to derive child fields from transcript if present
   function deriveChildFromTranscript() {
@@ -1333,6 +1342,7 @@
      Boot — called on every page
   --------------------------------------------- */
   onReady(() => {
+     await refreshSession();
     hydrateTopbarAuth();
     guardLandingRedirect();
 
