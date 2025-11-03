@@ -244,12 +244,20 @@
   function initChrome() {
     const menuBtn = document.getElementById('menuBtn');
     const menu = getMenuEl();
-    if (menuBtn && menu) {
-      menuBtn.addEventListener('click', () => {
-        menu.classList.toggle('hidden');
-      });
-      wireMenuAutoClose(menuBtn, menu);
-    }
+
+       // ---------------------------------------------
+  // ✅ Defensive bind for hamburger menu toggle
+  // ---------------------------------------------
+  const toggle = () => {
+    menu.classList.toggle('hidden');
+  };
+
+  // Remove any stale listeners to avoid duplicates
+  menuBtn.removeEventListener('click', toggle);
+  menuBtn.addEventListener('click', toggle);
+
+  // Auto-close menu when clicking outside or selecting a link
+  wireMenuAutoClose(menuBtn, menu);
 
     const yearEl = document.getElementById('year');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
@@ -1464,13 +1472,33 @@ function initAgePreview() {
     });
 
      // Always open Quick Create for any "create" CTA (button or link)
+/* ---------------------------------------------
+   Quick Create interceptor — SAFE VERSION
+--------------------------------------------- */
 document.addEventListener('click', (e) => {
   const el = e.target.closest('#heroCta, .js-open-create, a[href$="create.html"], a[href$="/create.html"]');
   if (!el) return;
+
+  // ✅ Skip topbar / hamburger to avoid blocking menu
+  if (e.target.closest('#menuBtn') || e.target.closest('#menu')) return;
+
   e.preventDefault();
-  e.stopImmediatePropagation();
+  // 🚫 Do NOT stopImmediatePropagation — keeps other handlers alive
   openQuickCreate();
-}, { capture: true });
+});
+
+     // ---------------------------------------------
+// Hero CTA fallback — ensure "Create your free story" always responds
+// ---------------------------------------------
+const heroCta = document.getElementById('heroCta');
+if (heroCta && !heroCta.dataset.wired) {
+  heroCta.addEventListener('click', (e) => {
+    e.preventDefault();
+    openQuickCreate();
+  }, { once: true });
+  heroCta.dataset.wired = '1';
+}
+
 
   });
 
