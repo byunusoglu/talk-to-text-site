@@ -1408,23 +1408,6 @@
     });
   }
 
-  function interceptCreateNavigationOnLanding() {
-    const path = (location.pathname || "").toLowerCase();
-    const isLanding = path.endsWith("/index.html") || path.endsWith("/") || path === "";
-
-    if (!isLanding) return;
-
-    document.addEventListener('click', (e) => {
-      const t = e.target;
-      const el = t.closest('a[href$="create.html"], a[href$="/create.html"], button[onclick*="create.html"]');
-      if (!el) return;
-
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      openQuickCreate();
-    }, { capture: true });
-  }
-
    // --- Restore missing helpers so boot doesn't crash ---
 function initAgeButtons() {
   const btns = $$(".age-btn");
@@ -1488,9 +1471,6 @@ document.addEventListener('click', (e) => {
   e.stopImmediatePropagation();
   openQuickCreate();
 }, { capture: true });
-
-// (Optional) Keep link interception for stray links created later
-interceptCreateNavigationOnLanding();
 
   });
 
