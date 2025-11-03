@@ -1412,6 +1412,28 @@
     }, { capture: true });
   }
 
+   // --- Restore missing helpers so boot doesn't crash ---
+function initAgeButtons() {
+  const btns = $$(".age-btn");
+  if (!btns.length) return;
+  btns.forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const age = (btn.dataset.age || "").toLowerCase();
+      setAge(age);
+      paintSelectedAge();
+      // Open the Quick Create overlay on landing instead of hard-nav
+      openQuickCreate();
+    });
+  });
+}
+
+function initAgePreview() {
+  // Paint selected state + hero image/text for stored age
+  paintSelectedAge();
+  updateHeroForAge(getAge());
+}
+
   /* ---------------------------------------------
      Boot — called on every page
   --------------------------------------------- */
