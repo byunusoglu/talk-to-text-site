@@ -554,6 +554,8 @@ function paintFirstPage({ title, firstPageText }) {
   }
 
   storyEl.innerHTML = `${safeTitle}${safePreview}`;
+
+   try { sessionStorage.setItem("yw_story_teaser", storyEl.innerHTML); } catch (_) {}
 }
 
   async function startGuestGeneration(guestPayload) {
@@ -896,6 +898,9 @@ function paintFirstPage({ title, firstPageText }) {
     gate?.classList.add("hidden");
     glow?.classList.add("hidden");
 
+       // 🧹 Clear temporary teaser once the account is created
+  try { sessionStorage.removeItem("yw_story_teaser"); } catch (_) {}
+     
     try {
       const note = document.createElement("div");
       note.textContent = "✨ Account ready! Taking you to your home.";
@@ -924,6 +929,17 @@ function paintFirstPage({ title, firstPageText }) {
     const md   = SS.getItem(K_STORY_MD);
     const pending = SS.getItem(K_PENDING);
 
+     // 🧠 Restore story teaser on refresh (if generation already completed once)
+const teaser = SS.getItem("yw_story_teaser");
+if (!html && !md && !pending && teaser) {
+  storyEl.innerHTML = teaser;
+  storyEl.dataset.preview = "lines";
+  storyEl.classList.add("preview-clamp");
+  showGate(getChildName());
+  return;
+}
+
+     
     // If we arrive with a pending transcript, kick off guest generation + poller
     if (!html && !md && pending) {
       storyEl.innerHTML = `
