@@ -478,9 +478,9 @@
       if (title) title.textContent = cfg.title;
       if (desc)  desc.textContent  = cfg.desc;
       if (cta) {
-        cta.textContent = cfg.cta;
-        cta.onclick = () => fadeOutAnd(() => { window.location.href = "create.html"; });
-      }
+  cta.textContent = cfg.cta;
+  cta.onclick = (e) => { e.preventDefault(); openQuickCreate(); };
+}
     } catch (_) {}
   }
 
@@ -1476,14 +1476,17 @@ function initAgePreview() {
    Quick Create interceptor — SAFE VERSION
 --------------------------------------------- */
 document.addEventListener('click', (e) => {
-  const el = e.target.closest('#heroCta, .js-open-create, a[href$="create.html"], a[href$="/create.html"]');
+  // Only intercept on the landing page (which has the hero-simple)
+  const onLanding = !!document.querySelector('.hero-simple');
+  if (!onLanding) return;
+
+  const el = e.target.closest('#heroCta, .js-open-create, [data-open-create]');
   if (!el) return;
 
-  // ✅ Skip topbar / hamburger to avoid blocking menu
+  // Don’t interfere with the hamburger/menu
   if (e.target.closest('#menuBtn') || e.target.closest('#menu')) return;
 
   e.preventDefault();
-  // 🚫 Do NOT stopImmediatePropagation — keeps other handlers alive
   openQuickCreate();
 });
 
