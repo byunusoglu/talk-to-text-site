@@ -59,35 +59,33 @@
     <div id="blurGlow" class="blur-glow hidden" aria-hidden="true"></div>
 
     <!-- 🔒 Soft-wall gate (hidden when signed in) -->
-    <div id="gateOverlay" class="gate-overlay hidden" aria-live="polite">
-      <div class="gate-card">
-        <h3 id="gateTitle">Continue reading for free</h3>
-        <p id="gateDesc" class="muted">
-          Create your free account to finish tonight’s bedtime story and save it.
-        </p>
+<div id="gateOverlay" class="gate-overlay hidden" aria-live="polite">
+  <div class="gate-card gate-card--brand">
+    <h3 id="gateTitle">Continue reading for free</h3>
+    <p id="gateDesc" class="muted">
+      Create your free account to finish tonight’s bedtime story and save it.
+    </p>
 
-        <!-- Primary one-tap action -->
-        <button type="button" class="btn btn-google" id="gateGoogle">Continue with Google</button>
+    <!-- Primary: Google (keeps your working flow) -->
+    <button type="button" class="btn btn-google" id="gateGoogle">
+      <span class="g-logo" aria-hidden="true"></span>
+      Continue with Google
+    </button>
 
-        <!-- Link to reveal email form -->
-        <button class="linklike" id="gateEmailBtn" type="button">Use email instead</button>
+    <!-- Secondary: Email (opens central modal; no inline form here) -->
+    <button type="button" class="btn btn-email" id="gateEmailOpen">
+      Continue with email
+    </button>
 
-        <!-- Inline email form (revealed on demand) -->
-        <form id="gateEmailForm" class="gate-email hidden" autocomplete="on">
-          <input type="email" id="gateEmail" placeholder="Email address" required />
-          <input type="password" id="gatePass" placeholder="Password" required />
-          <button type="submit" class="btn">Create free account</button>
-          <button type="button" class="linklike" id="gateBackBtn">Back</button>
-        </form>
-
-        <!-- Tiny trust cues -->
-        <div class="trust-row" aria-hidden="true">
-          <span>🛡️ No payment needed</span>
-          <span>·</span>
-          <span>Free forever for your first story</span>
-        </div>
-      </div>
+    <!-- Trust row -->
+    <div class="trust-row" aria-hidden="true">
+      <span>🛡️ No payment needed</span>
+      <span>·</span>
+      <span>Free forever for your first story</span>
     </div>
+  </div>
+</div>
+
   </article>
 </section>
 
