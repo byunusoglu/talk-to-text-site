@@ -32,7 +32,7 @@
   const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
   // Partner story generation endpoints
   const API_GUEST_GENERATE = `${API_BASE}/stories/guest-generate`;
-  const API_JOB = (jobId) => `${API_BASE}/jobs/${jobId}`;
+  const API_JOB = (jobId) => `${API_BASE}/jobs/guest/${jobId}`;
 
   // Session model for cookie-based auth
   let SESSION_READY = false;
