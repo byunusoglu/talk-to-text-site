@@ -859,9 +859,6 @@
   }
 }
 
-
-  }
-
   function unlockGate() {
     const storyEl = document.getElementById("storyContent");
     const reader  = document.querySelector(".story-reader");
