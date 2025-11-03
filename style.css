@@ -1391,6 +1391,68 @@ html.scroll-locked { overscroll-behavior: contain; }
 .gate-card .btn { width: 100%; margin-top: 8px; }
 .gate-card .btn.ghost { background: #fff; color: var(--plum-dark); border: 1px solid #e8e4f6; }
 
+/* === StoryBud Checkout Gate — Branded === */
+.gate-card--brand {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,235,247,0.96));
+  border: 1px solid #eee9fb;
+  border-radius: 18px;
+  box-shadow: 0 18px 36px rgba(0,0,0,0.08);
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.gate-card--brand h3 {
+  font-family: 'Nunito', sans-serif;
+  color: var(--plum-dark);
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.gate-card--brand .muted {
+  color: #3a3450;
+  margin-bottom: 12px;
+}
+
+/* Google button (keeps functional ID) */
+.btn.btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: #fff;
+  color: #2f2a36;
+  border: 1px solid #e8e4f6;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+.btn.btn-google:hover { background: #fbf9ff; }
+
+/* Tiny Google "G" mark (inline SVG mask) */
+.btn.btn-google .g-logo {
+  width: 18px; height: 18px; display: inline-block;
+  background: currentColor;
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="%23000" d="M43.6 20.5H42V20H24v8h11.3C33.7 31.6 29.2 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.7 3l5.7-5.7C33.8 5 29.2 3 24 3 12.3 3 3 12.3 3 24s9.3 21 21 21 21-9.3 21-21c0-1.2-.1-2.3-.4-3.5z"/></svg>') center/contain no-repeat;
+          mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="%23000" d="M43.6 20.5H42V20H24v8h11.3C33.7 31.6 29.2 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.7 3l5.7-5.7C33.8 5 29.2 3 24 3 12.3 3 3 12.3 3 24s9.3 21 21 21 21-9.3 21-21c0-1.2-.1-2.3-.4-3.5z"/></svg>') center/contain no-repeat;
+}
+
+/* Email button = plum outline */
+.btn.btn-email {
+  margin-top: 8px;
+  width: 100%;
+  background: #fff;
+  color: var(--plum-dark);
+  border: 1px solid #e8e4f6;
+  border-radius: 999px;
+  padding: 12px 16px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+.btn.btn-email:hover { background: #fbf9ff; }
+
+
 .gate-email {
   display: grid;
   gap: 8px;
