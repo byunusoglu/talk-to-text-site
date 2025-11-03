@@ -71,7 +71,7 @@
     }
     const token = data?.token || "";
     const user  = data?.data?.user || {};
-    if (!token) throw new Error("No token returned by signup");
+   // if (!token) throw new Error("No token returned by signup");
     return { token, user };
   }
 
