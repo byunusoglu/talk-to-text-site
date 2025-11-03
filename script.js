@@ -103,9 +103,12 @@
   }
 
   async function signOut() {
+  try {
     await fetch(`${API_BASE}/users/logout`, { method: "POST", credentials: "include" });
-    SESSION_USER = null;
-  }
+  } catch (_) {}
+  SESSION_USER = null;
+  try { localStorage.removeItem('yw_signed_in'); } catch (_) {}
+}
 
   // Helper: try to derive child fields from transcript if present
   function deriveChildFromTranscript() {
@@ -268,6 +271,40 @@
     // Re-hydrate once to win races with other DOM scripts
     setTimeout(hydrateTopbarAuth, 0);
   }
+
+   function wireLogoSmartRouting() {
+  const logo = document.querySelector('a.logo');
+  if (!logo) return;
+
+  // Set an immediate best-guess href before hydration
+  try {
+    const optimistic = localStorage.getItem('yw_signed_in') === '1';
+    logo.setAttribute('href', optimistic ? 'home.html' : 'index.html');
+  } catch (_) {}
+
+  const hardNav = (url) => {
+    try { document.body.classList.add('fade-out'); } catch (_) {}
+    setTimeout(() => { window.location.href = url; }, 80);
+  };
+
+  // Decide at click-time (wins the race on mobile)
+  logo.addEventListener('click', (e) => {
+    // If hydrateTopbarAuth already set correct href, just let it go
+    const hydratedHref = logo.getAttribute('href') || '';
+    const optimistic = (() => {
+      try { return localStorage.getItem('yw_signed_in') === '1'; } catch (_) { return false; }
+    })();
+
+    const signed = isSignedIn() || optimistic;
+    const target = signed ? 'home.html' : 'index.html';
+
+    if (hydratedHref !== target) {
+      e.preventDefault();
+      hardNav(target);
+    }
+  }, { passive: false });
+}
+
 
   /* ---------------------------------------------
      Guard: signed-in users → /home.html from landing
@@ -1470,7 +1507,8 @@ function initAgePreview() {
      Boot — called on every page
   --------------------------------------------- */
   onReady(async () => {
-    await refreshSession();
+    wireLogoSmartRouting();
+     await refreshSession();
     hydrateTopbarAuth();
     guardLandingRedirect();
 
