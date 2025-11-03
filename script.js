@@ -847,6 +847,16 @@
         }
       };
     }
+       // Temporary: Google button opens the main auth modal in Sign Up mode
+  const btnGoogle = document.getElementById("gateGoogle");
+  if (btnGoogle) {
+    btnGoogle.onclick = (e) => {
+      e.preventDefault();
+      openAuthModal("signup");
+    };
+  }
+}
+
   }
 
   function unlockGate() {
@@ -902,6 +912,9 @@
           <div class="muted" style="font-weight:700;">This may take a few seconds…</div>
         </div>
       `;
+
+       // Show the signup gate right away for guests, then keep the existing onDone gate call.
+       try { showGate(getChildName()); } catch (_) {}
 
       (async () => {
         try {
