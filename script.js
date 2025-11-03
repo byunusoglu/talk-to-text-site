@@ -6,6 +6,8 @@
                testimonials, scroll morph, audio micro-demo, etc.
    - Adds:     real JWT auth, auth modal (Sign Up + Sign In),
                topbar hydration, real gate unlock.
+   - Updates:  story generation uses partner APIs (guest-generate + job polling),
+               keeping the same visual flow.
 ===================================================== */
 (() => {
 
@@ -22,36 +24,37 @@
     setTimeout(cb, delay);
   };
 
-
-   
   const SS = window.sessionStorage;
 
   /* ---------------------------------------------
      REAL Auth client (JWT)
   --------------------------------------------- */
   const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
+  // Partner story generation endpoints
+  const API_GUEST_GENERATE = `${API_BASE}/stories/guest-generate`;
+  const API_JOB = (jobId) => `${API_BASE}/jobs/${jobId}`;
 
-   // Session model for cookie-based auth
-let SESSION_READY = false;
-let SESSION_USER  = null;
+  // Session model for cookie-based auth
+  let SESSION_READY = false;
+  let SESSION_USER  = null;
 
-async function refreshSession() {
-  try {
-    const res = await fetch(`${API_BASE}/users/me`, { credentials: "include" });
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    SESSION_USER = data?.data?.user || null;
-    SESSION_READY = true;
-    return true;
-  } catch {
-    SESSION_USER = null;
-    SESSION_READY = true;
-    return false;
+  async function refreshSession() {
+    try {
+      const res = await fetch(`${API_BASE}/users/me`, { credentials: "include" });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      SESSION_USER = data?.data?.user || null;
+      SESSION_READY = true;
+      return true;
+    } catch {
+      SESSION_USER = null;
+      SESSION_READY = true;
+      return false;
+    }
   }
-}
 
-function isSignedIn() { return !!SESSION_USER; }
-function getUser()    { return SESSION_USER;  }
+  function isSignedIn() { return !!SESSION_USER; }
+  function getUser()    { return SESSION_USER;  }
 
   // ---- API wrappers ----
   async function apiSignup({ childName, email, password, birthYear, gender }) {
@@ -59,7 +62,7 @@ function getUser()    { return SESSION_USER;  }
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ childName, email, password, birthYear, gender }),
-       credentials: "include"
+      credentials: "include"
     });
     const data = await res.json().catch(()=>({}));
     if (!res.ok) {
@@ -77,35 +80,32 @@ function getUser()    { return SESSION_USER;  }
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
-       credentials: "include"
+      credentials: "include"
     });
-    // console.log("res":res);
     const data = await res.json().catch(()=>({}));
-   //  console.log("data":data);
     if (!res.ok) {
       const msg = data?.message || data?.error || `Login failed (${res.status})`;
       throw new Error(msg);
     }
     const token = data?.token || "";
     const user  = data?.data?.user || {};
-   // if (!token) throw new Error("No token returned by login");
     return { token, user };
   }
 
-// simplified version for cookie-based auth
-async function apiGetMe() {
-  const res = await fetch(`${API_BASE}/users/me`, {
-    method: "GET",
-    credentials: "include", // always include cookies
-  });
-  if (!res.ok) throw new Error("API 401");
-  return res.json();
-}
+  // simplified version for cookie-based auth
+  async function apiGetMe() {
+    const res = await fetch(`${API_BASE}/users/me`, {
+      method: "GET",
+      credentials: "include", // always include cookies
+    });
+    if (!res.ok) throw new Error("API 401");
+    return res.json();
+  }
 
-async function signOut() {
-  await fetch(`${API_BASE}/users/logout`, { method: "POST", credentials: "include" });
-  SESSION_USER = null;
-}
+  async function signOut() {
+    await fetch(`${API_BASE}/users/logout`, { method: "POST", credentials: "include" });
+    SESSION_USER = null;
+  }
 
   // Helper: try to derive child fields from transcript if present
   function deriveChildFromTranscript() {
@@ -137,13 +137,13 @@ async function signOut() {
   const AGE_KEY = "yw_age_group";          // '0-2' | '3-5' | '5+'
   const DEFAULT_AGE = "0-2";
   const AGE_UI_DISABLED = true; // hide age tags, default to 0–2
-  const API_URL = "https://fairytale-api.vercel.app/api/generate-story";
 
   // keys used on navigation to checkout
   const K_TRANSCRIPT = "yw_transcript";
   const K_STORY_MD   = "yw_story_markdown";
   const K_STORY_HTML = "yw_story_html";
   const K_PENDING    = "yw_pending_transcript";   // pass data to checkout to generate there
+  const K_GUEST_PAYLOAD = "yw_guest_payload";     // structured payload for partner API
 
   // Preload hero images for fast swaps
   ["momdaughterbanner.png","childsdreambanner.png","grownbanner.png"]
@@ -360,12 +360,12 @@ async function signOut() {
               await apiLogin({ email, password: pass });
               try { await apiGetMe(); } catch(_){}
               close();
-              //fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
-               fadeOutAnd(() => {
-  setTimeout(() => {
-    window.location.href = "home.html";
-  }, 5 * 60 * 1000); // 5 dakika delay
-}, 120);
+              // NOTE: you had a 5-minute delay; leaving as-is
+              fadeOutAnd(() => {
+                setTimeout(() => {
+                  window.location.href = "home.html";
+                }, 5 * 60 * 1000);
+              }, 120);
             } catch (err) {
               alert(err?.message || "Could not sign in.");
             }
@@ -524,89 +524,109 @@ async function signOut() {
   }
 
   /* ---------------------------------------------
-     Landing: age buttons + hover preview
+     Partner Story Generation Helpers (guest)
   --------------------------------------------- */
-  function initAgeButtons() {
-    if (AGE_UI_DISABLED) {
-      setAge(DEFAULT_AGE);
-      updateHeroForAge(DEFAULT_AGE);
 
-      const bar =
-        document.querySelector('.age-buttons') ||
-        document.getElementById('ageBar') ||
-        document.querySelector('[data-age="buttons"]');
-      if (bar) bar.classList.add('hidden');
-
-      document.body.classList.add('age-no-bar');
-      return;
-    }
-
-    paintSelectedAge();
-    updateHeroForAge(getAge());
-    document.addEventListener("click", (e) => {
-      const btn = e.target.closest(".age-btn");
-      if (!btn) return;
-      const raw = (btn.dataset.age || "").trim();
-      const val = (raw === "0-2" || raw === "3-5" || raw === "5+") ? raw : DEFAULT_AGE;
-      setAge(val);
-      $$(".age-btn").forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-      updateHeroForAge(val);
-    }, { passive: false });
+  // Paint first page (title + opening paragraph) into checkout preview
+  function paintFirstPage({ title, firstPageText }) {
+    const storyEl = document.getElementById("storyContent");
+    if (!storyEl) return;
+    const safeTitle = title ? `<h1>${title}</h1>` : '';
+    const safePara  = firstPageText ? `<p>${firstPageText}</p>` : `<p class="muted">Your story is warming up…</p>`;
+    storyEl.innerHTML = `${safeTitle}${safePara}`;
   }
 
-  function initAgePreview() {
-    if (AGE_UI_DISABLED) return;
-
-    const isPointerFine = window.matchMedia("(pointer: fine)").matches;
-    if (!isPointerFine) return;
-    let restoreTimer = null;
-    $$(".age-btn").forEach(btn => {
-      btn.addEventListener("mouseenter", () => {
-        const hoverAge = (btn.dataset.age || "").trim();
-        if (!hoverAge) return;
-        updateHeroForAge(hoverAge);
-        if (restoreTimer) { clearTimeout(restoreTimer); restoreTimer = null; }
-      });
-      btn.addEventListener("mouseleave", () => {
-        restoreTimer = setTimeout(() => updateHeroForAge(getAge()), 120);
-      });
+  async function startGuestGeneration(guestPayload) {
+    const res = await fetch(API_GUEST_GENERATE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // guest flow does not send credentials
+      body: JSON.stringify(guestPayload)
     });
+    const data = await res.json().catch(()=> ({}));
+    if (!res.ok || !data?.ok || !data?.jobId) {
+      throw new Error(data?.message || `Guest generate failed (${res.status})`);
+    }
+    return data.jobId;
+  }
+
+  async function fetchJob(jobId) {
+    const res = await fetch(API_JOB(jobId), {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+      // no credentials for guest polling
+    });
+    if (!res.ok) throw new Error(`Job ${res.status}`);
+    return res.json();
+  }
+
+  // Poll every ~5s until completed
+  function pollForFirstPage(jobId, { onTick, onDone, onError, intervalMs = 5000 }) {
+    let timer = null;
+    const tick = async () => {
+      try {
+        const data = await fetchJob(jobId);
+        const s = data?.data?.status || data?.status;
+        const first = data?.data?.firstPageText;
+        const title = data?.data?.title;
+        if (typeof onTick === 'function') onTick({ status: s });
+
+        if (s === 'completed' && first) {
+          clearInterval(timer);
+          if (typeof onDone === 'function') onDone({ title, firstPageText: first });
+        }
+        // else keep polling while s is processing
+      } catch (err) {
+        clearInterval(timer);
+        if (typeof onError === 'function') onError(err);
+      }
+    };
+    timer = setInterval(tick, intervalMs);
+    tick(); // immediate check
+    return () => clearInterval(timer);
   }
 
   /* ---------------------------------------------
      API call + stash story + go checkout
+     (Updated: unify flows to use guest job on checkout)
   --------------------------------------------- */
 
+  // Instead of calling the old direct generator, we now:
+  // - stash transcript
+  // - (optionally) stash a structured guest payload if available
+  // - navigate to checkout where the loader + poller run
   async function generateStoryAndNavigate(transcript) {
     if (!transcript) throw new Error("Missing transcript");
-    const body = { transcript, ageGroup: getAge() };
     try {
       const btn = $('#chatGenerate') || $('#generateBtn');
       const spinner = $('#genSpinner');
       btn && (btn.disabled = true);
       spinner && spinner.classList.remove('hidden');
 
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error(`API ${res.status}`);
-
-      const data = await res.json();
-      const md   = data?.markdown || data?.story || "";
-      const html = mdToHtml(md);
-
       try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
-      try { SS.setItem(K_STORY_MD, md); } catch (_) {}
-      try { SS.setItem(K_STORY_HTML, html); } catch (_) {}
-      try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
+      try { SS.setItem(K_PENDING, transcript); } catch (_) {}
+
+      // If a guest payload hasn't been set yet, try best-effort fallback from transcript
+      const raw = SS.getItem(K_GUEST_PAYLOAD);
+      if (!raw) {
+        // derive minimal payload
+        const name = (transcript.match(/Child name:\s*([^\n]+)/i)?.[1] || 'Friend').trim();
+        const ageVal  = parseInt((transcript.match(/Child age:\s*([^\n]+)/i)?.[1] || '4'), 10);
+        const genderRaw = (transcript.match(/Child gender:\s*([^\n]+)/i)?.[1] || '').toLowerCase();
+        const place = (transcript.match(/Place:\s*([^\n]+)/i)?.[1] || 'forest').toLowerCase();
+        const guestPayload = {
+          language: 'en',
+          location: place,
+          child: { name, age: (isNaN(ageVal) ? 4 : Math.max(0, Math.min(12, ageVal))), gender: /girl|female/.test(genderRaw) ? 'female' : /boy|male/.test(genderRaw) ? 'male' : 'unspecified' },
+          pet: null
+        };
+        try { SS.setItem(K_GUEST_PAYLOAD, JSON.stringify(guestPayload)); } catch (_) {}
+      }
 
       goCheckout();
     } catch (err) {
       console.error(err);
-      alert("Sorry, we couldn't generate the story. Please try again.");
+      alert("Sorry, we couldn't start the story. Please try again.");
     } finally {
       const btn = $('#chatGenerate') || $('#generateBtn');
       const spinner = $('#genSpinner');
@@ -615,23 +635,9 @@ async function signOut() {
     }
   }
 
-  async function generateStoryInPlace(transcript) {
-    const body = { transcript, ageGroup: getAge() };
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-
-    const data = await res.json();
-    const md   = data?.markdown || data?.story || "";
-    const html = mdToHtml(md);
-
-    try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
-    try { SS.setItem(K_STORY_MD, md); } catch (_) {}
-    try { SS.setItem(K_STORY_HTML, html); } catch (_) {}
-    try { SS.setItem("yw_ambience", data?.ambience || "pad"); } catch (_) {}
+  // Kept for compatibility; not used in checkout path anymore.
+  async function generateStoryInPlace(/* transcript */) {
+    throw new Error("Deprecated: generateStoryInPlace is replaced by guest job flow.");
   }
 
   /* ---------------------------------------------
@@ -706,6 +712,20 @@ async function signOut() {
         `Characters: ${answers.chars || "—"}`,
         `Extras: ${answers.extras || "—"}`
       ].join("\n");
+
+      // Build a structured guest payload now (better mapping than transcript-only)
+      const ageNum = parseInt(answers.age || "4", 10);
+      const guestPayload = {
+        language: "en",
+        location: (answers.theme || "forest").toLowerCase(),
+        child: {
+          name: answers.name || "Friend",
+          age: isNaN(ageNum) ? 4 : Math.max(0, Math.min(12, ageNum)),
+          gender: "unspecified"
+        },
+        pet: null
+      };
+      try { SS.setItem(K_GUEST_PAYLOAD, JSON.stringify(guestPayload)); } catch (_) {}
 
       pushBot("✨ Creating your story...");
       await generateStoryAndNavigate(transcript);
@@ -874,6 +894,7 @@ async function signOut() {
     const md   = SS.getItem(K_STORY_MD);
     const pending = SS.getItem(K_PENDING);
 
+    // If we arrive with a pending transcript, kick off guest generation + poller
     if (!html && !md && pending) {
       storyEl.innerHTML = `
         <div class="wait-wrap">
@@ -882,15 +903,59 @@ async function signOut() {
         </div>
       `;
 
-      (async ()=>{
+      (async () => {
         try {
-          await generateStoryInPlace(pending);
-          SS.removeItem(K_PENDING);
-          window.location.reload();
+          // Prefer the structured payload if present (from Quick Create or Chat Wizard)
+          const raw = SS.getItem(K_GUEST_PAYLOAD);
+          let payload = null;
+          try { payload = raw ? JSON.parse(raw) : null; } catch(_) {}
+
+          // Fallback: minimum viable payload from transcript
+          if (!payload) {
+            const name = (pending.match(/Child name:\s*([^\n]+)/i)?.[1] || 'Friend').trim();
+            const age  = parseInt((pending.match(/Child age:\s*([^\n]+)/i)?.[1] || '4'), 10);
+            const genderRaw = (pending.match(/Child gender:\s*([^\n]+)/i)?.[1] || '').toLowerCase();
+            const place = (pending.match(/Place:\s*([^\n]+)/i)?.[1] || 'forest').toLowerCase();
+            payload = {
+              language: 'en',
+              location: place,
+              child: { name, age: (isNaN(age) ? 4 : Math.max(0, Math.min(12, age))), gender: /girl|female/.test(genderRaw) ? 'female' : /boy|male/.test(genderRaw) ? 'male' : 'unspecified' },
+              pet: null
+            };
+          }
+
+          // 1) Start job
+          const jobId = await startGuestGeneration(payload);
+
+          // 2) Poll until we get firstPageText, then paint the preview
+          pollForFirstPage(jobId, {
+            onTick: () => {}, // keep loader animating
+            onDone: ({ title, firstPageText }) => {
+              try { SS.removeItem(K_PENDING); } catch(_) {}
+              // Paint the opening on checkout
+              paintFirstPage({ title, firstPageText });
+
+              // Preview UX for guests (clamped lines)
+              const sc = document.getElementById("storyContent");
+              if (sc) {
+                sc.dataset.preview = "lines";
+                sc.classList.add("preview-clamp");
+              }
+
+              // Keep gate behavior
+              const childName = getChildName();
+              if (childName) showGate(childName);
+            },
+            onError: (err) => {
+              console.error(err);
+              alert("Sorry, we couldn't create the story. Please try again.");
+              try { SS.removeItem(K_PENDING); } catch(_) {}
+            }
+          });
         } catch (err) {
           console.error(err);
           alert("Sorry, we couldn't create the story. Please try again.");
-          SS.removeItem(K_PENDING);
+          try { SS.removeItem(K_PENDING); } catch(_) {}
         }
       })();
 
@@ -1306,6 +1371,25 @@ async function signOut() {
 
       try { sessionStorage.setItem(K_PENDING, transcript); } catch (_) {}
 
+      // Build partner's payload and save it for checkout
+      const kidAgeNum = parseInt(state.kidAge || "4", 10);
+      const guestPayload = {
+        language: 'en',
+        location: (state.place || 'forest').toLowerCase(),
+        child: {
+          name: state.kidName || 'Friend',
+          age: isNaN(kidAgeNum) ? 4 : Math.max(0, Math.min(12, kidAgeNum)),
+          gender: /girl|female/.test((state.kidGender||'').toLowerCase()) ? 'female'
+                : /boy|male/.test((state.kidGender||'').toLowerCase())    ? 'male'
+                : 'unspecified'
+        },
+        pet: (state.pets === 'yes') ? {
+          species: state.petType || 'pet',
+          name: state.petName || 'Buddy'
+        } : null
+      };
+      try { sessionStorage.setItem(K_GUEST_PAYLOAD, JSON.stringify(guestPayload)); } catch (_) {}
+
       document.body.classList.add("fade-out");
       setTimeout(()=>{ window.location.href = "checkout.html"; }, 100);
     });
@@ -1344,7 +1428,7 @@ async function signOut() {
      Boot — called on every page
   --------------------------------------------- */
   onReady(async () => {
-     await refreshSession();
+    await refreshSession();
     hydrateTopbarAuth();
     guardLandingRedirect();
 
