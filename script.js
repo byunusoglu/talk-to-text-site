@@ -1395,18 +1395,6 @@
     });
   }
 
-  function forceHeroToOverlay() {
-    const btn = document.getElementById('heroCta');
-    if (!btn) return;
-    const handler = (e) => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      openQuickCreate();
-    };
-    btn.addEventListener('click', handler, { capture: true });
-    try { btn.onclick = null; } catch (_) {}
-  }
-
   function interceptCreateNavigationOnLanding() {
     const path = (location.pathname || "").toLowerCase();
     const isLanding = path.endsWith("/index.html") || path.endsWith("/") || path === "";
@@ -1457,16 +1445,18 @@
       });
     });
 
-    // Force hero CTA to open Quick Create overlay
-    const heroCta = document.getElementById('heroCta');
-    if (heroCta) {
-      heroCta.onclick = (e) => { e.preventDefault(); openQuickCreate(); };
-    }
-    document.querySelectorAll('.js-open-create').forEach(btn=>{
-      btn.addEventListener('click', (e)=>{ e.preventDefault(); openQuickCreate(); });
-    });
-    forceHeroToOverlay();
-    interceptCreateNavigationOnLanding();
+     // Always open Quick Create for any "create" CTA (button or link)
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('#heroCta, .js-open-create, a[href$="create.html"], a[href$="/create.html"]');
+  if (!el) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  openQuickCreate();
+}, { capture: true });
+
+// (Optional) Keep link interception for stray links created later
+interceptCreateNavigationOnLanding();
+
   });
 
   // Expose small API for inline handlers if needed
