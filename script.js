@@ -535,14 +535,26 @@
      Partner Story Generation Helpers (guest)
   --------------------------------------------- */
 
-  // Paint first page (title + opening paragraph) into checkout preview
-  function paintFirstPage({ title, firstPageText }) {
-    const storyEl = document.getElementById("storyContent");
-    if (!storyEl) return;
-    const safeTitle = title ? `<h1>${title}</h1>` : '';
-    const safePara  = firstPageText ? `<p>${firstPageText}</p>` : `<p class="muted">Your story is warming up…</p>`;
-    storyEl.innerHTML = `${safeTitle}${safePara}`;
+function paintFirstPage({ title, firstPageText }) {
+  const storyEl = document.getElementById("storyContent");
+  if (!storyEl) return;
+
+  const safeTitle = title ? `<h1>${title}</h1>` : '';
+  let safePreview = '';
+
+  if (firstPageText) {
+    // Split text into lines and take first 4–5 sentences
+    const parts = firstPageText
+      .split(/(?<=[.!?])\s+/)
+      .filter(Boolean)
+      .slice(0, 5); // show ~5 sentences
+    safePreview = parts.map(p => `<p>${p}</p>`).join('');
+  } else {
+    safePreview = `<p class="muted">Your story is warming up…</p>`;
   }
+
+  storyEl.innerHTML = `${safeTitle}${safePreview}`;
+}
 
   async function startGuestGeneration(guestPayload) {
     const res = await fetch(API_GUEST_GENERATE, {
