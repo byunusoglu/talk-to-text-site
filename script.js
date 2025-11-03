@@ -804,109 +804,23 @@ function paintFirstPage({ title, firstPageText }) {
   const gateTitle = document.getElementById("gateTitle");
   const gateDesc  = document.getElementById("gateDesc");
 
-  const btnEmail  = document.getElementById("gateEmailBtn");
-  const formWrap  = document.getElementById("gateEmailForm");
-  const backBtn   = document.getElementById("gateBackBtn");
-  const btnRow    = document.getElementById("gateButtons");
+// Unified buttons — open central modal instead of inline form
+const btnGoogle = document.getElementById("gateGoogle");
+if (btnGoogle) {
+  btnGoogle.onclick = (e) => {
+    e.preventDefault();
+    openAuthModal("signup");
+  };
+}
 
-  if (personName && badge && badgeText) {
-    badgeText.textContent = `Personalised for ${personName}`;
-    badge.classList.remove("hidden");
-    reader?.classList.add("has-badge");
-  }
-  if (personName && gateDesc) {
-    gateDesc.textContent = `Create your free account to finish ${personName}’s bedtime story and save it.`;
-  }
-  if (gateTitle) gateTitle.textContent = "Continue reading for free";
+const btnEmailOpen = document.getElementById("gateEmailOpen");
+if (btnEmailOpen) {
+  btnEmailOpen.onclick = (e) => {
+    e.preventDefault();
+    openAuthModal("signup");
+  };
+}
 
-  reader?.classList.add("gated");
-
-  const isPreviewLines = storyEl?.dataset.preview === "lines";
-  if (!isPreviewLines) {
-    storyEl?.classList.add("blur-bottom");
-    glow?.classList.remove("hidden");
-  } else {
-    storyEl?.classList.remove("blur-bottom");
-    glow?.classList.add("hidden");
-  }
-
-  gate?.classList.remove("hidden");
-
-  if (btnEmail) {
-    btnEmail.onclick = (e) => {
-      e.preventDefault();
-      formWrap?.classList.remove("hidden");
-      btnEmail.classList.add("hidden");
-      btnRow?.classList.add("hidden");
-    };
-  }
-  if (backBtn) {
-    backBtn.onclick = (e) => {
-      e.preventDefault();
-      formWrap?.classList.add("hidden");
-      btnEmail?.classList.remove("hidden");
-      btnRow?.classList.remove("hidden");
-    };
-  }
-
-  // Email form submit (real signup)
-  if (formWrap) {
-    let extraInjected = false;
-    const ensureExtraFields = () => {
-      if (extraInjected) return;
-      extraInjected = true;
-      const extra = document.createElement("div");
-      extra.className = "gate-email";
-      extra.innerHTML = `
-        <label>Child’s name
-          <input type="text" id="gateChildName" placeholder="Mia" />
-        </label>
-        <label>Birth year
-          <input type="number" id="gateBirthYear" placeholder="2019" min="2008" max="${new Date().getUTCFullYear()}" />
-        </label>
-        <label>Gender
-          <select id="gateGender">
-            <option value="">Select</option>
-            <option value="female">Girl</option>
-            <option value="male">Boy</option>
-            <option value="other">Non-binary</option>
-            <option value="prefer-not-to-say">Prefer not to say</option>
-          </select>
-        </label>
-      `;
-      formWrap.appendChild(extra);
-    };
-
-    formWrap.onsubmit = async (e) => {
-      e.preventDefault();
-      const email = $("#gateEmail")?.value.trim();
-      const pass  = $("#gatePass")?.value || "";
-      if (!email || !pass) { alert("Please enter email and password."); return; }
-
-      let { childName, birthYear, gender } = deriveChildFromTranscript();
-      if (!childName || !birthYear || !gender) {
-        ensureExtraFields();
-        childName = childName || ($("#gateChildName")?.value.trim() || "");
-        birthYear = birthYear || ($("#gateBirthYear")?.value.trim() || "");
-        gender    = gender    || ($("#gateGender")?.value || "");
-        if (!childName || !birthYear || !gender) {
-          alert("Please provide your child’s name, birth year, and gender.");
-          return;
-        }
-      }
-
-      try {
-        // NOTE: switch to /auth/signup if your partner uses that route
-        await apiSignup({ childName, email, password: pass, birthYear, gender });
-        unlockGate();
-      } catch (err) {
-        const msg = err?.message || String(err);
-        alert(/already|exists|e11000/i.test(msg)
-          ? "This email is already registered. Please sign in instead."
-          : msg);
-      }
-    };
-  }
 
   // Temporary: Google button opens the main auth modal in Sign Up mode
   const btnGoogle = document.getElementById("gateGoogle");
