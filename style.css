@@ -1995,3 +1995,49 @@ body.age-no-bar main > section:first-child {
   color:#fff; font-weight:800;
 }
 
+/* === Animated Story (Premium teaser) === */
+.upgrade-embed {
+  margin: 12px auto 16px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.88);
+  border: 1px solid #eee9fb;
+  box-shadow: var(--shadow);
+  max-width: 980px;
+}
+
+.upgrade-embed__copy h2 {
+  margin: 0 0 6px;
+  color: var(--plum-dark);
+  font-family: 'Nunito', sans-serif;
+}
+.upgrade-embed__copy .muted { margin: 0 0 10px; }
+
+.upgrade-embed__frame {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #eee9fb;
+  background: #fff;
+  /* compact but readable height so story isn't pushed down */
+  height: clamp(220px, 32vh, 340px);
+}
+.upgrade-embed__frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.upgrade-embed__cta {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+@media (max-width: 700px) {
+  .upgrade-embed { padding: 10px 12px; }
+  .upgrade-embed__frame { height: clamp(200px, 28vh, 280px); }
+  .upgrade-embed__cta { justify-items: stretch; }
+  .upgrade-embed__cta .btn { width: 100%; }
+}
+
+
