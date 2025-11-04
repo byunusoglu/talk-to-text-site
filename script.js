@@ -820,16 +820,6 @@ if (btnEmailOpen) {
     openAuthModal("signup");
   };
 }
-
-
-  // Temporary: Google button opens the main auth modal in Sign Up mode
-  const btnGoogle = document.getElementById("gateGoogle");
-  if (btnGoogle) {
-    btnGoogle.onclick = (e) => {
-      e.preventDefault();
-      openAuthModal("signup");
-    };
-  }
 }
 
   function unlockGate() {
