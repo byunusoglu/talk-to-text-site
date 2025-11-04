@@ -253,6 +253,7 @@ const API_JOB_STATUS       = (jobId) => `${API_BASE}/jobs/${jobId}`;
   function initChrome() {
     const menuBtn = document.getElementById('menuBtn');
     const menu = getMenuEl();
+     if (!menuBtn || !menu) return;
 
        // ---------------------------------------------
   // ✅ Defensive bind for hamburger menu toggle
@@ -324,18 +325,18 @@ const API_JOB_STATUS       = (jobId) => `${API_BASE}/jobs/${jobId}`;
     }
   }
 
-  /* ---------------------------------------------
-     Auth Modal (Sign Up / Sign In) — works anywhere
-  --------------------------------------------- */
-  function openAuthModal(defaultMode = "signup") {
-    const id = "authModal";
-    let modal = document.getElementById(id);
+/* ---------------------------------------------
+   Auth Modal (Sign Up / Sign In) — works anywhere
+--------------------------------------------- */
+function openAuthModal(defaultMode = "signup") {
+  const id = "authModal";
+  let modal = document.getElementById(id);
 
-    if (!modal) {
-      modal = document.createElement("div");
-      modal.id = id;
-      modal.className = "modal";
-      modal.innerHTML = `
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = id;
+    modal.className = "modal";
+    modal.innerHTML = `
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
     <button class="modal-close" id="authCloseBtn" aria-label="Close">✕</button>
     <h2 id="authTitle">Create your free account</h2>
@@ -358,7 +359,7 @@ const API_JOB_STATUS       = (jobId) => `${API_BASE}/jobs/${jobId}`;
               <option value="" disabled selected>Select</option>
               <option value="female">Girl</option>
               <option value="male">Boy</option>
-              <option value="other">Non-binary</option>
+              <option value="non-binary">Non-binary</option>
               <option value="prefer-not-to-say">Prefer not to say</option>
             </select>
           </div>
@@ -385,107 +386,114 @@ const API_JOB_STATUS       = (jobId) => `${API_BASE}/jobs/${jobId}`;
     </div>
   </div>`;
 
-      document.body.appendChild(modal);
+    document.body.appendChild(modal);
 
-      const close = () => modal.classList.add("hidden");
-      modal.addEventListener("click", (e)=> { if (e.target === modal) close(); });
-      $("#authCloseBtn")?.addEventListener("click", close);
+    const close = () => modal.classList.add("hidden");
+    modal.addEventListener("click", (e)=> { if (e.target === modal) close(); });
+    document.getElementById("authCloseBtn")?.addEventListener("click", close);
 
-function setMode(mode) {
-  const title        = $("#authTitle");
-  const primary      = $("#authPrimaryBtn");
-  const switcher     = $("#authSwitch");
-  const signupFields = modal.querySelector('[data-auth="signup-fields"]');
+    // --- mode switcher (keeps your guest → authed re-generation flow) ---
+    function setMode(mode) {
+      const title        = document.getElementById("authTitle");
+      const primary      = document.getElementById("authPrimaryBtn");
+      const switcher     = document.getElementById("authSwitch");
+      const signupFields = modal.querySelector('[data-auth="signup-fields"]');
 
-  if (mode === "signin") {
-    if (title)        title.textContent = "Welcome back";
-    if (primary)      primary.textContent = "Sign In";
-    if (switcher)     switcher.textContent = "New here? Create an account";
-    if (signupFields) signupFields.style.display = "none";
+      if (mode === "signin") {
+        if (title)        title.textContent = "Welcome back";
+        if (primary)      primary.textContent = "Sign In";
+        if (switcher)     switcher.textContent = "New here? Create an account";
+        if (signupFields) signupFields.style.display = "none";
 
-    if (primary) primary.onclick = async () => {
-      const email = $("#authEmail")?.value.trim();
-      const pass  = $("#authPass")?.value;
-      if (!email || !pass) { alert("Please enter email and password."); return; }
+        if (primary) primary.onclick = async () => {
+          const email = document.getElementById("authEmail")?.value.trim();
+          const pass  = document.getElementById("authPass")?.value;
+          if (!email || !pass) { alert("Please enter email and password."); return; }
 
-      try {
-        await apiLogin({ email, password: pass });
-        try { await apiGetMe(); } catch (_) {}
-
-        // Promote a guest transcript (if any) to a full story on the account
-        const transcript = (SS.getItem(K_TRANSCRIPT) || SS.getItem(K_PENDING) || '').trim();
-        if (transcript) {
           try {
-            await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
-            fadeOutAnd(() => { window.location.href = 'storydetail.html'; }, 120);
-            return;
+            await apiLogin({ email, password: pass });
+            try { await apiGetMe(); } catch (_) {}
+
+            const transcript = (sessionStorage.getItem("yw_transcript") || sessionStorage.getItem("yw_pending_transcript") || "").trim();
+            if (transcript) {
+              try {
+                await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
+                modal.classList.add("hidden");
+                fadeOutAnd(() => { window.location.href = "storydetail.html"; }, 120);
+                return;
+              } catch (err) {
+                console.warn("Authed re-generation (signin) failed:", err?.message || err);
+              }
+            }
+
+            modal.classList.add("hidden");
+            fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
           } catch (err) {
-            console.warn('Authed re-generation (signin) failed:', err?.message || err);
+            alert(err?.message || "Could not sign in.");
           }
-        }
+        };
 
-        // No pending guest story → go home
-        modal.classList.add("hidden");
-        fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
-      } catch (err) {
-        alert(err?.message || "Could not sign in.");
+        if (switcher) switcher.onclick = () => setMode("signup");
+      } else {
+        // SIGN UP
+        if (title)        title.textContent = "Create your free account";
+        if (primary)      primary.textContent = "Create free account";
+        if (switcher)     switcher.textContent = "Have an account? Sign In";
+        if (signupFields) signupFields.style.display = "";
+
+        if (primary) primary.onclick = async () => {
+          const guess     = deriveChildFromTranscript();
+          const childName = document.getElementById("authChildName")?.value?.trim() || guess.childName;
+          const birthYear = document.getElementById("authBirthYear")?.value?.trim() || guess.birthYear;
+          const gender    = document.getElementById("authGender")?.value || guess.gender;
+          const email     = document.getElementById("authEmail")?.value?.trim();
+          const password  = document.getElementById("authPass")?.value;
+
+          if (!childName || !birthYear || !gender || !email || !password) {
+            alert("Please fill all fields.");
+            return;
+          }
+
+          try {
+            await apiSignup({ childName, email, password, birthYear, gender });
+            try { await apiGetMe(); } catch (_) {}
+
+            const transcript = (sessionStorage.getItem("yw_transcript") || sessionStorage.getItem("yw_pending_transcript") || "").trim();
+            if (transcript) {
+              try {
+                await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
+                modal.classList.add("hidden");
+                fadeOutAnd(() => { window.location.href = "storydetail.html"; }, 120);
+                return;
+              } catch (err) {
+                console.warn("Authed re-generation (signup) failed:", err?.message || err);
+              }
+            }
+
+            modal.classList.add("hidden");
+            fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
+          } catch (err) {
+            const msg = err?.message || "Could not create account.";
+            alert(/already|exists/i.test(msg)
+              ? "This email is already registered. Please sign in instead."
+              : msg
+            );
+          }
+        };
+
+        if (switcher) switcher.onclick = () => setMode("signin");
       }
-    };
+    }
 
-    if (switcher) switcher.onclick = () => setMode("signup");
+    // show & prime the first mode
+    modal.classList.remove("hidden");
+    setMode(defaultMode);
   } else {
-    // SIGN UP
-    if (title)        title.textContent = "Create your free account";
-    if (primary)      primary.textContent = "Create free account";
-    if (switcher)     switcher.textContent = "Have an account? Sign In";
-    if (signupFields) signupFields.style.display = "";
-
-    if (primary) primary.onclick = async () => {
-      // Try to auto-fill from transcript; allow user to override via fields
-      const guess     = deriveChildFromTranscript();
-      const childName = $("#authChildName")?.value?.trim() || guess.childName;
-      const birthYear = $("#authBirthYear")?.value?.trim() || guess.birthYear;
-      const gender    = $("#authGender")?.value || guess.gender;
-      const email     = $("#authEmail")?.value?.trim();
-      const password  = $("#authPass")?.value;
-
-      if (!childName || !birthYear || !gender || !email || !password) {
-        alert("Please fill all fields.");
-        return;
-      }
-
-      try {
-        await apiSignup({ childName, email, password, birthYear, gender });
-        try { await apiGetMe(); } catch (_) {}
-
-        // If a guest story exists, recreate it under the new account and open it
-        const transcript = (SS.getItem(K_TRANSCRIPT) || SS.getItem(K_PENDING) || '').trim();
-        if (transcript) {
-          try {
-            await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
-            fadeOutAnd(() => { window.location.href = 'storydetail.html'; }, 120);
-            return;
-          } catch (err) {
-            console.warn('Authed re-generation (signup) failed, falling back to home:', err?.message || err);
-          }
-        }
-
-        // No transcript → go home
-        modal.classList.add("hidden");
-        fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
-      } catch (err) {
-        const msg = err?.message || "Could not create account.";
-        alert(/already|exists/i.test(msg)
-          ? "This email is already registered. Please sign in instead."
-          : msg
-        );
-      }
-    };
-
-    if (switcher) switcher.onclick = () => setMode("signin");
+    // Modal already exists: rebuild to rebind handlers cleanly
+    modal.remove();
+    openAuthModal(defaultMode);
   }
 }
-
 
   /* ---------------------------------------------
      Age persistence + hero content
