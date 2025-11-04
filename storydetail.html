@@ -96,9 +96,31 @@
   </header>
 
   <main class="detail-wrap">
-    <h1>Read with Sounds <span class="badge-beta">Beta</span></h1>
-    <p class="listen-hint">Tap “Play story” to hear the narration in your chosen voice.</p>
 
+    <!-- Animated Story (Premium teaser) -->
+<section class="upgrade-embed fade-up" aria-label="Animated preview">
+  <div class="upgrade-embed__copy">
+    <h2>Want to see this story come alive?</h2>
+    <p class="muted">Our Premium plan turns your child’s story into a short animated flipbook. Upload a photo to personalise the characters.</p>
+  </div>
+
+  <div class="upgrade-embed__frame">
+    <iframe
+      title="Animated Story Preview"
+      data-src="https://online.1stflip.com/dnie/3cv4/"
+      loading="lazy"
+      referrerpolicy="no-referrer"
+      allowfullscreen
+    ></iframe>
+  </div>
+
+  <div class="upgrade-embed__cta">
+    <button class="btn" id="upgradeAnimateBtn">✨ Upgrade & Animate My Story</button>
+    <div class="hint muted">No commitment today. You can cancel anytime.</div>
+  </div>
+</section>
+
+    
     <!-- ✅ Production CTA: the only visible control by default -->
     <button class="btn ghost" id="voiceBtn">🎙️ Voice</button>
     <button class="btn sticky-listen" id="toggleMic">▶️ Play story</button>
