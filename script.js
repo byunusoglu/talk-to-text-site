@@ -438,9 +438,13 @@
 
             try {
               await apiSignup({ childName, email, password, birthYear, gender });
-              try { await apiGetMe(); } catch(_){}
-              close();
-              fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
+try { await apiGetMe(); } catch(_) {}
+close();
+
+// Seed a first story and go straight to the reader on first run
+const seeded = seedFirstStoryIfNeeded();
+fadeOutAnd(()=>{ window.location.href = seeded ? "storydetail.html" : "home.html"; }, 120);
+
             } catch (err) {
               const msg = err?.message || "Could not create account.";
               alert(
@@ -568,6 +572,52 @@
     return mdToHtml(previewMd);
   }
 
+
+   // --- TEMP: Seed a first story for brand-new users (reversible) ---
+function seedFirstStoryIfNeeded() {
+  try {
+    const seeded = localStorage.getItem('yw_first_story_seeded') === '1';
+    if (seeded) return false;
+
+    const SS = window.sessionStorage;
+    const kid = (function getChildNameFromTranscript(){
+      try {
+        const raw = SS.getItem('yw_transcript') || SS.getItem('yw_pending_transcript') || '';
+        const m = raw.match(/Child name:\s*([^\n]+)/i);
+        return (m && m[1] ? m[1].trim() : '').replace(/[^A-Za-zÇĞİÖŞÜçğıöşü' -]/g,'');
+      } catch(_) { return ''; }
+    })();
+
+    const title = kid ? `${kid}'s Moonlight Puddle` : `A Little Moonlight Puddle`;
+    const seededHtml = `
+      <h1>${title}</h1>
+      <h2>The Soft Night</h2>
+      <p>It was a calm, cozy evening. The moon peeked through the window with a gentle glow—whoosh…</p>
+
+      <h2>The Tiny Idea</h2>
+      <p>“Plip-plop,” went a small, friendly puddle outside. It looked like a mirror for the stars.</p>
+
+      <h2>A Brave Step</h2>
+      <p>${kid || 'Our friend'} tiptoed to the door, holding a snuggly blanket. The night breeze whispered hello—whooo…</p>
+
+      <h2>Moonbeam Helpers</h2>
+      <p>Silver moonbeams danced across the floor, showing a safe path, one soft step at a time.</p>
+
+      <h2>Snuggle Ending</h2>
+      <p>Back in bed, the room felt warm again. “Good night,” murmured the moon. “Good night,” said ${kid || 'our friend'}. Zzzz…</p>
+    `.trim();
+
+    SS.setItem('yw_story_html', seededHtml);
+    SS.removeItem('yw_story_markdown'); // be explicit: HTML is the source for detail page
+    SS.setItem('yw_ambience', 'night'); // gentle ambience default for detail page
+
+    localStorage.setItem('yw_first_story_seeded', '1');
+    return true;
+  } catch(_) { return false; }
+}
+
+
+   
   /* ---------------------------------------------
      Partner Story Generation Helpers (guest)
   --------------------------------------------- */
@@ -851,8 +901,12 @@ if (btnEmailOpen) {
       setTimeout(() => note.remove(), 900);
     } catch (_) {}
 
-    try { document.body.classList.add("fade-out"); } catch (_) {}
-    setTimeout(() => { window.location.href = "home.html"; }, 600);
+    const hasSeededStory = !!(SS && (SS.getItem("yw_story_html") || SS.getItem("yw_story_teaser")));
+try { document.body.classList.add("fade-out"); } catch (_) {}
+setTimeout(() => {
+  window.location.href = hasSeededStory ? "storydetail.html" : "home.html";
+}, 600);
+
   }
 
   /* ---------------------------------------------
