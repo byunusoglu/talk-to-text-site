@@ -58,32 +58,14 @@
     <!-- Subtle glow at the blur edge (toggled by JS) -->
     <div id="blurGlow" class="blur-glow hidden" aria-hidden="true"></div>
 
-    <!-- 🔒 Soft-wall gate (hidden when signed in) -->
-<div id="gateOverlay" class="gate-overlay hidden" aria-live="polite">
-  <div class="gate-card gate-card--brand">
-    <h3 id="gateTitle">Continue reading for free</h3>
-    <p id="gateDesc" class="muted">
-      Create your free account to finish tonight’s bedtime story and save it.
-    </p>
+<!-- Simplified sign-up gate -->
+<div id="gateOverlay" class="gate-overlay hidden">
+  <h3 id="gateTitle">Continue reading for free</h3>
+  <p id="gateDesc">
+    Create your free account to finish tonight’s bedtime story and save it.
+  </p>
 
-    <!-- Primary: Google (keeps your working flow) -->
-    <button type="button" class="btn btn-google" id="gateGoogle">
-      <span class="g-logo" aria-hidden="true"></span>
-      Continue with Google
-    </button>
-
-    <!-- Secondary: Email (opens central modal; no inline form here) -->
-    <button type="button" class="btn btn-email" id="gateEmailOpen">
-      Continue with email
-    </button>
-
-    <!-- Trust row -->
-    <div class="trust-row" aria-hidden="true">
-      <span>🛡️ No payment needed</span>
-      <span>·</span>
-      <span>Free forever for your first story</span>
-    </div>
-  </div>
+  <button id="gateSignup" class="btn-primary">Sign up for free</button>
 </div>
 
   </article>
