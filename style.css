@@ -2274,3 +2274,14 @@ body.age-no-bar main > section:first-child {
 /* (Already present in your page-level helper) */
 .sticky-fade { transition: opacity .25s ease, transform .2s ease; will-change: opacity, transform; }
 
+/* Lock background when modal/bottom-sheet is open */
+html.modal-open, body.modal-open {
+  height: 100%;
+  overflow: hidden;                 /* desktop + Android */
+  overscroll-behavior: contain;     /* stop rubber-banding */
+}
+
+/* While dragging, tell the browser not to treat gestures as scroll */
+.v-overlay, .v-sheet { touch-action: none; }   /* iOS/Safari friendly */
+
+
