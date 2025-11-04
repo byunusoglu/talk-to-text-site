@@ -1921,6 +1921,34 @@ body.age-no-bar main > section:first-child {
 
 .hidden { display: none !important; }
 
+/* --- Gate positioning fix: show teaser above --- */
+.story-reader.gated {
+  padding-bottom: 240px; /* give enough room for the gate below */
+  position: relative;
+}
+
+/* Move the gate slightly lower within the story card */
+.gate-overlay {
+  bottom: 0;                /* anchor to bottom edge */
+  transform: translateY(30px); /* push down to reveal story lines */
+}
+
+/* Reduce blur/fade overlap so teaser remains readable */
+.story-content.preview-clamp::after {
+  height: 42px; /* less fade = more visible text */
+}
+
+/* Keep it comfortable on mobile */
+@media (max-width: 700px) {
+  .story-reader.gated {
+    padding-bottom: 280px;
+  }
+  .gate-overlay {
+    transform: translateY(24px);
+  }
+}
+
+
 /* === Checkout "Please wait" transition view === */
 .wait-wrap {
   display: grid; place-items: center; gap: 10px;
