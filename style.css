@@ -2116,3 +2116,44 @@ body.age-no-bar main > section:first-child {
 }
 .cu-actions .hint { margin-left: 6px; }
 
+/* === Compact Accordion (for photo personalisation) === */
+.acc.acc--compact { 
+  max-width: 980px; 
+  margin: 8px auto 14px; 
+}
+
+.acc-head {
+  width: 100%;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #eee9fb;
+  box-shadow: var(--shadow);
+  color: var(--plum-dark);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.acc-title { font-family: 'Nunito', sans-serif; font-size: 15px; }
+.acc-chevron { transition: transform .2s ease; }
+.acc-head[aria-expanded="true"] .acc-chevron { transform: rotate(90deg); }
+
+.acc-body {
+  overflow: hidden;
+  transition: grid-template-rows .22s ease, padding .22s ease;
+  display: grid;
+  grid-template-rows: 0fr;     /* collapsed */
+  padding: 0 2px;
+}
+
+.acc-body[data-open="1"] {
+  grid-template-rows: 1fr;     /* expanded */
+  padding: 8px 2px 0 2px;
+}
+
+.acc-body > * {
+  min-height: 0; /* needed for grid “0fr/1fr” trick */
+}
+
+
