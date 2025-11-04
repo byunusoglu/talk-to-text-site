@@ -1567,44 +1567,146 @@ if (heroCta && !heroCta.dataset.wired) {
     document.body.appendChild(n); setTimeout(()=>n.remove(),1200);
   };
 
-  // Voice picker (modal-lite)
-  function openVoicePicker() {
-    const hasUserVoice = false; // dummy until backend
-    const current = getDefaultVoice();
+   // Voice picker (modal-like bottom sheet with overlay, drag-to-dismiss)
+function openVoicePicker() {
+  const storyEl = document.getElementById('storyContent');
 
-    const sheet = document.createElement('div');
-    sheet.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -20px 40px rgba(0,0,0,.25);padding:14px;z-index:999';
-    sheet.innerHTML = `
-      <div style="height:4px;width:42px;background:#e9e6f7;border-radius:999px;margin:6px auto 12px;"></div>
-      <h3 style="margin:0 0 10px;">Choose voice</h3>
-      <div id="vlist" style="display:grid;gap:8px"></div>
-      <div class="muted" style="margin-top:10px;font-size:13px">Want your own voice? <button id="cloneBtn" class="btn ghost" style="margin-left:6px">Clone voice (Beta)</button></div>
-      <div style="margin-top:12px;text-align:right"><button class="btn" id="closeV">Done</button></div>
-    `;
-    document.body.appendChild(sheet);
+  // Hide sticky CTAs while the sheet is open
+  const bar = document.getElementById('stickyCtas');
+  const btnPlay  = document.getElementById('toggleMic');
+  const btnVoice = document.getElementById('voiceBtn');
+  const hideCTAs = () => {
+    if (bar) bar.classList.add('is-hidden');
+    if (!bar) {
+      btnPlay?.classList.add('is-hidden');
+      btnVoice?.classList.add('is-hidden');
+    }
+  };
+  const showCTAs = () => {
+    if (bar) bar.classList.remove('is-hidden');
+    if (!bar) {
+      btnPlay?.classList.remove('is-hidden');
+      btnVoice?.classList.remove('is-hidden');
+    }
+  };
 
-    const vlist = sheet.querySelector('#vlist');
-    [...voicesBuiltin, { id:'user_voice', name:'My voice (Beta)', disabled:!hasUserVoice }]
-      .forEach(v => {
-        const b = document.createElement('button');
-        b.className = 'btn' + (v.id===current ? '' : ' ghost');
-        b.disabled = !!v.disabled;
-        b.textContent = v.name + (v.disabled ? ' — coming soon' : (v.id===current?'  ✓':''));
-        b.style.textAlign = 'left';
-        b.addEventListener('click', () => {
-          setDefaultVoice(v.id);
-          toast(`Voice set to ${v.name}`);
-          [...vlist.children].forEach(x => x.className = 'btn ghost');
-          b.className = 'btn';
-        });
-        vlist.appendChild(b);
+  // Overlay + sheet
+  const ov = document.createElement('div');
+  ov.className = 'v-overlay';
+  ov.id = 'vOverlay';
+
+  // Build sheet content
+  const hasUserVoice = false; // until backend is wired
+  const current = (function getDefaultVoice(){
+    try { return localStorage.getItem('yw_voice_default') || 'warm_en_gb'; } catch { return 'warm_en_gb'; }
+  })();
+
+  const voicesBuiltin = [
+    { id:'warm_en_gb', name:'StoryBuds Warm (en-GB)' },
+    { id:'calm_en_gb', name:'StoryBuds Calm (en-GB)' },
+    { id:'tr_tr',      name:'StoryBuds Turkish (tr-TR)' }
+  ];
+
+  const sheet = document.createElement('div');
+  sheet.className = 'v-sheet';
+  sheet.innerHTML = `
+    <div class="v-grip" aria-hidden="true"></div>
+    <h3 style="margin:0 0 10px;">Choose voice</h3>
+    <div id="vlist" style="display:grid;gap:8px"></div>
+    <div class="muted" style="margin-top:10px;font-size:13px">
+      Want your own voice?
+      <button id="cloneBtn" class="btn ghost" style="margin-left:6px">Clone voice (Beta)</button>
+    </div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn" id="closeV">Done</button>
+    </div>
+  `;
+  ov.appendChild(sheet);
+  document.body.appendChild(ov);
+
+  // Populate voice list
+  const vlist = sheet.querySelector('#vlist');
+  [...voicesBuiltin, { id:'user_voice', name:'My voice (Beta)', disabled:!hasUserVoice }]
+    .forEach(v => {
+      const b = document.createElement('button');
+      b.className = 'btn' + (v.id===current ? '' : ' ghost');
+      b.disabled = !!v.disabled;
+      b.textContent = v.name + (v.disabled ? ' — coming soon' : (v.id===current?'  ✓':''));
+      b.style.textAlign = 'left';
+      b.addEventListener('click', () => {
+        try { localStorage.setItem('yw_voice_default', v.id); } catch {}
+        // repaint selection
+        [...vlist.children].forEach(x => x.className = 'btn ghost');
+        b.className = 'btn';
       });
-
-    sheet.querySelector('#cloneBtn').addEventListener('click', () => {
-      alert('🎙️ Voice cloning is nearly ready.\nYou’ll read three 20-second prompts, then we’ll create your voice.');
+      vlist.appendChild(b);
     });
-    sheet.querySelector('#closeV').addEventListener('click', () => sheet.remove());
-  }
+
+  // Open animation + hide CTAs
+  requestAnimationFrame(() => { ov.classList.add('show'); hideCTAs(); });
+
+  // Close helpers
+  const teardown = () => {
+    ov.classList.remove('show');
+    setTimeout(() => { ov.remove(); showCTAs(); }, 200);
+    document.removeEventListener('keydown', onKey);
+  };
+  const onKey = (e) => { if (e.key === 'Escape') teardown(); };
+
+  // Close on "Done"
+  sheet.querySelector('#closeV')?.addEventListener('click', teardown);
+
+  // Close on outside click (overlay background)
+  ov.addEventListener('click', (e) => {
+    if (e.target === ov) teardown();
+  });
+
+  // Drag to dismiss (touch + mouse)
+  let startY = null, curY = null, dragging = false;
+  const THRESHOLD = 80; // px to dismiss
+  const MAX_PULL = 160;
+
+  const onStart = (y) => { startY = y; dragging = true; sheet.style.transition = 'none'; };
+  const onMove  = (y) => {
+    if (!dragging) return;
+    curY = y;
+    const dy = Math.max(0, Math.min(MAX_PULL, (curY - startY)));
+    sheet.style.transform = `translateY(${dy}px)`;
+    // dim overlay slightly while dragging
+    ov.style.opacity = String(Math.max(0.5, 1 - dy / 400));
+  };
+  const onEnd = () => {
+    if (!dragging) return;
+    const dy = Math.max(0, (curY ?? startY) - startY);
+    sheet.style.transition = ''; // restore
+    ov.style.opacity = '';       // restore
+    if (dy > THRESHOLD) {
+      teardown();
+    } else {
+      sheet.style.transform = ''; // snap back
+    }
+    dragging = false; startY = curY = null;
+  };
+
+  // Pointer (mouse)
+  sheet.addEventListener('mousedown', (e) => onStart(e.clientY));
+  window.addEventListener('mousemove', (e) => onMove(e.clientY));
+  window.addEventListener('mouseup', onEnd);
+
+  // Touch
+  sheet.addEventListener('touchstart', (e) => onStart(e.changedTouches[0].clientY), { passive: true });
+  window.addEventListener('touchmove',  (e) => onMove(e.changedTouches[0].clientY),  { passive: true });
+  window.addEventListener('touchend', onEnd);
+
+  // Keyboard (Esc)
+  document.addEventListener('keydown', onKey);
+
+  // Optional: link handler
+  sheet.querySelector('#cloneBtn')?.addEventListener('click', () => {
+    alert('🎙️ Voice cloning is nearly ready.\nYou’ll read three 20-second prompts, then we’ll create your voice.');
+  });
+}
+
 
   // One-tap Play (dummy for now)
   async function playStoryNow() {
