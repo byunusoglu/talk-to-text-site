@@ -286,5 +286,54 @@ if (openBtn) {
       }
     })();
   </script>
+  <script>
+(async () => {
+  try {
+    // If a story is already in session (e.g., just signed up), skip fetching
+    if (sessionStorage.getItem('yw_story_html')) return;
+
+    // Check if user is signed in — /users/me
+    const me = await fetch('https://imaginee-y9nk.onrender.com/api/v1/users/me', {
+      credentials:'include'
+    });
+    if (!me.ok) return; // guest → nothing to load
+
+    // Fetch their stories — /stories/my
+    const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
+      credentials:'include'
+    });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const stories = data?.data?.stories || [];
+    if (!stories.length) return;
+
+    // Most recent first
+    const latest = stories.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
+    let html = '';
+
+    // If story list already includes pages, render directly
+    if (latest.pages?.length) {
+      const body = latest.pages.map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
+      html = `<h1>${latest.title || ''}</h1>${body}`;
+    } else if (latest._id) {
+      // Otherwise fetch by ID — /stories/:id
+      const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${latest._id}`, {
+        credentials:'include'
+      });
+      if (one.ok) {
+        const full = (await one.json())?.data?.story || {};
+        const body = (full.pages || []).map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
+        html = `<h1>${full.title || latest.title || ''}</h1>${body}`;
+      }
+    }
+
+    if (html) sessionStorage.setItem('yw_story_html', html);
+  } catch (_) {
+    // silent fail keeps UX smooth
+  }
+})();
+</script>
+
 </body>
 </html>
