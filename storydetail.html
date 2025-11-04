@@ -189,6 +189,56 @@
     const storyEl = document.getElementById("storyContent");
     storyEl.innerHTML = SS.getItem("yw_story_html") || '<p class="muted">No story found. Please generate a story first.</p>';
 
+    // Fallback: if no local story and user is signed in, fetch latest from partner API
+(async () => {
+  try {
+    const hasLocal = !!SS.getItem('yw_story_html');
+    if (hasLocal) return;
+
+    // Check auth — /users/me
+    const me = await fetch('https://imaginee-y9nk.onrender.com/api/v1/users/me', {
+      credentials: 'include'
+    });
+    if (!me.ok) return; // not signed in → keep default message
+
+    // Get user's stories — /stories/my
+    const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
+      credentials: 'include'
+    });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const stories = data?.data?.stories || [];
+    if (!stories.length) return;
+
+    // Most recent story first
+    const latest = stories.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
+
+    // If pages included, render; else fetch by id — /stories/:id
+    let html = '';
+    if (latest.pages?.length) {
+      const body = latest.pages.map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
+      html = `<h1>${latest.title || ''}</h1>${body}`;
+    } else if (latest._id) {
+      const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${latest._id}`, {
+        credentials: 'include'
+      });
+      if (one.ok) {
+        const full = (await one.json())?.data?.story || {};
+        const body = (full.pages || []).map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
+        html = `<h1>${full.title || latest.title || ''}</h1>${body}`;
+      }
+    }
+
+    if (html) {
+      SS.setItem('yw_story_html', html);
+      storyEl.innerHTML = html;
+    }
+  } catch (_) {
+    // silent fail to keep UX clean
+  }
+})();
+    
     // Show full controls in ?debug=1 mode
     const url = new URL(location.href);
     const isDebug = url.searchParams.get("debug") === "1";
