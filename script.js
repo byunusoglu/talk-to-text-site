@@ -26,6 +26,8 @@
 
   const SS = window.sessionStorage;
 
+   const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
+   
    // Partner (authenticated) story endpoints — use cookie-based auth
 const API_STORIES_GENERATE = `${API_BASE}/stories/generate`;
 const API_STORIES_MY       = `${API_BASE}/stories/my`;
@@ -34,7 +36,6 @@ const API_JOB_STATUS       = (jobId) => `${API_BASE}/jobs/${jobId}`;
   /* ---------------------------------------------
      REAL Auth client (JWT)
   --------------------------------------------- */
-  const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
   // Partner story generation endpoints
   const API_GUEST_GENERATE = `${API_BASE}/stories/guest-generate`;
   const API_JOB = (jobId) => `${API_BASE}/jobs/guest/${jobId}`;
@@ -390,110 +391,101 @@ const API_JOB_STATUS       = (jobId) => `${API_BASE}/jobs/${jobId}`;
       modal.addEventListener("click", (e)=> { if (e.target === modal) close(); });
       $("#authCloseBtn")?.addEventListener("click", close);
 
-      function setMode(mode) {
-        const title   = $("#authTitle");
-        const primary = $("#authPrimaryBtn");
-        const switcher= $("#authSwitch");
-        const signupFields = modal.querySelector('[data-auth="signup-fields"]');
+function setMode(mode) {
+  const title        = $("#authTitle");
+  const primary      = $("#authPrimaryBtn");
+  const switcher     = $("#authSwitch");
+  const signupFields = modal.querySelector('[data-auth="signup-fields"]');
 
-        if (mode === "signin") {
-          if (title)   title.textContent = "Welcome back";
-          if (primary) primary.textContent = "Sign In";
-          if (switcher) switcher.textContent = "New here? Create an account";
-          if (signupFields) signupFields.style.display = "none";
+  if (mode === "signin") {
+    if (title)        title.textContent = "Welcome back";
+    if (primary)      primary.textContent = "Sign In";
+    if (switcher)     switcher.textContent = "New here? Create an account";
+    if (signupFields) signupFields.style.display = "none";
 
-          if (primary) primary.onclick = async () => {
-            const email = $("#authEmail")?.value.trim();
-            const pass  = $("#authPass")?.value;
-            if (!email || !pass) { alert("Please enter email and password."); return; }
-            try {
-  await apiLogin({ email, password: pass });
-  try { await apiGetMe(); } catch(_){}
+    if (primary) primary.onclick = async () => {
+      const email = $("#authEmail")?.value.trim();
+      const pass  = $("#authPass")?.value;
+      if (!email || !pass) { alert("Please enter email and password."); return; }
 
-  // If there was a guest transcript pending, attach it to the account now
-  const transcript = (SS.getItem(K_TRANSCRIPT) || SS.getItem(K_PENDING) || '').trim();
-  if (transcript) {
-    try {
-      await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
-      fadeOutAnd(() => { window.location.href = 'storydetail.html'; }, 120);
-      return;
-    } catch (err) {
-      console.warn('Authed re-generation (signin) failed:', err?.message || err);
-    }
-  }
+      try {
+        await apiLogin({ email, password: pass });
+        try { await apiGetMe(); } catch (_) {}
 
-  // Otherwise go home (your original behavior had a 5-min delay — removed for clarity)
-  close();
-  fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
-} catch (err) {
-  alert(err?.message || "Could not sign in.");
-} catch (err) {
-              alert(err?.message || "Could not sign in.");
-            }
-          };
-          if (switcher) switcher.onclick = () => setMode("signup");
-        } else {
-          if (title)   title.textContent = "Create your free account";
-          if (primary) primary.textContent = "Create free account";
-          if (switcher) switcher.textContent = "Have an account? Sign In";
-          if (signupFields) signupFields.style.display = "";
-
-          if (primary) primary.onclick = async () => {
-            // Try to auto-fill from transcript; allow user to override via fields
-            const guess = deriveChildFromTranscript();
-            const childName = $("#authChildName")?.value?.trim() || guess.childName;
-            const birthYear = $("#authBirthYear")?.value?.trim() || guess.birthYear;
-            const gender    = $("#authGender")?.value || guess.gender;
-            const email     = $("#authEmail")?.value?.trim();
-            const password  = $("#authPass")?.value;
-
-            if (!childName || !birthYear || !gender || !email || !password) {
-              alert("Please fill all fields.");
-              return;
-            }
-
-            try {
-  await apiSignup({ childName, email, password, birthYear, gender });
-  try { await apiGetMe(); } catch(_){}
-
-  // ── NEW: if a guest transcript exists, recreate it under the account
-  const transcript = (SS.getItem(K_TRANSCRIPT) || SS.getItem(K_PENDING) || '').trim();
-  if (transcript) {
-    try {
-      await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
-      // go straight to the story detail once we have full content in session
-      fadeOutAnd(() => { window.location.href = 'storydetail.html'; }, 120);
-      return; // stop the old redirect
-    } catch (err) {
-      console.warn('Authed re-generation failed, falling back to home:', err?.message || err);
-    }
-  }
-
-  // Fallback: no transcript → just land on home
-  close();
-  fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
-} catch (err) {
-  const msg = err?.message || "Could not create account.";
-  alert(/already|exists/i.test(msg) ? "This email is already registered. Please sign in instead." : msg);
-} catch (err) {
-              const msg = err?.message || "Could not create account.";
-              alert(
-                /already|exists/i.test(msg)
-                  ? "This email is already registered. Please sign in instead."
-                  : msg
-              );
-            }
-          };
-          if (switcher) switcher.onclick = () => setMode("signin");
+        // Promote a guest transcript (if any) to a full story on the account
+        const transcript = (SS.getItem(K_TRANSCRIPT) || SS.getItem(K_PENDING) || '').trim();
+        if (transcript) {
+          try {
+            await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
+            fadeOutAnd(() => { window.location.href = 'storydetail.html'; }, 120);
+            return;
+          } catch (err) {
+            console.warn('Authed re-generation (signin) failed:', err?.message || err);
+          }
         }
+
+        // No pending guest story → go home
+        modal.classList.add("hidden");
+        fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
+      } catch (err) {
+        alert(err?.message || "Could not sign in.");
+      }
+    };
+
+    if (switcher) switcher.onclick = () => setMode("signup");
+  } else {
+    // SIGN UP
+    if (title)        title.textContent = "Create your free account";
+    if (primary)      primary.textContent = "Create free account";
+    if (switcher)     switcher.textContent = "Have an account? Sign In";
+    if (signupFields) signupFields.style.display = "";
+
+    if (primary) primary.onclick = async () => {
+      // Try to auto-fill from transcript; allow user to override via fields
+      const guess     = deriveChildFromTranscript();
+      const childName = $("#authChildName")?.value?.trim() || guess.childName;
+      const birthYear = $("#authBirthYear")?.value?.trim() || guess.birthYear;
+      const gender    = $("#authGender")?.value || guess.gender;
+      const email     = $("#authEmail")?.value?.trim();
+      const password  = $("#authPass")?.value;
+
+      if (!childName || !birthYear || !gender || !email || !password) {
+        alert("Please fill all fields.");
+        return;
       }
 
-      modal.classList.remove("hidden");
-      setMode(defaultMode);
-    } else {
-      modal.classList.remove("hidden");
-    }
+      try {
+        await apiSignup({ childName, email, password, birthYear, gender });
+        try { await apiGetMe(); } catch (_) {}
+
+        // If a guest story exists, recreate it under the new account and open it
+        const transcript = (SS.getItem(K_TRANSCRIPT) || SS.getItem(K_PENDING) || '').trim();
+        if (transcript) {
+          try {
+            await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
+            fadeOutAnd(() => { window.location.href = 'storydetail.html'; }, 120);
+            return;
+          } catch (err) {
+            console.warn('Authed re-generation (signup) failed, falling back to home:', err?.message || err);
+          }
+        }
+
+        // No transcript → go home
+        modal.classList.add("hidden");
+        fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
+      } catch (err) {
+        const msg = err?.message || "Could not create account.";
+        alert(/already|exists/i.test(msg)
+          ? "This email is already registered. Please sign in instead."
+          : msg
+        );
+      }
+    };
+
+    if (switcher) switcher.onclick = () => setMode("signin");
   }
+}
+
 
   /* ---------------------------------------------
      Age persistence + hero content
