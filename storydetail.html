@@ -97,82 +97,11 @@
 
   <main class="detail-wrap">
     <h1>Read with Sounds <span class="badge-beta">Beta</span></h1>
-    <p class="listen-hint">Tap “Start listening” and read the story aloud — sound effects will follow you.</p>
+    <p class="listen-hint">Tap “Play story” to hear the narration in your chosen voice.</p>
 
     <!-- ✅ Production CTA: the only visible control by default -->
     <button class="btn ghost" id="voiceBtn">🎙️ Voice</button>
     <button class="btn sticky-listen" id="toggleMic">▶️ Play story</button>
-
-    <!-- Controls (kept in DOM for logic, but hidden by default) -->
-    <section class="soundbar dev-only" id="soundbar">
-      <div>
-        <div class="status" id="micStatus">Microphone: idle</div>
-        <div class="hint" id="micHint">Tap “Start listening” and read the story aloud.</div>
-        <div class="sfx-row" id="manualSfx">
-          <button class="btn ghost" data-sfx="whoosh">Whoosh</button>
-          <button class="btn ghost" data-sfx="plip">Plip-plop</button>
-          <button class="btn ghost" data-sfx="wind">Wind</button>
-          <button class="btn ghost" data-sfx="chime">Magic chime</button>
-          <button class="btn ghost" data-sfx="bark">Puppy bark (soft)</button>
-          <button class="btn ghost" data-sfx="lullaby">Lullaby (phrase)</button>
-          <button class="btn ghost" data-sfx="stop">Stop ambience</button>
-        </div>
-      </div>
-
-      <!-- Volume -->
-      <div class="inline-field">
-        <label for="vol" class="muted">Volume</label>
-        <input id="vol" type="range" min="0" max="1" step="0.01" value="0.35" />
-      </div>
-
-      <!-- Ambience -->
-      <div class="inline-field">
-        <label for="amb" class="muted">Ambience</label>
-        <select id="amb">
-          <option value="auto" selected>Auto</option>
-          <option value="off">Off</option>
-          <option value="forest">Forest</option>
-          <option value="ocean">Ocean</option>
-          <option value="rain">Rain</option>
-          <option value="night">Night</option>
-          <option value="castle">Castle</option>
-          <option value="pad">Soft pad</option>
-        </select>
-      </div>
-
-      <!-- A separate mic button just for debug view (different id) -->
-      <div class="inline-field">
-        <button class="btn" id="toggleMicDebug">Start listening (debug)</button>
-      </div>
-    </section>
-
-    <!-- Debug -->
-    <section class="stt-debug dev-only" aria-label="Speech recognition debug" id="sttDebug">
-      <div class="stt-controls">
-        <div class="inline-field">
-          <label for="sttLang" class="muted">Recognition language</label>
-          <select id="sttLang">
-            <option value="en-GB" selected>English (UK)</option>
-            <option value="en-US">English (US)</option>
-            <option value="tr-TR">Türkçe</option>
-          </select>
-        </div>
-        <label class="muted"><input type="checkbox" id="sttInterimChk" checked /> Show interim</label>
-        <button class="btn ghost" id="sttClear" type="button">Clear logs</button>
-      </div>
-
-      <div class="stt-panels">
-        <div class="stt-panel"><div class="stt-title">Final transcript</div><div id="sttFinal" class="stt-box"></div></div>
-        <div class="stt-panel"><div class="stt-title">Interim transcript</div><div id="sttInterim" class="stt-box"></div></div>
-        <div class="stt-panel"><div class="stt-title">Events</div><div id="sttEvents" class="stt-box monospace"></div></div>
-      </div>
-
-      <div class="stt-meter-row">
-        <div class="stt-title">Mic level</div>
-        <div class="stt-meter"><span id="sttMeterBar"></span></div>
-        <button class="btn ghost" id="sttMicTest" type="button">Start mic test</button>
-      </div>
-    </section>
 
     <!-- Story -->
     <section class="story-reader">
@@ -251,77 +180,9 @@
       document.getElementById('toggleMic')?.style.setProperty('bottom','88px');
     }
 
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const master = ctx.createGain(); master.gain.value = 0.35; master.connect(ctx.destination);
-    // Volume slider may be hidden; guard listener
-    (function(){
-      const vol = document.getElementById('vol');
-      if (vol) vol.addEventListener('input', e => { master.gain.value = parseFloat(e.target.value || "0.35"); });
-    })();
+    // Audio & ambience disabled for now
+const ctx = null;
 
-    const deaccent = (s) => (s || "").normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-
-    /* ========= SFX ========= */
-    function makeNoiseBuffer(){
-      const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-      const d = b.getChannelData(0);
-      for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * 0.6;
-      return b;
-    }
-    function playWhoosh(){
-      const s = ctx.createBufferSource(); s.buffer = makeNoiseBuffer();
-      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 14000;
-      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.08);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
-      s.connect(f).connect(g).connect(master); s.start(); s.stop(ctx.currentTime + 0.65);
-    }
-    function playPlip(){
-      const t = ctx.currentTime;
-      [0, 0.18].forEach((d, i) => {
-        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(i ? 660 : 520, t + d);
-        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + d);
-        g.gain.exponentialRampToValueAtTime(0.2, t + d + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.25);
-        o.connect(g).connect(master); o.start(t + d); o.stop(t + d + 0.26);
-      });
-    }
-    function playChime(){
-      const t = ctx.currentTime;
-      [784, 988, 1319].forEach((f, i) => {
-        const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.setValueAtTime(f, t + i*0.08);
-        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + i*0.08);
-        g.gain.exponentialRampToValueAtTime(0.22, t + i*0.08 + 0.04);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + i*0.08 + 0.6);
-        o.connect(g).connect(master); o.start(t + i*0.08); o.stop(t + i*0.08 + 0.65);
-      });
-    }
-    function playBarkSoft(){
-      const t = ctx.currentTime;
-      const o = ctx.createOscillator(); o.type = "square"; o.frequency.setValueAtTime(220, t);
-      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.15, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-      o.connect(g).connect(master); o.start(t); o.stop(t + 0.21);
-    }
-    function playWindGust(){
-      const s = ctx.createBufferSource(); s.buffer = makeNoiseBuffer();
-      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 400; bp.Q.value = 0.7;
-      const g = ctx.createGain(); g.gain.value = 0.0001;
-      g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.06);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
-      s.connect(bp).connect(g).connect(master); s.start(); s.stop(ctx.currentTime + 0.85);
-    }
-    function playLullabyPhrase(){
-      const t = ctx.currentTime;
-      const g = ctx.createGain(); g.gain.value = 0.16; g.connect(master);
-      const seq = [523.25, 523.25, 392.00, 440.00, 523.25];
-      seq.forEach((f, i) => {
-        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(f, t + i*0.45);
-        o.connect(g); o.start(t + i*0.45); o.stop(t + i*0.45 + 0.42);
-      });
-      setTimeout(() => { try { g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3); } catch(_){} }, 2400);
-    }
 
     // Manual SFX (exists in DOM but hidden by default)
     (function(){
@@ -515,138 +376,7 @@
       }
     }
 
-    /* ====== Speech Recognition (low-latency interim + follower) ====== */
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    // Prefer the production sticky button; fall back to the debug one if present
-    const micBtn = document.getElementById('toggleMic') || document.getElementById('toggleMicDebug');
-    const micStatus = document.getElementById('micStatus');
-    const langSel   = document.getElementById('sttLang');
-    const interimChk= document.getElementById('sttInterimChk');
-    const boxFinal  = document.getElementById('sttFinal');
-    const boxInter  = document.getElementById('sttInterim');
-    const boxEv     = document.getElementById('sttEvents');
-
-    function logEv(msg){
-      const t = new Date().toLocaleTimeString();
-      if (boxEv) {
-        boxEv.textContent += `[${t}] ${msg}\n`;
-        boxEv.scrollTop = boxEv.scrollHeight;
-      }
-    }
-
-    let micPrimed = false;
-    async function ensureMicPermission() {
-      if (micPrimed) return;
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation:true, noiseSuppression:true }
-      });
-      stream.getTracks().forEach(t => t.stop());
-      micPrimed = true;
-    }
-
-    const effectMatchers = [
-      { name:'whoosh',  rx:/\b(fly|whoosh|soar(?:ed)?|uçtu|r[üu]zgar)\b/iu },
-      { name:'plip',    rx:/\b(rain|raindrop|raindrops|plip(?:-?plop)?|shower|ya[ğg]mur)\b/iu },
-      { name:'wind',    rx:/\b(wind|breeze|forest|a[gğ]a[cç])\b/iu },
-      { name:'chime',   rx:/\b(magic|sparkle|sparkly|sparkles|star[s]?|parlad[ıi]|sihir)\b/iu },
-      { name:'bark',    rx:/\b(dog|puppy|papi|poppy|bark|k[öo]pek)\b/iu },
-      { name:'lullaby', rx:/\b(good\s*night|sleep|yawn|uyku|iyi\s*geceler)\b/iu },
-    ];
-    function scanAndTriggerFree(text){
-      const clean = deaccent(text);
-      for (const {name, rx} of effectMatchers){ if (rx.test(clean)) { triggerEffect(name); break; } }
-    }
-
-    let interimWindow = "";
-    const MAX_WINDOW_CHARS = 200;
-    let debounceTimer = null;
-    let lastTokenSeen = "";
-    let rec = null;
-
-    async function startMic(){
-      if (!SpeechRec){
-        if (micStatus) micStatus.textContent = 'Microphone: unsupported in this browser';
-        logEv('SpeechRecognition not available');
-        return;
-      }
-
-      if (micBtn) micBtn.disabled = true;
-      try {
-        if (ctx.state !== 'running') await ctx.resume();
-        await ensureMicPermission();
-
-        const lang = (langSel?.value || 'en-GB');
-        rec = new SpeechRec();
-        rec.lang = lang;
-        rec.continuous = true;
-        rec.interimResults = true;
-        rec.maxAlternatives = 1;
-
-        rec.onstart = () => {
-          if (micStatus) micStatus.textContent = `Microphone: listening… (${lang})`;
-          if (micBtn) { micBtn.textContent = 'Stop listening'; micBtn.disabled = false; }
-          logEv('onstart');
-        };
-        rec.onresult = (e) => {
-          const finals=[], interims=[];
-          for (let i=e.resultIndex; i<e.results.length; i++){
-            const r = e.results[i]; const t = r[0]?.transcript || '';
-            (r.isFinal ? finals : interims).push(t);
-          }
-
-          const interimText = interims.join(' ').trim();
-          if (boxInter) boxInter.textContent = (interimChk?.checked ? interimText : '');
-          if (interimText) {
-            const toks = interimText.trim().split(/\s+/).slice(-6);
-            const lastTok = toks[toks.length - 1] || "";
-            if (lastTok && lastTok !== lastTokenSeen) {
-              lastTokenSeen = lastTok;
-              scanAndTriggerFree(lastTok);
-            }
-            alignAndMaybeTrigger(interimText);
-            interimWindow = (interimWindow + ' ' + interimText).slice(-MAX_WINDOW_CHARS);
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => alignAndMaybeTrigger(interimWindow), 60);
-          }
-
-          if (finals.length){
-            const finalText = finals.join(' ').trim();
-            if (finalText){
-              if (boxFinal) {
-                boxFinal.textContent += (boxFinal.textContent ? '\n' : '') + finalText;
-                boxFinal.scrollTop = boxFinal.scrollHeight;
-              }
-              logEv(`final: "${finalText}"`);
-              scanAndTriggerFree(finalText);
-              alignAndMaybeTrigger(finalText);
-            }
-            interimWindow = '';
-            if (boxInter) boxInter.textContent = '';
-          }
-        };
-        rec.onerror = (e) => logEv(`onerror: ${e?.error || 'unknown'}`);
-        rec.onend   = () => {
-          logEv('onend');
-          if (micStatus) micStatus.textContent = 'Microphone: idle';
-          if (micBtn) { micBtn.textContent = 'Start listening'; micBtn.onclick = startMic; micBtn.disabled = false; }
-        };
-
-        if (micBtn) micBtn.onclick = stopMic;
-        rec.start();
-      } catch (err) {
-        logEv(`startMic() error: ${err?.message || err}`);
-        if (micStatus) micStatus.textContent = 'Microphone: idle';
-        if (micBtn) { micBtn.textContent = 'Start listening'; micBtn.onclick = startMic; micBtn.disabled = false; }
-      }
-    }
-
-    function stopMic(){
-      try { rec && rec.stop && rec.stop(); } catch(_) {}
-      // UI resets in onend
-    }
-
-    if (micBtn) micBtn.onclick = startMic;
 
     (function(){
       const clearBtn = document.getElementById("sttClear");
@@ -661,32 +391,10 @@
       });
     })();
 
-    (function(){
-      const meterBar = document.getElementById("sttMeterBar");
-      const btn = document.getElementById("sttMicTest");
-      if (!btn || !meterBar) return;
-      btn.addEventListener("click", async () => {
-        try{
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true } });
-          const src = ctx.createMediaStreamSource(stream);
-          const analyser = ctx.createAnalyser(); analyser.fftSize = 512; src.connect(analyser);
-          const data = new Uint8Array(analyser.fftSize);
-          (function loop(){
-            analyser.getByteTimeDomainData(data);
-            let sum=0; for (let i=0;i<data.length;i++){ const d=data[i]-128; sum+=d*d; }
-            const rms = Math.sqrt(sum/data.length);
-            const pct = Math.min(100, Math.max(0, (rms/35)*100));
-            meterBar.style.width = pct.toFixed(0) + '%';
-            requestAnimationFrame(loop);
-          })();
-          logEv('Mic test running — speak and watch the bar');
-        } catch(err){ logEv('Mic test error: ' + (err?.message || err)); }
-      });
-    })();
 
-    // One-time resume for mobile autoplay policies
-    document.body.addEventListener("click", () => ctx.resume && ctx.resume(), { once:true });
-    document.getElementById("year").textContent = new Date().getFullYear();
+    // Footer year
+const yearEl = document.getElementById("year");
+if (yearEl) yearEl.textContent = String(new Date().getFullYear());
   </script>
   <script>
 /* 1) Optional: hydrate page <h1> from story */
