@@ -2182,4 +2182,55 @@ body.age-no-bar main > section:first-child {
    (prevents headings from “peeking” when collapsed) */
 .acc .char-uploader { margin: 0; }
 
+/* --- Sticky CTA bar (replaces two separate fixed buttons) --- */
+.sticky-cta-bar{
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+/* Neutralise the old fixed positioning from the standalone styles */
+.sticky-cta-bar #toggleMic,
+.sticky-cta-bar #voiceBtn{
+  position: static !important;
+  left: auto; right: auto; bottom: auto;
+}
+
+/* Primary Play (reuses your .sticky-listen gradient) */
+.sticky-cta-bar #toggleMic{
+  font-weight: 800;
+  height: 48px;
+  border-radius: 999px;
+}
+
+/* Secondary Voice (outline/ghost look, lower visual weight) */
+.btn-voice{
+  background: #fff;
+  color: var(--plum-dark);
+  border: 1px solid #e8e4f6;
+  height: 48px;
+  border-radius: 999px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+.btn-voice:hover{ background:#fbf9ff; }
+
+/* Small screens: full-width bar stays tidy */
+@media (max-width:700px){
+  .sticky-cta-bar{ gap: 8px; }
+  .sticky-cta-bar #toggleMic,
+  .sticky-cta-bar #voiceBtn{ height: 46px; }
+}
+
+/* Fade helper (used by the visibility script below) */
+.sticky-fade{ transition: opacity .25s ease, transform .2s ease; will-change: opacity, transform; }
+.sticky-fade.is-hidden{ opacity:0; transform: translateY(8px); pointer-events:none; }
+
 
