@@ -2067,3 +2067,52 @@ body.age-no-bar main > section:first-child {
   .sb-stage { height: clamp(200px, 28vh, 280px); }
   .sb-nav { width: 34px; height: 34px; }
 }
+
+/* === Character Uploader (compact) === */
+.char-uploader {
+  max-width: 980px;
+  margin: 8px auto 14px;
+  padding: 12px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #eee9fb;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+.char-uploader .cu-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  margin-bottom: 8px;
+}
+.char-uploader h3 {
+  margin: 0; color: var(--plum-dark); font-size: 18px; font-family: 'Nunito', sans-serif;
+}
+.char-uploader .muted { margin: 0; }
+
+/* two cards side-by-side on desktop, stacked on mobile */
+.cu-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+@media (max-width: 700px) { .cu-grid { grid-template-columns: 1fr; } }
+
+.cu-card {
+  display: grid; grid-template-columns: 120px 1fr; gap: 10px;
+  background: #fff; border: 1px solid #eee9fb; border-radius: 14px; padding: 10px;
+}
+.cu-thumb {
+  width: 100%; aspect-ratio: 1/1; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2));
+  display: grid; place-items: center; color: #8b83a3; font-weight: 700; font-size: 12px;
+  border: 1px solid #eee9fb;
+}
+.cu-thumb::after { content: "No photo"; opacity: .8; }
+.cu-thumb.has-img::after { content: ""; }
+
+.cu-meta { display: grid; align-content: center; gap: 8px; }
+.cu-label { font-weight: 800; color: var(--plum-dark); }
+.cu-input { display: none; }
+.cu-btn { padding: 10px 12px; }
+
+.cu-actions {
+  display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap;
+}
+.cu-actions .hint { margin-left: 6px; }
+
