@@ -825,22 +825,15 @@ function showGate(personName) {
   gate?.classList.remove("hidden");
   glow?.classList.remove("hidden");
 
-  // 4) Wire buttons (open central auth modal)
-  const btnGoogle    = document.getElementById("gateGoogle");
-  const btnEmailOpen = document.getElementById("gateEmailOpen");
+// 4) Wire button
+const btnSignup = document.getElementById("gateSignup");
+if (btnSignup) {
+  btnSignup.onclick = (e) => {
+    e.preventDefault();
+    openAuthModal("signup");
+  };
+}
 
-  if (btnGoogle) {
-    btnGoogle.onclick = (e) => {
-      e.preventDefault();
-      openAuthModal("signup");
-    };
-  }
-  if (btnEmailOpen) {
-    btnEmailOpen.onclick = (e) => {
-      e.preventDefault();
-      openAuthModal("signup");
-    };
-  }
 }
 
 
