@@ -1567,45 +1567,50 @@ if (heroCta && !heroCta.dataset.wired) {
     document.body.appendChild(n); setTimeout(()=>n.remove(),1200);
   };
 
-   // Voice picker (modal-like bottom sheet with overlay, drag-to-dismiss)
 function openVoicePicker() {
-  const storyEl = document.getElementById('storyContent');
-
-  // Hide sticky CTAs while the sheet is open
   const bar = document.getElementById('stickyCtas');
   const btnPlay  = document.getElementById('toggleMic');
   const btnVoice = document.getElementById('voiceBtn');
+
+  // --- Scroll lock helpers (no layout jump) ---
+  let scrollY = 0;
+  const lockScroll = () => {
+    scrollY = window.scrollY || window.pageYOffset || 0;
+    document.documentElement.classList.add('modal-open');
+    document.body.classList.add('modal-open');
+    // iOS-safe lock
+    document.body.style.position = 'fixed';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${scrollY}px`;
+  };
+  const unlockScroll = () => {
+    document.documentElement.classList.remove('modal-open');
+    document.body.classList.remove('modal-open');
+    document.body.style.position = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    const prevTop = document.body.style.top || '0px';
+    document.body.style.top = '';
+    const y = Math.abs(parseInt(prevTop, 10)) || 0;
+    window.scrollTo(0, y);
+  };
+
   const hideCTAs = () => {
     if (bar) bar.classList.add('is-hidden');
-    if (!bar) {
-      btnPlay?.classList.add('is-hidden');
-      btnVoice?.classList.add('is-hidden');
-    }
+    else { btnPlay?.classList.add('is-hidden'); btnVoice?.classList.add('is-hidden'); }
   };
   const showCTAs = () => {
     if (bar) bar.classList.remove('is-hidden');
-    if (!bar) {
-      btnPlay?.classList.remove('is-hidden');
-      btnVoice?.classList.remove('is-hidden');
-    }
+    else { btnPlay?.classList.remove('is-hidden'); btnVoice?.classList.remove('is-hidden'); }
   };
 
-  // Overlay + sheet
+  // Build overlay + sheet
   const ov = document.createElement('div');
   ov.className = 'v-overlay';
   ov.id = 'vOverlay';
-
-  // Build sheet content
-  const hasUserVoice = false; // until backend is wired
-  const current = (function getDefaultVoice(){
-    try { return localStorage.getItem('yw_voice_default') || 'warm_en_gb'; } catch { return 'warm_en_gb'; }
-  })();
-
-  const voicesBuiltin = [
-    { id:'warm_en_gb', name:'StoryBuds Warm (en-GB)' },
-    { id:'calm_en_gb', name:'StoryBuds Calm (en-GB)' },
-    { id:'tr_tr',      name:'StoryBuds Turkish (tr-TR)' }
-  ];
 
   const sheet = document.createElement('div');
   sheet.className = 'v-sheet';
@@ -1624,88 +1629,109 @@ function openVoicePicker() {
   ov.appendChild(sheet);
   document.body.appendChild(ov);
 
-  // Populate voice list
+  // Populate voices (same as before)
+  const voicesBuiltin = [
+    { id:'warm_en_gb', name:'StoryBuds Warm (en-GB)' },
+    { id:'calm_en_gb', name:'StoryBuds Calm (en-GB)' },
+    { id:'tr_tr',      name:'StoryBuds Turkish (tr-TR)' }
+  ];
+  const current = (() => { try { return localStorage.getItem('yw_voice_default') || 'warm_en_gb'; } catch { return 'warm_en_gb'; } })();
   const vlist = sheet.querySelector('#vlist');
-  [...voicesBuiltin, { id:'user_voice', name:'My voice (Beta)', disabled:!hasUserVoice }]
-    .forEach(v => {
-      const b = document.createElement('button');
-      b.className = 'btn' + (v.id===current ? '' : ' ghost');
-      b.disabled = !!v.disabled;
-      b.textContent = v.name + (v.disabled ? ' — coming soon' : (v.id===current?'  ✓':''));
-      b.style.textAlign = 'left';
-      b.addEventListener('click', () => {
-        try { localStorage.setItem('yw_voice_default', v.id); } catch {}
-        // repaint selection
-        [...vlist.children].forEach(x => x.className = 'btn ghost');
-        b.className = 'btn';
-      });
-      vlist.appendChild(b);
+  [...voicesBuiltin, { id:'user_voice', name:'My voice (Beta)', disabled:true }].forEach(v=>{
+    const b = document.createElement('button');
+    b.className = 'btn' + (v.id===current ? '' : ' ghost');
+    b.disabled = !!v.disabled;
+    b.textContent = v.name + (v.disabled ? ' — coming soon' : (v.id===current?'  ✓':''));
+    b.style.textAlign = 'left';
+    b.addEventListener('click', () => {
+      try { localStorage.setItem('yw_voice_default', v.id); } catch {}
+      ;[...vlist.children].forEach(x => x.className = 'btn ghost');
+      b.className = 'btn';
     });
+    vlist.appendChild(b);
+  });
 
-  // Open animation + hide CTAs
+  // Open: lock scroll + hide CTAs + reveal
+  lockScroll();
   requestAnimationFrame(() => { ov.classList.add('show'); hideCTAs(); });
 
   // Close helpers
   const teardown = () => {
     ov.classList.remove('show');
-    setTimeout(() => { ov.remove(); showCTAs(); }, 200);
+    setTimeout(() => {
+      ov.remove();
+      showCTAs();
+      unlockScroll();
+      detachBlockers();
+    }, 200);
     document.removeEventListener('keydown', onKey);
   };
   const onKey = (e) => { if (e.key === 'Escape') teardown(); };
 
-  // Close on "Done"
+  // Close on Done / outside click
   sheet.querySelector('#closeV')?.addEventListener('click', teardown);
+  ov.addEventListener('click', (e) => { if (e.target === ov) teardown(); });
 
-  // Close on outside click (overlay background)
-  ov.addEventListener('click', (e) => {
-    if (e.target === ov) teardown();
-  });
+  // Prevent background scroll while open (wheel/touchmove)
+  const block = (e) => { e.preventDefault(); };
+  const attachBlockers = () => {
+    ov.addEventListener('wheel', block, { passive: false });
+    ov.addEventListener('touchmove', block, { passive: false });
+    sheet.addEventListener('wheel', block, { passive: false });       // avoid scroll chaining
+    sheet.addEventListener('touchmove', block, { passive: false });
+  };
+  const detachBlockers = () => {
+    ov.removeEventListener('wheel', block, { passive: false });
+    ov.removeEventListener('touchmove', block, { passive: false });
+    sheet.removeEventListener('wheel', block, { passive: false });
+    sheet.removeEventListener('touchmove', block, { passive: false });
+  };
+  attachBlockers();
 
-  // Drag to dismiss (touch + mouse)
+  // Drag-to-dismiss (prevents scroll while dragging)
   let startY = null, curY = null, dragging = false;
-  const THRESHOLD = 80; // px to dismiss
-  const MAX_PULL = 160;
+  const THRESHOLD = 80, MAX_PULL = 160;
 
-  const onStart = (y) => { startY = y; dragging = true; sheet.style.transition = 'none'; };
-  const onMove  = (y) => {
+  const onStart = (y, rawEvent) => {
+    dragging = true; startY = y; curY = y;
+    sheet.style.transition = 'none';
+    rawEvent?.preventDefault();   // stop native scroll start
+  };
+  const onMove = (y, rawEvent) => {
     if (!dragging) return;
+    rawEvent?.preventDefault();   // keep page frozen during drag
     curY = y;
-    const dy = Math.max(0, Math.min(MAX_PULL, (curY - startY)));
+    const dy = Math.max(0, Math.min(MAX_PULL, curY - startY));
     sheet.style.transform = `translateY(${dy}px)`;
-    // dim overlay slightly while dragging
     ov.style.opacity = String(Math.max(0.5, 1 - dy / 400));
   };
   const onEnd = () => {
     if (!dragging) return;
-    const dy = Math.max(0, (curY ?? startY) - startY);
-    sheet.style.transition = ''; // restore
-    ov.style.opacity = '';       // restore
-    if (dy > THRESHOLD) {
-      teardown();
-    } else {
-      sheet.style.transform = ''; // snap back
-    }
+    const dy = Math.max(0, curY - startY);
+    sheet.style.transition = '';
+    ov.style.opacity = '';
+    if (dy > THRESHOLD) teardown();
+    else sheet.style.transform = ''; // snap back
     dragging = false; startY = curY = null;
   };
 
-  // Pointer (mouse)
-  sheet.addEventListener('mousedown', (e) => onStart(e.clientY));
-  window.addEventListener('mousemove', (e) => onMove(e.clientY));
-  window.addEventListener('mouseup', onEnd);
+  // Mouse
+  sheet.addEventListener('mousedown', (e) => onStart(e.clientY, e), { passive: false });
+  window.addEventListener('mousemove', (e) => onMove(e.clientY, e), { passive: false });
+  window.addEventListener('mouseup', onEnd, { passive: true });
 
   // Touch
-  sheet.addEventListener('touchstart', (e) => onStart(e.changedTouches[0].clientY), { passive: true });
-  window.addEventListener('touchmove',  (e) => onMove(e.changedTouches[0].clientY),  { passive: true });
-  window.addEventListener('touchend', onEnd);
+  sheet.addEventListener('touchstart', (e) => onStart(e.changedTouches[0].clientY, e), { passive: false });
+  window.addEventListener('touchmove',  (e) => onMove(e.changedTouches[0].clientY, e),  { passive: false });
+  window.addEventListener('touchend', onEnd, { passive: true });
 
-  // Keyboard (Esc)
+  // Keyboard + clone button
   document.addEventListener('keydown', onKey);
-
-  // Optional: link handler
   sheet.querySelector('#cloneBtn')?.addEventListener('click', () => {
     alert('🎙️ Voice cloning is nearly ready.\nYou’ll read three 20-second prompts, then we’ll create your voice.');
   });
 }
+
 
 
   // One-tap Play (dummy for now)
