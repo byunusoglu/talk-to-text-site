@@ -26,16 +26,10 @@
 
   const SS = window.sessionStorage;
 
-   const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
-   
-   // Partner (authenticated) story endpoints — use cookie-based auth
-const API_STORIES_GENERATE = `${API_BASE}/stories/generate`;
-const API_STORIES_MY       = `${API_BASE}/stories/my`;
-const API_JOB_STATUS       = (jobId) => `${API_BASE}/jobs/${jobId}`;
-
   /* ---------------------------------------------
      REAL Auth client (JWT)
   --------------------------------------------- */
+  const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
   // Partner story generation endpoints
   const API_GUEST_GENERATE = `${API_BASE}/stories/guest-generate`;
   const API_JOB = (jobId) => `${API_BASE}/jobs/guest/${jobId}`;
@@ -253,7 +247,6 @@ const API_JOB_STATUS       = (jobId) => `${API_BASE}/jobs/${jobId}`;
   function initChrome() {
     const menuBtn = document.getElementById('menuBtn');
     const menu = getMenuEl();
-     if (!menuBtn || !menu) return;
 
        // ---------------------------------------------
   // ✅ Defensive bind for hamburger menu toggle
@@ -325,18 +318,18 @@ const API_JOB_STATUS       = (jobId) => `${API_BASE}/jobs/${jobId}`;
     }
   }
 
-/* ---------------------------------------------
-   Auth Modal (Sign Up / Sign In) — works anywhere
---------------------------------------------- */
-function openAuthModal(defaultMode = "signup") {
-  const id = "authModal";
-  let modal = document.getElementById(id);
+  /* ---------------------------------------------
+     Auth Modal (Sign Up / Sign In) — works anywhere
+  --------------------------------------------- */
+  function openAuthModal(defaultMode = "signup") {
+    const id = "authModal";
+    let modal = document.getElementById(id);
 
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = id;
-    modal.className = "modal";
-    modal.innerHTML = `
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = id;
+      modal.className = "modal";
+      modal.innerHTML = `
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
     <button class="modal-close" id="authCloseBtn" aria-label="Close">✕</button>
     <h2 id="authTitle">Create your free account</h2>
@@ -359,7 +352,7 @@ function openAuthModal(defaultMode = "signup") {
               <option value="" disabled selected>Select</option>
               <option value="female">Girl</option>
               <option value="male">Boy</option>
-              <option value="non-binary">Non-binary</option>
+              <option value="other">Non-binary</option>
               <option value="prefer-not-to-say">Prefer not to say</option>
             </select>
           </div>
@@ -386,114 +379,87 @@ function openAuthModal(defaultMode = "signup") {
     </div>
   </div>`;
 
-    document.body.appendChild(modal);
+      document.body.appendChild(modal);
 
-    const close = () => modal.classList.add("hidden");
-    modal.addEventListener("click", (e)=> { if (e.target === modal) close(); });
-    document.getElementById("authCloseBtn")?.addEventListener("click", close);
+      const close = () => modal.classList.add("hidden");
+      modal.addEventListener("click", (e)=> { if (e.target === modal) close(); });
+      $("#authCloseBtn")?.addEventListener("click", close);
 
-    // --- mode switcher (keeps your guest → authed re-generation flow) ---
-    function setMode(mode) {
-      const title        = document.getElementById("authTitle");
-      const primary      = document.getElementById("authPrimaryBtn");
-      const switcher     = document.getElementById("authSwitch");
-      const signupFields = modal.querySelector('[data-auth="signup-fields"]');
+      function setMode(mode) {
+        const title   = $("#authTitle");
+        const primary = $("#authPrimaryBtn");
+        const switcher= $("#authSwitch");
+        const signupFields = modal.querySelector('[data-auth="signup-fields"]');
 
-      if (mode === "signin") {
-        if (title)        title.textContent = "Welcome back";
-        if (primary)      primary.textContent = "Sign In";
-        if (switcher)     switcher.textContent = "New here? Create an account";
-        if (signupFields) signupFields.style.display = "none";
+        if (mode === "signin") {
+          if (title)   title.textContent = "Welcome back";
+          if (primary) primary.textContent = "Sign In";
+          if (switcher) switcher.textContent = "New here? Create an account";
+          if (signupFields) signupFields.style.display = "none";
 
-        if (primary) primary.onclick = async () => {
-          const email = document.getElementById("authEmail")?.value.trim();
-          const pass  = document.getElementById("authPass")?.value;
-          if (!email || !pass) { alert("Please enter email and password."); return; }
+          if (primary) primary.onclick = async () => {
+            const email = $("#authEmail")?.value.trim();
+            const pass  = $("#authPass")?.value;
+            if (!email || !pass) { alert("Please enter email and password."); return; }
+            try {
+              await apiLogin({ email, password: pass });
+              try { await apiGetMe(); } catch(_){}
+              close();
+              // NOTE: you had a 5-minute delay; leaving as-is
+              fadeOutAnd(() => {
+                setTimeout(() => {
+                  window.location.href = "home.html";
+                }, 5 * 60 * 1000);
+              }, 120);
+            } catch (err) {
+              alert(err?.message || "Could not sign in.");
+            }
+          };
+          if (switcher) switcher.onclick = () => setMode("signup");
+        } else {
+          if (title)   title.textContent = "Create your free account";
+          if (primary) primary.textContent = "Create free account";
+          if (switcher) switcher.textContent = "Have an account? Sign In";
+          if (signupFields) signupFields.style.display = "";
 
-          try {
-            await apiLogin({ email, password: pass });
-            try { await apiGetMe(); } catch (_) {}
+          if (primary) primary.onclick = async () => {
+            // Try to auto-fill from transcript; allow user to override via fields
+            const guess = deriveChildFromTranscript();
+            const childName = $("#authChildName")?.value?.trim() || guess.childName;
+            const birthYear = $("#authBirthYear")?.value?.trim() || guess.birthYear;
+            const gender    = $("#authGender")?.value || guess.gender;
+            const email     = $("#authEmail")?.value?.trim();
+            const password  = $("#authPass")?.value;
 
-            const transcript = (sessionStorage.getItem("yw_transcript") || sessionStorage.getItem("yw_pending_transcript") || "").trim();
-            if (transcript) {
-              try {
-                await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
-                modal.classList.add("hidden");
-                fadeOutAnd(() => { window.location.href = "storydetail.html"; }, 120);
-                return;
-              } catch (err) {
-                console.warn("Authed re-generation (signin) failed:", err?.message || err);
-              }
+            if (!childName || !birthYear || !gender || !email || !password) {
+              alert("Please fill all fields.");
+              return;
             }
 
-            modal.classList.add("hidden");
-            fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
-          } catch (err) {
-            alert(err?.message || "Could not sign in.");
-          }
-        };
-
-        if (switcher) switcher.onclick = () => setMode("signup");
-      } else {
-        // SIGN UP
-        if (title)        title.textContent = "Create your free account";
-        if (primary)      primary.textContent = "Create free account";
-        if (switcher)     switcher.textContent = "Have an account? Sign In";
-        if (signupFields) signupFields.style.display = "";
-
-        if (primary) primary.onclick = async () => {
-          const guess     = deriveChildFromTranscript();
-          const childName = document.getElementById("authChildName")?.value?.trim() || guess.childName;
-          const birthYear = document.getElementById("authBirthYear")?.value?.trim() || guess.birthYear;
-          const gender    = document.getElementById("authGender")?.value || guess.gender;
-          const email     = document.getElementById("authEmail")?.value?.trim();
-          const password  = document.getElementById("authPass")?.value;
-
-          if (!childName || !birthYear || !gender || !email || !password) {
-            alert("Please fill all fields.");
-            return;
-          }
-
-          try {
-            await apiSignup({ childName, email, password, birthYear, gender });
-            try { await apiGetMe(); } catch (_) {}
-
-            const transcript = (sessionStorage.getItem("yw_transcript") || sessionStorage.getItem("yw_pending_transcript") || "").trim();
-            if (transcript) {
-              try {
-                await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
-                modal.classList.add("hidden");
-                fadeOutAnd(() => { window.location.href = "storydetail.html"; }, 120);
-                return;
-              } catch (err) {
-                console.warn("Authed re-generation (signup) failed:", err?.message || err);
-              }
+            try {
+              await apiSignup({ childName, email, password, birthYear, gender });
+              try { await apiGetMe(); } catch(_){}
+              close();
+              fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
+            } catch (err) {
+              const msg = err?.message || "Could not create account.";
+              alert(
+                /already|exists/i.test(msg)
+                  ? "This email is already registered. Please sign in instead."
+                  : msg
+              );
             }
-
-            modal.classList.add("hidden");
-            fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
-          } catch (err) {
-            const msg = err?.message || "Could not create account.";
-            alert(/already|exists/i.test(msg)
-              ? "This email is already registered. Please sign in instead."
-              : msg
-            );
-          }
-        };
-
-        if (switcher) switcher.onclick = () => setMode("signin");
+          };
+          if (switcher) switcher.onclick = () => setMode("signin");
+        }
       }
-    }
 
-    // show & prime the first mode
-    modal.classList.remove("hidden");
-    setMode(defaultMode);
-  } else {
-    // Modal already exists: rebuild to rebind handlers cleanly
-    modal.remove();
-    openAuthModal(defaultMode);
+      modal.classList.remove("hidden");
+      setMode(defaultMode);
+    } else {
+      modal.classList.remove("hidden");
+    }
   }
-}
 
   /* ---------------------------------------------
      Age persistence + hero content
@@ -828,7 +794,7 @@ function paintFirstPage({ title, firstPageText }) {
   /* ---------------------------------------------
      Gate overlay (checkout preview → auth)
   --------------------------------------------- */
-function showGate(personName) {
+   function showGate(personName) {
   const storyEl   = document.getElementById("storyContent");
   const gate      = document.getElementById("gateOverlay");
   const glow      = document.getElementById("blurGlow");
@@ -838,38 +804,33 @@ function showGate(personName) {
   const gateTitle = document.getElementById("gateTitle");
   const gateDesc  = document.getElementById("gateDesc");
 
-  // 1) Personalize badge & copy
-  if (personName && badge && badgeText) {
-    badgeText.textContent = `Just for ${personName}`;
-    badge.classList.remove("hidden");
-    reader?.classList.add("has-badge");
-  }
-  if (gateTitle) gateTitle.textContent = "Continue reading for free";
-  if (gateDesc)  gateDesc.textContent  = "Create your free account to finish tonight’s bedtime story and save it.";
-
-  // 2) Clamp/blur the teaser and mark the reader as gated
-  if (storyEl) {
-    storyEl.dataset.preview = "lines";
-    storyEl.classList.add("preview-clamp");
-    storyEl.classList.remove("blur-bottom"); // keep only one visual
-  }
-  reader?.classList.add("gated");
-
-  // 3) Unhide the gate + subtle glow
-  gate?.classList.remove("hidden");
-  glow?.classList.remove("hidden");
-
-// 4) Wire button
-const btnSignup = document.getElementById("gateSignup");
-if (btnSignup) {
-  btnSignup.onclick = (e) => {
+// Unified buttons — open central modal instead of inline form
+const btnGoogle = document.getElementById("gateGoogle");
+if (btnGoogle) {
+  btnGoogle.onclick = (e) => {
     e.preventDefault();
     openAuthModal("signup");
   };
 }
 
+const btnEmailOpen = document.getElementById("gateEmailOpen");
+if (btnEmailOpen) {
+  btnEmailOpen.onclick = (e) => {
+    e.preventDefault();
+    openAuthModal("signup");
+  };
 }
 
+
+  // Temporary: Google button opens the main auth modal in Sign Up mode
+  const btnGoogle = document.getElementById("gateGoogle");
+  if (btnGoogle) {
+    btnGoogle.onclick = (e) => {
+      e.preventDefault();
+      openAuthModal("signup");
+    };
+  }
+}
 
   function unlockGate() {
     const storyEl = document.getElementById("storyContent");
@@ -1001,25 +962,19 @@ if (!html && !md && !pending && teaser) {
       return;
     }
 
-if (!isSignedIn()) {
-  // Prefer any previously saved teaser if present
-  const savedTeaser = SS.getItem("yw_story_teaser");
-  if (savedTeaser) {
-    storyEl.innerHTML = savedTeaser;
-  } else if (md) {
-    const previewHtml = makePreviewHtml(md, 10);
-    storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
-  } else {
-    storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
-  }
+    if (!isSignedIn()) {
+      if (md) {
+        const previewHtml = makePreviewHtml(md, 10);
+        storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
+      } else {
+        storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
+      }
+      storyEl.dataset.preview = "lines";
+      storyEl.classList.add("preview-clamp");
 
-  storyEl.dataset.preview = "lines";
-  storyEl.classList.add("preview-clamp");
-
-  const childName = getChildName();
-  // ⬅️ Always show the gate for guests so there’s a clear next action
-  showGate(childName);
-} else {
+      const childName = getChildName();
+      if (html || md) showGate(childName);
+    } else {
       storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
       delete storyEl.dataset.preview;
       storyEl.classList.remove("preview-clamp");
@@ -1460,98 +1415,6 @@ function initAgePreview() {
   // Paint selected state + hero image/text for stored age
   paintSelectedAge();
   updateHeroForAge(getAge());
-}
-
-   // Turn partner story object (either from job outputData or GET /stories/my) into simple HTML
-function renderStoryHtmlFromPartner({ title, pages }) {
-  const safeTitle = title ? `<h1>${title}</h1>` : '';
-  const body = Array.isArray(pages)
-    ? pages.map(p => `<p>${(p?.text || '').trim()}</p>`).join('')
-    : '<p class="muted">No content yet.</p>';
-  return `${safeTitle}${body}`;
-}
-
-// Recreate the guest story under the authenticated account, then wait for completion
-async function ensureFirstStoryForUser({ transcript, language = 'en-GB', childImageUrl = null }) {
-  // 1) Kick off generation under the logged-in user
-  const start = await fetch(API_STORIES_GENERATE, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ transcript, language, ...(childImageUrl ? { childImageUrl } : {}) })
-  });
-  const startJson = await start.json().catch(() => ({}));
-  if (!start.ok || !startJson?.jobId) {
-    const msg = startJson?.message || `Story generation failed (${start.status})`;
-    throw new Error(msg);
-  }
-  const jobId = startJson.jobId; // from partner API :contentReference[oaicite:2]{index=2}
-
-  // 2) Poll the job until "completed" and we have outputData
-  async function poll() {
-    const r = await fetch(API_JOB_STATUS(jobId), { credentials: 'include' });
-    if (!r.ok) throw new Error(`Job poll failed (${r.status})`);
-    const j = await r.json();
-    const job = j?.data?.job || j?.data || j;
-    return job;
-  }
-
-  // simple backoff: try ~10 times
-  for (let i = 0; i < 12; i++) {
-    const job = await poll();
-    if (job?.status === 'completed') {
-      // Partner example returns outputData with storyId, title, pages etc. :contentReference[oaicite:3]{index=3}
-      const out = job.outputData || {};
-      const title = out.title || '';
-      const pages = out.pages || [];
-      const storyId = out.storyId || job.storyId || null;
-
-      const html = renderStoryHtmlFromPartner({ title, pages });
-
-      try { sessionStorage.setItem('yw_story_html', html); } catch (_) {}
-      if (storyId) try { sessionStorage.setItem('yw_story_id', storyId); } catch (_) {}
-
-      return { storyId, title, pages };
-    }
-    // not completed yet — small wait
-    await new Promise(r => setTimeout(r, 2000));
-  }
-  throw new Error('Story job did not complete in time.');
-}
-
-// Fetch the most recent story from partner API and hydrate the page/session
-async function fetchLatestStoryToSession() {
-  const res = await fetch(API_STORIES_MY, { credentials: 'include' });
-  if (!res.ok) throw new Error(`Fetch my stories failed (${res.status})`);
-  const data = await res.json();
-  const stories = data?.data?.stories || [];
-  if (!stories.length) return null;
-
-  // Assume array is newest-first; if not, sort by createdAt desc
-  const latest = stories.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-  // Partner GET sample shows minimal fields; if your backend returns pages here too, use them directly. :contentReference[oaicite:4]{index=4}
-  const title = latest.title || '';
-  const pages = latest.pages || []; // if backend includes them
-  let html = '';
-
-  if (pages.length) {
-    html = renderStoryHtmlFromPartner({ title, pages });
-  } else {
-    // If this endpoint doesn’t include pages, do a follow-up GET /stories/:id
-    if (latest._id) {
-      const one = await fetch(`${API_BASE}/stories/${latest._id}`, { credentials: 'include' });
-      const oneJson = await one.json();
-      const full = oneJson?.data?.story || {};
-      html = renderStoryHtmlFromPartner({ title: full.title || title, pages: full.pages || [] });
-    }
-  }
-
-  if (html) {
-    try { sessionStorage.setItem('yw_story_html', html); } catch (_) {}
-    if (latest._id) try { sessionStorage.setItem('yw_story_id', latest._id); } catch (_) {}
-    return { id: latest._id, html };
-  }
-  return null;
 }
 
   /* ---------------------------------------------
