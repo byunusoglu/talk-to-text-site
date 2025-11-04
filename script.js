@@ -1539,6 +1539,87 @@ if (heroCta && !heroCta.dataset.wired) {
     isSignedIn
   };
 
+   // ===== Story Detail — Voice picker + Play (frontend-only for now) =====
+(() => {
+  const SS = window.sessionStorage;
+  const $  = (s, r=document)=>r.querySelector(s);
+
+  const elPlay  = $('#toggleMic'); // sticky CTA
+  const elVoice = $('#voiceBtn');  // pill above CTA
+  const storyEl = $('#storyContent');
+  if (!elPlay || !elVoice || !storyEl) return;
+
+  // Persisted defaults
+  const K_DEFAULT_VOICE = 'yw_voice_default';
+  const voicesBuiltin = [
+    { id:'warm_en_gb', name:'StoryBuds Warm (en-GB)' },
+    { id:'calm_en_gb', name:'StoryBuds Calm (en-GB)' },
+    { id:'tr_tr',      name:'StoryBuds Turkish (tr-TR)' }
+  ];
+  const getDefaultVoice = () => { try { return localStorage.getItem(K_DEFAULT_VOICE) || 'warm_en_gb'; } catch { return 'warm_en_gb'; } };
+  const setDefaultVoice = (v) => { try { localStorage.setItem(K_DEFAULT_VOICE, v); } catch {} };
+
+  // Tiny toast
+  const toast = (msg) => {
+    const n = document.createElement('div');
+    n.textContent = msg;
+    n.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:110px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999';
+    document.body.appendChild(n); setTimeout(()=>n.remove(),1200);
+  };
+
+  // Voice picker (modal-lite)
+  function openVoicePicker() {
+    const hasUserVoice = false; // dummy until backend
+    const current = getDefaultVoice();
+
+    const sheet = document.createElement('div');
+    sheet.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -20px 40px rgba(0,0,0,.25);padding:14px;z-index:999';
+    sheet.innerHTML = `
+      <div style="height:4px;width:42px;background:#e9e6f7;border-radius:999px;margin:6px auto 12px;"></div>
+      <h3 style="margin:0 0 10px;">Choose voice</h3>
+      <div id="vlist" style="display:grid;gap:8px"></div>
+      <div class="muted" style="margin-top:10px;font-size:13px">Want your own voice? <button id="cloneBtn" class="btn ghost" style="margin-left:6px">Clone voice (Beta)</button></div>
+      <div style="margin-top:12px;text-align:right"><button class="btn" id="closeV">Done</button></div>
+    `;
+    document.body.appendChild(sheet);
+
+    const vlist = sheet.querySelector('#vlist');
+    [...voicesBuiltin, { id:'user_voice', name:'My voice (Beta)', disabled:!hasUserVoice }]
+      .forEach(v => {
+        const b = document.createElement('button');
+        b.className = 'btn' + (v.id===current ? '' : ' ghost');
+        b.disabled = !!v.disabled;
+        b.textContent = v.name + (v.disabled ? ' — coming soon' : (v.id===current?'  ✓':''));
+        b.style.textAlign = 'left';
+        b.addEventListener('click', () => {
+          setDefaultVoice(v.id);
+          toast(`Voice set to ${v.name}`);
+          [...vlist.children].forEach(x => x.className = 'btn ghost');
+          b.className = 'btn';
+        });
+        vlist.appendChild(b);
+      });
+
+    sheet.querySelector('#cloneBtn').addEventListener('click', () => {
+      alert('🎙️ Voice cloning is nearly ready.\nYou’ll read three 20-second prompts, then we’ll create your voice.');
+    });
+    sheet.querySelector('#closeV').addEventListener('click', () => sheet.remove());
+  }
+
+  // One-tap Play (dummy for now)
+  async function playStoryNow() {
+    const voiceId = getDefaultVoice();
+    const text = (storyEl.textContent || '').trim().slice(0, 400);
+    if (!text) { toast('No story content yet'); return; }
+
+    toast(`▶️ Playing in ${voiceId.replaceAll('_',' ').toUpperCase()} (demo)`);
+  }
+
+  elVoice.addEventListener('click', openVoicePicker);
+  elPlay.addEventListener('click', playStoryNow);
+})();
+
+   
 })();
 
 /* =====================================================
