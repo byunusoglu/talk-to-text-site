@@ -841,36 +841,37 @@ function paintFirstPage({ title, firstPageText }) {
     });
   }
 
-  /* ---------------------------------------------
-     Gate overlay (checkout preview → auth)
-  --------------------------------------------- */
-   function showGate(personName) {
-  const storyEl   = document.getElementById("storyContent");
-  const gate      = document.getElementById("gateOverlay");
-  const glow      = document.getElementById("blurGlow");
-  const reader    = document.querySelector(".story-reader");
-  const badge     = document.getElementById("personalBadge");
-  const badgeText = document.getElementById("personalBadgeText");
-  const gateTitle = document.getElementById("gateTitle");
-  const gateDesc  = document.getElementById("gateDesc");
+function showGate(personName = "") {
+  const storyEl = document.getElementById("storyContent");
+  const gate = document.getElementById("gateOverlay");
+  if (!storyEl || !gate) return;
 
-// Unified buttons — open central modal instead of inline form
-const btnGoogle = document.getElementById("gateGoogle");
-if (btnGoogle) {
-  btnGoogle.onclick = (e) => {
+  // Simplified gate design — single unified CTA
+  gate.classList.remove("hidden");
+  gate.innerHTML = `
+    <div class="gate-card gate-card--brand">
+      <h3>Continue reading for free</h3>
+      <p class="muted">
+        ${personName ? `Create your free account to finish ${personName}’s bedtime story.` 
+                     : `Create your free account to finish this bedtime story.`}
+      </p>
+      <button type="button" class="btn" id="gateSignupBtn">Sign Up for Free</button>
+      <div class="trust-row" aria-hidden="true">
+        <span>🛡️ No payment needed</span>
+        <span>·</span>
+        <span>Free forever for your first story</span>
+      </div>
+    </div>
+  `;
+
+  // CTA opens main signup modal
+  const btn = document.getElementById("gateSignupBtn");
+  if (btn) btn.addEventListener("click", (e) => {
     e.preventDefault();
     openAuthModal("signup");
-  };
+  });
 }
 
-const btnEmailOpen = document.getElementById("gateEmailOpen");
-if (btnEmailOpen) {
-  btnEmailOpen.onclick = (e) => {
-    e.preventDefault();
-    openAuthModal("signup");
-  };
-}
-}
 
   function unlockGate() {
     const storyEl = document.getElementById("storyContent");
