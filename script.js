@@ -967,19 +967,25 @@ if (!html && !md && !pending && teaser) {
       return;
     }
 
-    if (!isSignedIn()) {
-      if (md) {
-        const previewHtml = makePreviewHtml(md, 10);
-        storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
-      } else {
-        storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
-      }
-      storyEl.dataset.preview = "lines";
-      storyEl.classList.add("preview-clamp");
+if (!isSignedIn()) {
+  // Prefer any previously saved teaser if present
+  const savedTeaser = SS.getItem("yw_story_teaser");
+  if (savedTeaser) {
+    storyEl.innerHTML = savedTeaser;
+  } else if (md) {
+    const previewHtml = makePreviewHtml(md, 10);
+    storyEl.innerHTML = previewHtml || "<p>Your story will appear here after generation.</p>";
+  } else {
+    storyEl.innerHTML = "<p><strong>Preview</strong> — create your free account to finish this bedtime story.</p>";
+  }
 
-      const childName = getChildName();
-      if (html || md) showGate(childName);
-    } else {
+  storyEl.dataset.preview = "lines";
+  storyEl.classList.add("preview-clamp");
+
+  const childName = getChildName();
+  // ⬅️ Always show the gate for guests so there’s a clear next action
+  showGate(childName);
+} else {
       storyEl.innerHTML = html || "<p>Your story will appear here after generation.</p>";
       delete storyEl.dataset.preview;
       storyEl.classList.remove("preview-clamp");
