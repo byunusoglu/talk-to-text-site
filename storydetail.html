@@ -111,49 +111,6 @@
   <div class="sb-dots" id="sbDots" aria-hidden="true"></div>
 </section>
 
-    <!-- Personalise characters (compact, below storybook) -->
-<section class="char-uploader" id="charUploader" aria-label="Personalise characters">
-  <div class="cu-head">
-    <h3>Personalise characters</h3>
-    <p class="muted">Add a photo for your child and pet (optional).</p>
-  </div>
-
-  <div class="cu-grid">
-    <!-- Child -->
-    <div class="cu-card">
-      <div class="cu-thumb" data-role="child" aria-label="Child photo preview"></div>
-      <div class="cu-meta">
-        <div class="cu-label">Child</div>
-        <input type="file" accept="image/*" capture="environment" id="cuChild" class="cu-input" aria-label="Upload child photo">
-        <button class="btn ghost cu-btn" data-for="cuChild">Upload photo</button>
-      </div>
-    </div>
-
-    <!-- Pet (optional) -->
-    <div class="cu-card">
-      <div class="cu-thumb" data-role="pet" aria-label="Pet photo preview"></div>
-      <div class="cu-meta">
-        <div class="cu-label">Pet (optional)</div>
-        <input type="file" accept="image/*" capture="environment" id="cuPet" class="cu-input" aria-label="Upload pet photo">
-        <button class="btn ghost cu-btn" data-for="cuPet">Upload photo</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="cu-actions">
-    <button class="btn" id="cuSave">Save photos</button>
-    <button class="btn ghost" id="cuClear">Clear</button>
-    <div class="hint muted">Used for digital personalisation and your printed book later.</div>
-  </div>
-</section>
-
-    
-<!-- Story (kept as-is) -->
-<section class="story-reader">
-  <h2 id="storyTitle" class="sr-only">Your story</h2>
-  <div id="storyContent" class="story-content"></div>
-</section>
-
     <!-- Personalise with photos (accordion, collapsed by default) -->
 <section class="acc acc--compact" id="charAcc" aria-label="Personalise characters">
   <button class="acc-head" id="charAccToggle" aria-expanded="false" aria-controls="charAccBody">
@@ -198,6 +155,13 @@
       </div>
     </section>
   </div>
+</section>
+
+    
+<!-- Story (kept as-is) -->
+<section class="story-reader">
+  <h2 id="storyTitle" class="sr-only">Your story</h2>
+  <div id="storyContent" class="story-content"></div>
 </section>
 
     
