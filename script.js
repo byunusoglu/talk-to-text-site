@@ -26,6 +26,11 @@
 
   const SS = window.sessionStorage;
 
+   // Partner (authenticated) story endpoints — use cookie-based auth
+const API_STORIES_GENERATE = `${API_BASE}/stories/generate`;
+const API_STORIES_MY       = `${API_BASE}/stories/my`;
+const API_JOB_STATUS       = (jobId) => `${API_BASE}/jobs/${jobId}`;
+
   /* ---------------------------------------------
      REAL Auth client (JWT)
   --------------------------------------------- */
@@ -402,16 +407,27 @@
             const pass  = $("#authPass")?.value;
             if (!email || !pass) { alert("Please enter email and password."); return; }
             try {
-              await apiLogin({ email, password: pass });
-              try { await apiGetMe(); } catch(_){}
-              close();
-              // NOTE: you had a 5-minute delay; leaving as-is
-              fadeOutAnd(() => {
-                setTimeout(() => {
-                  window.location.href = "home.html";
-                }, 5 * 60 * 1000);
-              }, 120);
-            } catch (err) {
+  await apiLogin({ email, password: pass });
+  try { await apiGetMe(); } catch(_){}
+
+  // If there was a guest transcript pending, attach it to the account now
+  const transcript = (SS.getItem(K_TRANSCRIPT) || SS.getItem(K_PENDING) || '').trim();
+  if (transcript) {
+    try {
+      await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
+      fadeOutAnd(() => { window.location.href = 'storydetail.html'; }, 120);
+      return;
+    } catch (err) {
+      console.warn('Authed re-generation (signin) failed:', err?.message || err);
+    }
+  }
+
+  // Otherwise go home (your original behavior had a 5-min delay — removed for clarity)
+  close();
+  fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
+} catch (err) {
+  alert(err?.message || "Could not sign in.");
+} catch (err) {
               alert(err?.message || "Could not sign in.");
             }
           };
@@ -437,11 +453,29 @@
             }
 
             try {
-              await apiSignup({ childName, email, password, birthYear, gender });
-              try { await apiGetMe(); } catch(_){}
-              close();
-              fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
-            } catch (err) {
+  await apiSignup({ childName, email, password, birthYear, gender });
+  try { await apiGetMe(); } catch(_){}
+
+  // ── NEW: if a guest transcript exists, recreate it under the account
+  const transcript = (SS.getItem(K_TRANSCRIPT) || SS.getItem(K_PENDING) || '').trim();
+  if (transcript) {
+    try {
+      await ensureFirstStoryForUser({ transcript, language: 'en-GB' });
+      // go straight to the story detail once we have full content in session
+      fadeOutAnd(() => { window.location.href = 'storydetail.html'; }, 120);
+      return; // stop the old redirect
+    } catch (err) {
+      console.warn('Authed re-generation failed, falling back to home:', err?.message || err);
+    }
+  }
+
+  // Fallback: no transcript → just land on home
+  close();
+  fadeOutAnd(()=>{ window.location.href = "home.html"; }, 120);
+} catch (err) {
+  const msg = err?.message || "Could not create account.";
+  alert(/already|exists/i.test(msg) ? "This email is already registered. Please sign in instead." : msg);
+} catch (err) {
               const msg = err?.message || "Could not create account.";
               alert(
                 /already|exists/i.test(msg)
@@ -1426,6 +1460,98 @@ function initAgePreview() {
   // Paint selected state + hero image/text for stored age
   paintSelectedAge();
   updateHeroForAge(getAge());
+}
+
+   // Turn partner story object (either from job outputData or GET /stories/my) into simple HTML
+function renderStoryHtmlFromPartner({ title, pages }) {
+  const safeTitle = title ? `<h1>${title}</h1>` : '';
+  const body = Array.isArray(pages)
+    ? pages.map(p => `<p>${(p?.text || '').trim()}</p>`).join('')
+    : '<p class="muted">No content yet.</p>';
+  return `${safeTitle}${body}`;
+}
+
+// Recreate the guest story under the authenticated account, then wait for completion
+async function ensureFirstStoryForUser({ transcript, language = 'en-GB', childImageUrl = null }) {
+  // 1) Kick off generation under the logged-in user
+  const start = await fetch(API_STORIES_GENERATE, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transcript, language, ...(childImageUrl ? { childImageUrl } : {}) })
+  });
+  const startJson = await start.json().catch(() => ({}));
+  if (!start.ok || !startJson?.jobId) {
+    const msg = startJson?.message || `Story generation failed (${start.status})`;
+    throw new Error(msg);
+  }
+  const jobId = startJson.jobId; // from partner API :contentReference[oaicite:2]{index=2}
+
+  // 2) Poll the job until "completed" and we have outputData
+  async function poll() {
+    const r = await fetch(API_JOB_STATUS(jobId), { credentials: 'include' });
+    if (!r.ok) throw new Error(`Job poll failed (${r.status})`);
+    const j = await r.json();
+    const job = j?.data?.job || j?.data || j;
+    return job;
+  }
+
+  // simple backoff: try ~10 times
+  for (let i = 0; i < 12; i++) {
+    const job = await poll();
+    if (job?.status === 'completed') {
+      // Partner example returns outputData with storyId, title, pages etc. :contentReference[oaicite:3]{index=3}
+      const out = job.outputData || {};
+      const title = out.title || '';
+      const pages = out.pages || [];
+      const storyId = out.storyId || job.storyId || null;
+
+      const html = renderStoryHtmlFromPartner({ title, pages });
+
+      try { sessionStorage.setItem('yw_story_html', html); } catch (_) {}
+      if (storyId) try { sessionStorage.setItem('yw_story_id', storyId); } catch (_) {}
+
+      return { storyId, title, pages };
+    }
+    // not completed yet — small wait
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  throw new Error('Story job did not complete in time.');
+}
+
+// Fetch the most recent story from partner API and hydrate the page/session
+async function fetchLatestStoryToSession() {
+  const res = await fetch(API_STORIES_MY, { credentials: 'include' });
+  if (!res.ok) throw new Error(`Fetch my stories failed (${res.status})`);
+  const data = await res.json();
+  const stories = data?.data?.stories || [];
+  if (!stories.length) return null;
+
+  // Assume array is newest-first; if not, sort by createdAt desc
+  const latest = stories.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+  // Partner GET sample shows minimal fields; if your backend returns pages here too, use them directly. :contentReference[oaicite:4]{index=4}
+  const title = latest.title || '';
+  const pages = latest.pages || []; // if backend includes them
+  let html = '';
+
+  if (pages.length) {
+    html = renderStoryHtmlFromPartner({ title, pages });
+  } else {
+    // If this endpoint doesn’t include pages, do a follow-up GET /stories/:id
+    if (latest._id) {
+      const one = await fetch(`${API_BASE}/stories/${latest._id}`, { credentials: 'include' });
+      const oneJson = await one.json();
+      const full = oneJson?.data?.story || {};
+      html = renderStoryHtmlFromPartner({ title: full.title || title, pages: full.pages || [] });
+    }
+  }
+
+  if (html) {
+    try { sessionStorage.setItem('yw_story_html', html); } catch (_) {}
+    if (latest._id) try { sessionStorage.setItem('yw_story_id', latest._id); } catch (_) {}
+    return { id: latest._id, html };
+  }
+  return null;
 }
 
   /* ---------------------------------------------
