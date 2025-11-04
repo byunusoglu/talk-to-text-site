@@ -153,6 +153,53 @@
   <h2 id="storyTitle" class="sr-only">Your story</h2>
   <div id="storyContent" class="story-content"></div>
 </section>
+
+    <!-- Personalise with photos (accordion, collapsed by default) -->
+<section class="acc acc--compact" id="charAcc" aria-label="Personalise characters">
+  <button class="acc-head" id="charAccToggle" aria-expanded="false" aria-controls="charAccBody">
+    <span class="acc-title">📷 Personalise with photos (optional)</span>
+    <span class="acc-chevron" aria-hidden="true">▸</span>
+  </button>
+
+  <div class="acc-body" id="charAccBody" hidden>
+    <!-- Character Uploader (same content as before, unchanged) -->
+    <section class="char-uploader" id="charUploader" aria-label="Personalise characters">
+      <div class="cu-head">
+        <h3>Personalise characters</h3>
+        <p class="muted">Add a photo for your child and pet (optional).</p>
+      </div>
+
+      <div class="cu-grid">
+        <!-- Child -->
+        <div class="cu-card">
+          <div class="cu-thumb" data-role="child" aria-label="Child photo preview"></div>
+          <div class="cu-meta">
+            <div class="cu-label">Child</div>
+            <input type="file" accept="image/*" capture="environment" id="cuChild" class="cu-input" aria-label="Upload child photo">
+            <button class="btn ghost cu-btn" data-for="cuChild">Upload photo</button>
+          </div>
+        </div>
+
+        <!-- Pet (optional) -->
+        <div class="cu-card">
+          <div class="cu-thumb" data-role="pet" aria-label="Pet photo preview"></div>
+          <div class="cu-meta">
+            <div class="cu-label">Pet (optional)</div>
+            <input type="file" accept="image/*" capture="environment" id="cuPet" class="cu-input" aria-label="Upload pet photo">
+            <button class="btn ghost cu-btn" data-for="cuPet">Upload photo</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cu-actions">
+        <button class="btn" id="cuSave">Save photos</button>
+        <button class="btn ghost" id="cuClear">Clear</button>
+        <div class="hint muted">Used for digital personalisation and your printed book later.</div>
+      </div>
+    </section>
+  </div>
+</section>
+
     
     <!-- ✅ Production CTA: the only visible control by default -->
     <button class="btn ghost" id="voiceBtn">🎙️ Voice</button>
@@ -681,6 +728,127 @@ document.getElementById('voiceBtn')?.addEventListener('click', ()=>{
     paint('child', cur.child || '');
     paint('pet',   cur.pet   || '');
   })();
+})();
+</script>
+
+  <script>
+(function charAccordion(){
+  const toggle = document.getElementById('charAccToggle');
+  const body   = document.getElementById('charAccBody');
+
+  if (!toggle || !body) return;
+
+  let inited = false;
+
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    const next = !expanded;
+
+    toggle.setAttribute('aria-expanded', String(next));
+    if (next) {
+      body.hidden = false;           // make it measurable
+      requestAnimationFrame(() => {  // allow style to apply
+        body.setAttribute('data-open', '1');
+      });
+      if (!inited) { inited = true; window.initCharUploader?.(); }
+    } else {
+      body.removeAttribute('data-open');
+      // wait for transition then hide so it's out of a11y flow
+      setTimeout(() => { if (!toggle || toggle.getAttribute('aria-expanded') !== 'true') body.hidden = true; }, 240);
+    }
+  });
+})();
+</script>
+
+  <script>
+(function(){
+  function initCharUploader(){
+    const SS = window.sessionStorage;
+    const $  = (s, r=document)=>r.querySelector(s);
+
+    const wrap   = $('#charUploader'); if (!wrap) return;
+    const btns   = wrap.querySelectorAll('.cu-btn');
+    const prevs  = { child: wrap.querySelector('.cu-thumb[data-role="child"]'),
+                     pet:   wrap.querySelector('.cu-thumb[data-role="pet"]') };
+    const inputs = { child: $('#cuChild'), pet: $('#cuPet') };
+    const saveBtn = $('#cuSave');
+    const clearBtn= $('#cuClear');
+
+    const KEY = 'yw_char_photos_v1';
+
+    function readPhotos(){ try { return JSON.parse(SS.getItem(KEY) || '{}'); } catch(_) { return {}; } }
+    function writePhotos(obj){ try { SS.setItem(KEY, JSON.stringify(obj||{})); } catch(_) {} }
+
+    function paint(role, dataUrl){
+      const slot = prevs[role]; if (!slot) return;
+      if (dataUrl) {
+        slot.style.backgroundImage = `url("${dataUrl}")`;
+        slot.style.backgroundSize = 'cover';
+        slot.style.backgroundPosition = 'center';
+        slot.classList.add('has-img');
+      } else {
+        slot.style.backgroundImage = '';
+        slot.classList.remove('has-img');
+      }
+    }
+
+    async function fileToDataURL(file, max = 1200){
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      await new Promise((res, rej)=>{ img.onload=res; img.onerror=rej; img.src=url; });
+      const ratio = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * ratio));
+      const h = Math.max(1, Math.round(img.height * ratio));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      return c.toDataURL('image/jpeg', 0.85);
+    }
+
+    // wire “Upload photo” buttons
+    btns.forEach(b=>{
+      const forId = b.getAttribute('data-for');
+      const input = document.getElementById(forId);
+      b.addEventListener('click', ()=> input?.click());
+    });
+
+    // react to file selection
+    Object.entries(inputs).forEach(([role, input])=>{
+      input?.addEventListener('change', async ()=>{
+        const f = input.files?.[0]; if (!f) return;
+        if (!/^image\//.test(f.type)) { alert('Please choose an image.'); return; }
+        const dataUrl = await fileToDataURL(f);
+        const cur = readPhotos();
+        cur[role] = dataUrl; writePhotos(cur); paint(role, dataUrl);
+      });
+    });
+
+    saveBtn?.addEventListener('click', ()=>{
+      const cur = readPhotos();
+      if (!cur.child && !cur.pet) { alert('Please add at least one photo.'); return; }
+      toast('Photos saved for personalisation.');
+      // TODO: swap to server upload when endpoint is ready; store returned URLs.
+    });
+
+    clearBtn?.addEventListener('click', ()=>{
+      writePhotos({}); paint('child',''); paint('pet','');
+    });
+
+    function toast(msg){
+      const n = document.createElement('div');
+      n.textContent = msg;
+      n.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:110px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999';
+      document.body.appendChild(n); setTimeout(()=>n.remove(),1200);
+    }
+
+    // paint from cache immediately
+    const cur = readPhotos();
+    paint('child', cur.child || '');
+    paint('pet',   cur.pet   || '');
+  }
+
+  // expose for accordion
+  window.initCharUploader = initCharUploader;
 })();
 </script>
 
