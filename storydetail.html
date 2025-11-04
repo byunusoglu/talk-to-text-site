@@ -86,6 +86,7 @@
         <span class="cart-count" id="cartCount">0</span>
       </button>
       <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
+      <button id="favBtn" aria-pressed="false" title="Star this story">⭐ Favourite</button>
     </div>
     <nav id="menu" class="menu hidden" aria-label="Main navigation">
       <a href="home.html">Home</a>
@@ -99,6 +100,7 @@
     <p class="listen-hint">Tap “Start listening” and read the story aloud — sound effects will follow you.</p>
 
     <!-- ✅ Production CTA: the only visible control by default -->
+    <button class="btn ghost" id="voiceBtn">🎙️ Parent voice (beta)</button>
     <button class="btn sticky-listen" id="toggleMic">▶️ Start listening</button>
 
     <!-- Controls (kept in DOM for logic, but hidden by default) -->
@@ -686,5 +688,32 @@
     document.body.addEventListener("click", () => ctx.resume && ctx.resume(), { once:true });
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>
+  <script>
+/* 1) Optional: hydrate page <h1> from story */
+(function(){
+  const storyH1 = document.getElementById('storyContent')?.querySelector('h1')?.textContent?.trim();
+  const pageH1  = document.querySelector('main h1, .detail-wrap h1');
+  if (storyH1 && pageH1 && !/Read with Sounds/i.test(pageH1.textContent)) pageH1.textContent = storyH1;
+})();
+
+/* 2) Favourites (local only) */
+(function(){
+  const key='yw_starred_stories', btn=document.getElementById('favBtn'); if(!btn) return;
+  const get=()=>{try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(_){return[]}};
+  const set=a=>{try{localStorage.setItem(key,JSON.stringify(a))}catch(_){}};
+  const title=(document.getElementById('storyContent')?.querySelector('h1')?.textContent?.trim()
+               || document.querySelector('main h1, .detail-wrap h1')?.textContent?.trim()
+               || 'Untitled Story');
+  const paint=()=>{const on=get().includes(title); btn.setAttribute('aria-pressed',on?'true':'false'); btn.textContent=on?'🌟 Favourited':'⭐ Favourite';};
+  const toast=m=>{const n=document.createElement('div'); n.textContent=m; n.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:110px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999'; document.body.appendChild(n); setTimeout(()=>n.remove(),1100);};
+  btn.addEventListener('click',()=>{const a=get(); const i=a.indexOf(title); if(i>=0)a.splice(i,1); else a.push(title); set(a); paint(); toast(a.includes(title)?'Saved to favourites':'Removed from favourites');});
+  paint();
+})();
+
+/* 3) Parent voice (teaser) */
+document.getElementById('voiceBtn')?.addEventListener('click', ()=>{
+  alert('🎙️ Parent voice is coming soon.\nRecord a 20-second sample and we’ll narrate in your voice.');
+});
+</script>
 </body>
 </html>
