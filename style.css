@@ -1452,24 +1452,6 @@ html.scroll-locked { overscroll-behavior: contain; }
 }
 .btn.btn-email:hover { background: #fbf9ff; }
 
-/* Simplified sign-up button */
-.btn-primary {
-  display: inline-block;
-  margin-top: 1rem;
-  padding: 0.75rem 1.25rem;
-  background: var(--accent, #ff7a59);
-  color: #fff;
-  border: none;
-  border-radius: 0.75rem;
-  font-size: 1.05rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.25s ease;
-}
-.btn-primary:hover {
-  background: #ff693e;
-}
-
 
 .gate-email {
   display: grid;
