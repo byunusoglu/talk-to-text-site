@@ -2156,4 +2156,30 @@ body.age-no-bar main > section:first-child {
   min-height: 0; /* needed for grid “0fr/1fr” trick */
 }
 
+/* Ensure hidden truly hides regardless of display overrides */
+.acc-body[hidden] { display: none !important; }
+
+/* Collapse smoothly with inner wrapper that clips content */
+.acc-body {
+  display: grid;
+  grid-template-rows: 0fr;   /* collapsed */
+  overflow: hidden;          /* clip */
+  padding: 0 2px;
+}
+
+.acc-body[data-open="1"] {
+  grid-template-rows: 1fr;   /* expanded */
+  padding: 8px 2px 0 2px;
+}
+
+/* The inner wrapper actually receives the height; it must clip children */
+.acc-content {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Remove outer margins from the uploader when inside accordion
+   (prevents headings from “peeking” when collapsed) */
+.acc .char-uploader { margin: 0; }
+
 
