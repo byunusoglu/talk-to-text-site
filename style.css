@@ -2284,4 +2284,37 @@ html.modal-open, body.modal-open {
 /* While dragging, tell the browser not to treat gestures as scroll */
 .v-overlay, .v-sheet { touch-action: none; }   /* iOS/Safari friendly */
 
+/* === Accordion Chevron (SVG) — clearer, animated === */
+.acc-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+  line-height: 1;
+  color: var(--plum-dark);
+  opacity: 0.8;
+  transition: transform .25s ease, opacity .2s ease;
+}
+.acc-chevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Rotate when expanded (aria-expanded toggled by your JS) */
+.acc-head[aria-expanded="true"] .acc-chevron {
+  transform: rotate(90deg);
+  opacity: 1;
+}
+
+/* Slightly larger on small screens for recognisability */
+@media (max-width: 700px) {
+  .acc-chevron { margin-left: 12px; }
+  .acc-chevron svg { width: 20px; height: 20px; }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .acc-chevron { transition: none; }
+}
+
 
