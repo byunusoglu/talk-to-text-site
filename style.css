@@ -1970,3 +1970,28 @@ body.age-no-bar main > section:first-child {
   50%      { transform: translateY(-6px); opacity: 1;  }
 }
 
+/* — Story Detail UX polish (non-breaking) — */
+.sd-topbar-right { display:flex; align-items:center; gap:8px; }
+
+/* Favourite (star) button */
+#favBtn{
+  display:inline-flex; align-items:center; gap:6px;
+  border:1px solid #eee9fb; border-radius:12px; background:#fff;
+  padding:8px 10px; cursor:pointer; font-weight:800; color:#6b6479;
+}
+#favBtn[aria-pressed="true"]{ color:#b35b00; background:#fff7eb; border-color:#ffe1bd; }
+
+/* Parent voice (beta) pill above sticky listen */
+#voiceBtn{
+  position: fixed; left: 16px; right: 16px; bottom: 74px;
+  z-index: 19; border-radius:999px; padding:10px 12px;
+  background:rgba(26,31,46,.92); color:#fff; border:1px solid rgba(255,255,255,.2);
+  font-weight:800; box-shadow:0 8px 24px rgba(0,0,0,.15); text-align:center;
+}
+
+/* Premium look for existing sticky #toggleMic */
+.sticky-listen{
+  background: linear-gradient(135deg, #8E44EC, #B67AF3);
+  color:#fff; font-weight:800;
+}
+
