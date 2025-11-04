@@ -2233,4 +2233,44 @@ body.age-no-bar main > section:first-child {
 .sticky-fade{ transition: opacity .25s ease, transform .2s ease; will-change: opacity, transform; }
 .sticky-fade.is-hidden{ opacity:0; transform: translateY(8px); pointer-events:none; }
 
+/* === Voice Picker Overlay + Bottom Sheet === */
+.v-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,12,20,0.55);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity .2s ease;
+  pointer-events: none;
+}
+.v-overlay.show { opacity: 1; pointer-events: auto; }
+
+.v-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -20px 40px rgba(0,0,0,.25);
+  transform: translateY(100%);
+  transition: transform .25s ease;
+  will-change: transform;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 14px;
+}
+.v-overlay.show .v-sheet { transform: translateY(0); }
+
+.v-grip {
+  height: 5px; width: 44px;
+  background: #e9e6f7;
+  border-radius: 999px;
+  margin: 8px auto 10px;
+}
+
+/* Ensure sticky CTA bar disappears under the sheet without layout shifts */
+#stickyCtas.is-hidden,
+#voiceBtn.is-hidden,
+#toggleMic.is-hidden { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+/* (Already present in your page-level helper) */
+.sticky-fade { transition: opacity .25s ease, transform .2s ease; will-change: opacity, transform; }
 
