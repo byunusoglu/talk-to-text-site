@@ -97,29 +97,25 @@
 
   <main class="detail-wrap">
 
-    <!-- Animated Story (Premium teaser) -->
-<section class="upgrade-embed fade-up" aria-label="Animated preview">
-  <div class="upgrade-embed__copy">
-    <h2>Want to see this story come alive?</h2>
-    <p class="muted">Our Premium plan turns your child’s story into a short animated flipbook. Upload a photo to personalise the characters.</p>
+    <!-- Storybook (0–2) — purely visual, no text -->
+<section class="storybook" id="storybook" aria-label="Visual storybook">
+  <button class="sb-nav sb-prev" id="sbPrev" aria-label="Previous page">‹</button>
+
+  <div class="sb-stage">
+    <!-- Pages are injected by JS as .sb-page elements with background images -->
+    <div class="sb-page sb-anim" data-idx="0"></div>
   </div>
 
-  <div class="upgrade-embed__frame">
-    <iframe
-      title="Animated Story Preview"
-      data-src="https://online.1stflip.com/dnie/3cv4/"
-      loading="lazy"
-      referrerpolicy="no-referrer"
-      allowfullscreen
-    ></iframe>
-  </div>
+  <button class="sb-nav sb-next" id="sbNext" aria-label="Next page">›</button>
 
-  <div class="upgrade-embed__cta">
-    <button class="btn" id="upgradeAnimateBtn">✨ Upgrade & Animate My Story</button>
-    <div class="hint muted">No commitment today. You can cancel anytime.</div>
-  </div>
+  <div class="sb-dots" id="sbDots" aria-hidden="true"></div>
 </section>
 
+<!-- Story (kept as-is) -->
+<section class="story-reader">
+  <h2 id="storyTitle" class="sr-only">Your story</h2>
+  <div id="storyContent" class="story-content"></div>
+</section>
     
     <!-- ✅ Production CTA: the only visible control by default -->
     <button class="btn ghost" id="voiceBtn">🎙️ Voice</button>
@@ -445,43 +441,106 @@ document.getElementById('voiceBtn')?.addEventListener('click', ()=>{
   alert('🎙️ Parent voice is coming soon.\nRecord a 20-second sample and we’ll narrate in your voice.');
 });
 </script>
+
   <script>
-  // Lazy-load flipbook only when visible
-  (function lazyFlip() {
-    const frame = document.querySelector('.upgrade-embed__frame iframe');
-    if (!frame) return;
-    const src = frame.getAttribute('data-src');
-    const load = () => { if (src && !frame.src) frame.src = src; };
+(function storybookInit(){
+  const SS = window.sessionStorage;
+  const stage = document.querySelector('.sb-stage');
+  const dots  = document.getElementById('sbDots');
+  const prev  = document.getElementById('sbPrev');
+  const next  = document.getElementById('sbNext');
+  if (!stage || !dots) return;
 
-    if ('IntersectionObserver' in window) {
-      const io = new IntersectionObserver(entries => {
-        if (entries.some(e => e.isIntersecting)) { load(); io.disconnect(); }
-      }, { rootMargin: '120px' });
-      io.observe(frame);
-    } else { load(); } // fallback
-  })();
+  // 1) Try story images from backend or session
+  // If your existing loader fetched a full story (with pages), we can read & cache them here.
+  async function getImagePages(){
+    // Prefer cached
+    try {
+      const cached = JSON.parse(SS.getItem('yw_story_pages') || '[]');
+      if (cached.length) return cached;
+    } catch(_) {}
 
-  // Upgrade CTA — if signed in, take to Home plans; if guest, open Sign Up
-  (function wireUpgradeCTA() {
-    const btn = document.getElementById('upgradeAnimateBtn');
-    if (!btn) return;
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      try {
-        if (window.StoryBuds && typeof window.StoryBuds.isSignedIn === 'function' && window.StoryBuds.isSignedIn()) {
-          document.body.classList.add('fade-out');
-          setTimeout(() => { window.location.href = 'home.html#plans'; }, 100);
-        } else if (window.StoryBuds && typeof window.StoryBuds.openAuthModal === 'function') {
-          window.StoryBuds.openAuthModal('signup');
-        } else {
-          // Safe fallback
-          window.location.href = 'checkout.html?upgrade=premium';
-        }
-      } catch(_) {
-        window.location.href = 'checkout.html?upgrade=premium';
-      }
+    // Try to extract images from the latest fetched story HTML (none by default)
+    // or fetch the latest signed-in story (your page already does this above):contentReference[oaicite:4]{index=4}.
+    // To keep this decoupled, we only read what earlier logic may have set:
+    // SS.yw_story_images (optional)
+    try {
+      const imgs = JSON.parse(SS.getItem('yw_story_images') || '[]');
+      if (imgs.length) return imgs;
+    } catch(_) {}
+
+    // Fallback: soft, baby-friendly local banners
+    return [
+      'momdaughterbanner.png',
+      'childsdreambanner.png',
+      'grownbanner.png'
+    ];
+  }
+
+  // 2) Render pages
+  function renderPages(imgs){
+    stage.innerHTML = '';
+    dots.innerHTML = '';
+    imgs.forEach((src, i) => {
+      const p = document.createElement('div');
+      p.className = 'sb-page sb-anim' + (i === 0 ? ' sb-active' : '');
+      p.dataset.idx = String(i);
+      p.style.backgroundImage = `url("${src}")`;
+      stage.appendChild(p);
+
+      const d = document.createElement('button');
+      d.type = 'button';
+      d.setAttribute('aria-label', `Page ${i+1}`);
+      if (i === 0) d.setAttribute('aria-current','true');
+      d.addEventListener('click', () => go(i));
+      dots.appendChild(d);
     });
+  }
+
+  let total = 0, idx = 0;
+  function go(n){
+    const pages = [...stage.querySelectorAll('.sb-page')];
+    if (!pages.length) return;
+    const nextIdx = Math.max(0, Math.min(total-1, n));
+    pages.forEach(el => el.classList.remove('sb-active'));
+    pages[nextIdx]?.classList.add('sb-active');
+    [...dots.children].forEach((b, i) => b.toggleAttribute('aria-current', i === nextIdx));
+    idx = nextIdx;
+  }
+  function goRel(d){ go(idx + d); }
+
+  // 3) Input: arrows + tap + swipe
+  prev?.addEventListener('click', () => goRel(-1));
+  next?.addEventListener('click', () => goRel( 1));
+  stage.addEventListener('click', (e) => {
+    // Tap left/right halves to navigate
+    const x = (e.clientX || 0) - stage.getBoundingClientRect().left;
+    goRel( x > stage.clientWidth/2 ? 1 : -1 );
+  });
+  stage.addEventListener('touchstart', handleTouch, {passive:true});
+  stage.addEventListener('touchend', handleTouchEnd, {passive:true});
+  let touchX = null;
+  function handleTouch(ev){ touchX = ev.changedTouches?.[0]?.clientX ?? null; }
+  function handleTouchEnd(ev){
+    if (touchX == null) return;
+    const dx = (ev.changedTouches?.[0]?.clientX ?? 0) - touchX;
+    if (Math.abs(dx) > 30) goRel(dx < 0 ? 1 : -1);
+    touchX = null;
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') goRel(1);
+    if (e.key === 'ArrowLeft')  goRel(-1);
+  });
+
+  // 4) Boot
+  (async () => {
+    const imgs = await getImagePages();
+    renderPages(imgs);
+    total = imgs.length;
   })();
+})();
 </script>
+
+  
 </body>
 </html>
