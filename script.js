@@ -794,7 +794,7 @@ function paintFirstPage({ title, firstPageText }) {
   /* ---------------------------------------------
      Gate overlay (checkout preview → auth)
   --------------------------------------------- */
-   function showGate(personName) {
+function showGate(personName) {
   const storyEl   = document.getElementById("storyContent");
   const gate      = document.getElementById("gateOverlay");
   const glow      = document.getElementById("blurGlow");
@@ -804,24 +804,45 @@ function paintFirstPage({ title, firstPageText }) {
   const gateTitle = document.getElementById("gateTitle");
   const gateDesc  = document.getElementById("gateDesc");
 
-// Unified buttons — open central modal instead of inline form
-const btnGoogle = document.getElementById("gateGoogle");
-if (btnGoogle) {
-  btnGoogle.onclick = (e) => {
-    e.preventDefault();
-    openAuthModal("signup");
-  };
+  // 1) Personalize badge & copy
+  if (personName && badge && badgeText) {
+    badgeText.textContent = `Just for ${personName}`;
+    badge.classList.remove("hidden");
+    reader?.classList.add("has-badge");
+  }
+  if (gateTitle) gateTitle.textContent = "Continue reading for free";
+  if (gateDesc)  gateDesc.textContent  = "Create your free account to finish tonight’s bedtime story and save it.";
+
+  // 2) Clamp/blur the teaser and mark the reader as gated
+  if (storyEl) {
+    storyEl.dataset.preview = "lines";
+    storyEl.classList.add("preview-clamp");
+    storyEl.classList.remove("blur-bottom"); // keep only one visual
+  }
+  reader?.classList.add("gated");
+
+  // 3) Unhide the gate + subtle glow
+  gate?.classList.remove("hidden");
+  glow?.classList.remove("hidden");
+
+  // 4) Wire buttons (open central auth modal)
+  const btnGoogle    = document.getElementById("gateGoogle");
+  const btnEmailOpen = document.getElementById("gateEmailOpen");
+
+  if (btnGoogle) {
+    btnGoogle.onclick = (e) => {
+      e.preventDefault();
+      openAuthModal("signup");
+    };
+  }
+  if (btnEmailOpen) {
+    btnEmailOpen.onclick = (e) => {
+      e.preventDefault();
+      openAuthModal("signup");
+    };
+  }
 }
 
-const btnEmailOpen = document.getElementById("gateEmailOpen");
-if (btnEmailOpen) {
-  btnEmailOpen.onclick = (e) => {
-    e.preventDefault();
-    openAuthModal("signup");
-  };
-}
-
-}
 
   function unlockGate() {
     const storyEl = document.getElementById("storyContent");
