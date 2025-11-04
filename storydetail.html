@@ -817,6 +817,62 @@ document.getElementById('voiceBtn')?.addEventListener('click', ()=>{
 })();
 </script>
 
+  <!-- Sticky CTAs: reveal only after ~10 lines are visible -->
+<style>
+  /* tiny helper so we can animate without touching your existing classes */
+  .sticky-fade { transition: opacity .25s ease, transform .2s ease; will-change: opacity, transform; }
+  .sticky-fade.is-hidden { opacity: 0; transform: translateY(8px); pointer-events: none; }
+</style>
+
+<script>
+(function manageStickyVisibility(){
+  const storyEl = document.getElementById('storyContent');
+  const btnVoice = document.getElementById('voiceBtn');    // pill above
+  const btnPlay  = document.getElementById('toggleMic');   // sticky main CTA
+  if (!storyEl || !btnVoice || !btnPlay) return;
+
+  // opt-in to smooth fade
+  [btnVoice, btnPlay].forEach(b => b.classList.add('sticky-fade', 'is-hidden'));
+
+  function stickyOcclusionPx(){
+    // subtract only fixed, visible elements (voice + play)
+    const take = (el) => {
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') return 0;
+      if (cs.position !== 'fixed') return 0;
+      const r = el.getBoundingClientRect();
+      return (r.height || 0) + 10; // add small breathing space
+    };
+    return take(btnVoice) + take(btnPlay);
+  }
+
+  function visibleLinesCount(){
+    const rect = storyEl.getBoundingClientRect();
+    const cs   = getComputedStyle(storyEl);
+    const lh   = parseFloat(cs.lineHeight) || 24;      // fallback
+    const vpH  = window.innerHeight || 0;
+    const occl = stickyOcclusionPx();
+
+    // height available for reading area, minus space above story start
+    const available = Math.max(0, vpH - occl - Math.max(0, rect.top));
+    return Math.floor(available / lh);
+  }
+
+  function update(){
+    const lines = visibleLinesCount();
+    const show = lines >= 10; // threshold
+    [btnVoice, btnPlay].forEach(b => b.classList.toggle('is-hidden', !show));
+  }
+
+  // run after paint and whenever layout changes
+  requestAnimationFrame(update);
+  window.addEventListener('scroll',  update, { passive:true });
+  window.addEventListener('resize',  update);
+  // if story HTML swaps in later, give it another tick
+  setTimeout(update, 200);
+})();
+</script>
+
   
 </body>
 </html>
