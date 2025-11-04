@@ -111,6 +111,43 @@
   <div class="sb-dots" id="sbDots" aria-hidden="true"></div>
 </section>
 
+    <!-- Personalise characters (compact, below storybook) -->
+<section class="char-uploader" id="charUploader" aria-label="Personalise characters">
+  <div class="cu-head">
+    <h3>Personalise characters</h3>
+    <p class="muted">Add a photo for your child and pet (optional).</p>
+  </div>
+
+  <div class="cu-grid">
+    <!-- Child -->
+    <div class="cu-card">
+      <div class="cu-thumb" data-role="child" aria-label="Child photo preview"></div>
+      <div class="cu-meta">
+        <div class="cu-label">Child</div>
+        <input type="file" accept="image/*" capture="environment" id="cuChild" class="cu-input" aria-label="Upload child photo">
+        <button class="btn ghost cu-btn" data-for="cuChild">Upload photo</button>
+      </div>
+    </div>
+
+    <!-- Pet (optional) -->
+    <div class="cu-card">
+      <div class="cu-thumb" data-role="pet" aria-label="Pet photo preview"></div>
+      <div class="cu-meta">
+        <div class="cu-label">Pet (optional)</div>
+        <input type="file" accept="image/*" capture="environment" id="cuPet" class="cu-input" aria-label="Upload pet photo">
+        <button class="btn ghost cu-btn" data-for="cuPet">Upload photo</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cu-actions">
+    <button class="btn" id="cuSave">Save photos</button>
+    <button class="btn ghost" id="cuClear">Clear</button>
+    <div class="hint muted">Used for digital personalisation and your printed book later.</div>
+  </div>
+</section>
+
+    
 <!-- Story (kept as-is) -->
 <section class="story-reader">
   <h2 id="storyTitle" class="sr-only">Your story</h2>
@@ -537,6 +574,112 @@ document.getElementById('voiceBtn')?.addEventListener('click', ()=>{
     const imgs = await getImagePages();
     renderPages(imgs);
     total = imgs.length;
+  })();
+})();
+</script>
+
+  <script>
+(function charUploaderInit(){
+  const SS = window.sessionStorage;
+  const $  = (s, r=document)=>r.querySelector(s);
+
+  const wrap   = $('#charUploader'); if (!wrap) return;
+  const btns   = wrap.querySelectorAll('.cu-btn');
+  const prevs  = { child: wrap.querySelector('.cu-thumb[data-role="child"]'),
+                   pet:   wrap.querySelector('.cu-thumb[data-role="pet"]') };
+  const inputs = { child: $('#cuChild'), pet: $('#cuPet') };
+  const saveBtn = $('#cuSave');
+  const clearBtn= $('#cuClear');
+
+  const KEY = 'yw_char_photos_v1'; // { child: dataURL?, pet: dataURL? }
+
+  function readPhotos(){
+    try { return JSON.parse(SS.getItem(KEY) || '{}'); } catch(_) { return {}; }
+  }
+  function writePhotos(obj){
+    try { SS.setItem(KEY, JSON.stringify(obj||{})); } catch(_) {}
+  }
+
+  function paint(role, dataUrl){
+    const slot = prevs[role]; if (!slot) return;
+    if (dataUrl) {
+      slot.style.backgroundImage = `url("${dataUrl}")`;
+      slot.style.backgroundSize = 'cover';
+      slot.style.backgroundPosition = 'center';
+      slot.classList.add('has-img');
+    } else {
+      slot.style.backgroundImage = '';
+      slot.classList.remove('has-img');
+    }
+  }
+
+  async function fileToDataURL(file, max = 1200){
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    await new Promise((res, rej)=>{ img.onload=res; img.onerror=rej; img.src=url; });
+
+    // downscale to keep storage + upload light
+    const ratio = Math.min(1, max / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * ratio));
+    const h = Math.max(1, Math.round(img.height * ratio));
+
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    return c.toDataURL('image/jpeg', 0.85);
+  }
+
+  // wire “Upload photo” buttons
+  btns.forEach(b=>{
+    const forId = b.getAttribute('data-for');
+    const input = document.getElementById(forId);
+    b.addEventListener('click', ()=> input?.click());
+  });
+
+  // react to file selection
+  Object.entries(inputs).forEach(([role, input])=>{
+    input?.addEventListener('change', async ()=>{
+      const f = input.files?.[0]; if (!f) return;
+      // basic guard: images only
+      if (!/^image\//.test(f.type)) { alert('Please choose an image.'); return; }
+      const dataUrl = await fileToDataURL(f);
+      const cur = readPhotos();
+      cur[role] = dataUrl;
+      writePhotos(cur);
+      paint(role, dataUrl);
+    });
+  });
+
+  saveBtn?.addEventListener('click', async ()=>{
+    const cur = readPhotos();
+    if (!cur.child && !cur.pet) { alert('Please add at least one photo.'); return; }
+
+    // TODO: when backend upload endpoint is ready, POST the data URLs and store returned URLs
+    // Example sketch:
+    // const res = await fetch('/api/upload', { method:'POST', body: JSON.stringify(cur) });
+    // const { childUrl, petUrl } = await res.json();
+
+    // For now we just toast and keep in sessionStorage
+    toast('Photos saved for personalisation.');
+  });
+
+  clearBtn?.addEventListener('click', ()=>{
+    writePhotos({});
+    paint('child', ''); paint('pet', '');
+  });
+
+  function toast(msg){
+    const n = document.createElement('div');
+    n.textContent = msg;
+    n.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:110px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999';
+    document.body.appendChild(n); setTimeout(()=>n.remove(),1200);
+  }
+
+  // boot: paint from cache
+  (function boot(){
+    const cur = readPhotos();
+    paint('child', cur.child || '');
+    paint('pet',   cur.pet   || '');
   })();
 })();
 </script>
