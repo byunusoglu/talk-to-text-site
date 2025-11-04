@@ -445,5 +445,43 @@ document.getElementById('voiceBtn')?.addEventListener('click', ()=>{
   alert('🎙️ Parent voice is coming soon.\nRecord a 20-second sample and we’ll narrate in your voice.');
 });
 </script>
+  <script>
+  // Lazy-load flipbook only when visible
+  (function lazyFlip() {
+    const frame = document.querySelector('.upgrade-embed__frame iframe');
+    if (!frame) return;
+    const src = frame.getAttribute('data-src');
+    const load = () => { if (src && !frame.src) frame.src = src; };
+
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(entries => {
+        if (entries.some(e => e.isIntersecting)) { load(); io.disconnect(); }
+      }, { rootMargin: '120px' });
+      io.observe(frame);
+    } else { load(); } // fallback
+  })();
+
+  // Upgrade CTA — if signed in, take to Home plans; if guest, open Sign Up
+  (function wireUpgradeCTA() {
+    const btn = document.getElementById('upgradeAnimateBtn');
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      try {
+        if (window.StoryBuds && typeof window.StoryBuds.isSignedIn === 'function' && window.StoryBuds.isSignedIn()) {
+          document.body.classList.add('fade-out');
+          setTimeout(() => { window.location.href = 'home.html#plans'; }, 100);
+        } else if (window.StoryBuds && typeof window.StoryBuds.openAuthModal === 'function') {
+          window.StoryBuds.openAuthModal('signup');
+        } else {
+          // Safe fallback
+          window.location.href = 'checkout.html?upgrade=premium';
+        }
+      } catch(_) {
+        window.location.href = 'checkout.html?upgrade=premium';
+      }
+    });
+  })();
+</script>
 </body>
 </html>
