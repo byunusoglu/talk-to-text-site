@@ -166,9 +166,11 @@
 </section>
 
     
-    <!-- ✅ Production CTA: the only visible control by default -->
-    <button class="btn ghost" id="voiceBtn">🎙️ Voice</button>
-    <button class="btn sticky-listen" id="toggleMic">▶️ Play story</button>
+    <!-- Sticky CTA bar: Play (primary) + Voice (secondary) -->
+<div class="sticky-cta-bar sticky-fade is-hidden" id="stickyCtas">
+  <button class="btn sticky-listen" id="toggleMic">▶️ Play story</button>
+  <button class="btn btn-voice" id="voiceBtn" title="Choose voice before playing">🎙️ Voice</button>
+</div>
 
     <!-- Story -->
     <section class="story-reader">
@@ -824,54 +826,39 @@ document.getElementById('voiceBtn')?.addEventListener('click', ()=>{
   .sticky-fade.is-hidden { opacity: 0; transform: translateY(8px); pointer-events: none; }
 </style>
 
-<script>
+  <script>
 (function manageStickyVisibility(){
   const storyEl = document.getElementById('storyContent');
-  const btnVoice = document.getElementById('voiceBtn');    // pill above
-  const btnPlay  = document.getElementById('toggleMic');   // sticky main CTA
-  if (!storyEl || !btnVoice || !btnPlay) return;
-
-  // opt-in to smooth fade
-  [btnVoice, btnPlay].forEach(b => b.classList.add('sticky-fade', 'is-hidden'));
+  const bar     = document.getElementById('stickyCtas');
+  const btnPlay = document.getElementById('toggleMic');
+  const btnVoice= document.getElementById('voiceBtn');
+  if (!storyEl || !bar || !btnPlay || !btnVoice) return;
 
   function stickyOcclusionPx(){
-    // subtract only fixed, visible elements (voice + play)
-    const take = (el) => {
-      const cs = getComputedStyle(el);
-      if (cs.display === 'none' || cs.visibility === 'hidden') return 0;
-      if (cs.position !== 'fixed') return 0;
-      const r = el.getBoundingClientRect();
-      return (r.height || 0) + 10; // add small breathing space
-    };
-    return take(btnVoice) + take(btnPlay);
+    // only count truly fixed UI ABOVE the bar (we’re the bar, so 0 here)
+    return 0;
   }
 
   function visibleLinesCount(){
     const rect = storyEl.getBoundingClientRect();
-    const cs   = getComputedStyle(storyEl);
-    const lh   = parseFloat(cs.lineHeight) || 24;      // fallback
+    const lh   = parseFloat(getComputedStyle(storyEl).lineHeight) || 24;
     const vpH  = window.innerHeight || 0;
-    const occl = stickyOcclusionPx();
-
-    // height available for reading area, minus space above story start
-    const available = Math.max(0, vpH - occl - Math.max(0, rect.top));
+    const available = Math.max(0, vpH - stickyOcclusionPx() - Math.max(0, rect.top));
     return Math.floor(available / lh);
   }
 
   function update(){
-    const lines = visibleLinesCount();
-    const show = lines >= 10; // threshold
-    [btnVoice, btnPlay].forEach(b => b.classList.toggle('is-hidden', !show));
+    const show = visibleLinesCount() >= 10;
+    bar.classList.toggle('is-hidden', !show);
   }
 
-  // run after paint and whenever layout changes
   requestAnimationFrame(update);
-  window.addEventListener('scroll',  update, { passive:true });
-  window.addEventListener('resize',  update);
-  // if story HTML swaps in later, give it another tick
-  setTimeout(update, 200);
+  window.addEventListener('scroll', update, { passive:true });
+  window.addEventListener('resize', update);
+  setTimeout(update, 200); // story HTML may hydrate late
 })();
 </script>
+
 
   
 </body>
