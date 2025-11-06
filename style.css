@@ -124,61 +124,12 @@ h1, h2 {
   color: var(--plum);
 }
 
-/* Cart button (top layer, persistent) */
-.cart-btn {
-  position: relative;
-  background: white;
-  border: 1px solid #ece8f9;
-  border-radius: 999px;
-  padding: 8px 12px;
-  box-shadow: var(--shadow);
-  cursor: pointer;
-  font-size: 16px;
-  color: var(--plum);
-}
-.cart-count {
-  display: inline-block;
-  min-width: 18px;
-  padding: 1px 6px;
-  margin-left: 6px;
-  border-radius: 999px;
-  background: #6ee7b7;
-  color: #054d2c;
-  font-weight: 700;
-  font-size: 12px;
-  line-height: 18px;
-  text-align: center;
-}
-
-.cart-icon {
-  width: 22px;
-  height: 22px;
-  vertical-align: middle;
-  color: var(--plum);
-  transition: transform 0.4s ease, color 0.4s ease;
-}
-
 /* gentle "wiggle" animation when hovered or when item added */
 @keyframes cartWiggle {
   0%, 100% { transform: rotate(0deg); }
   25% { transform: rotate(-10deg); }
   50% { transform: rotate(8deg); }
   75% { transform: rotate(-5deg); }
-}
-
-.cart-btn:hover .cart-icon {
-  animation: cartWiggle 0.6s ease;
-  color: #a37cd3;
-}
-
-/* Triggered by JS when item added */
-.cart-btn.shake .cart-icon {
-  animation: cartWiggle 0.6s ease;
-}
-
-/* Hide cart count if empty */
-.cart-count.hidden {
-  display: none;
 }
 
 /* ðŸ” Dropdown menu */
