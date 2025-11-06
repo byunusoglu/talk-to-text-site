@@ -38,9 +38,25 @@
   let SESSION_READY = false;
   let SESSION_USER  = null;
 
+  // Yardımcı fonksiyon: API çağrıları için header hazırlama
+  // Cookie yoksa localStorage'dan JWT token'ı alır ve Authorization header'ına ekler
+  function getAuthHeaders(additionalHeaders = {}) {
+    const headers = { ...additionalHeaders };
+    try {
+      const token = localStorage.getItem('yw_jwt_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    } catch (_) {}
+    return headers;
+  }
+
   async function refreshSession() {
     try {
-      const res = await fetch(`${API_BASE}/users/me`, { credentials: "include" });
+      const res = await fetch(`${API_BASE}/users/me`, {
+        headers: getAuthHeaders(),
+        credentials: "include"
+      });
       if (!res.ok) throw new Error();
       const data = await res.json();
       SESSION_USER = data?.data?.user || null;
@@ -77,7 +93,12 @@
     }
     const token = data?.token || "";
     const user  = data?.data?.user || {};
-   // if (!token) throw new Error("No token returned by signup");
+
+    // Token'ı localStorage'a kaydet (mobil cihazlar için fallback)
+    if (token) {
+      try { localStorage.setItem('yw_jwt_token', token); } catch (_) {}
+    }
+
     return { token, user };
   }
 
@@ -95,6 +116,12 @@
     }
     const token = data?.token || "";
     const user  = data?.data?.user || {};
+
+    // Token'ı localStorage'a kaydet (mobil cihazlar için fallback)
+    if (token) {
+      try { localStorage.setItem('yw_jwt_token', token); } catch (_) {}
+    }
+
     return { token, user };
   }
 
@@ -102,6 +129,7 @@
   async function apiGetMe() {
     const res = await fetch(`${API_BASE}/users/me`, {
       method: "GET",
+      headers: getAuthHeaders(),
       credentials: "include", // always include cookies
     });
     if (!res.ok) throw new Error("API 401");
@@ -110,10 +138,17 @@
 
   async function signOut() {
   try {
-    await fetch(`${API_BASE}/users/logout`, { method: "POST", credentials: "include" });
+    await fetch(`${API_BASE}/users/logout`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      credentials: "include"
+    });
   } catch (_) {}
   SESSION_USER = null;
-  try { localStorage.removeItem('yw_signed_in'); } catch (_) {}
+  try {
+    localStorage.removeItem('yw_signed_in');
+    localStorage.removeItem('yw_jwt_token'); // JWT token'ı da temizle
+  } catch (_) {}
 }
 
   // Helper: try to derive child fields from transcript if present
@@ -674,8 +709,8 @@ function paintFirstPage({ title, firstPageText }) {
   async function startGuestGeneration(guestPayload) {
     const res = await fetch(API_GUEST_GENERATE, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // guest flow does not send credentials
+      headers: getAuthHeaders({ "Content-Type": "application/json" }),
+      credentials: "include", // cookie varsa gönder
       body: JSON.stringify(guestPayload)
     });
     const data = await res.json().catch(()=> ({}));
@@ -688,8 +723,8 @@ function paintFirstPage({ title, firstPageText }) {
   async function fetchJob(jobId) {
     const res = await fetch(API_JOB(jobId), {
       method: "GET",
-      headers: { "Content-Type": "application/json" }
-      // no credentials for guest polling
+      headers: getAuthHeaders({ "Content-Type": "application/json" }),
+      credentials: "include" // cookie varsa gönder
     });
     if (!res.ok) throw new Error(`Job ${res.status}`);
     return res.json();
