@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Checkout — StoryBuds</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="script.js"></script>
+</head>
+<body class="fade-in">
+  <!-- Top layer stays consistent -->
+  <header class="topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-badge">
+        <img src="logo.png" alt="StoryBuds logo" />
+      </span>
+    </a>
+
+    <div class="top-actions">
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">
+        <svg class="cart-icon" viewBox="0 0 24 24" fill="none">
+  <path d="M3 3h2l3.6 9.59a1 1 0 0 0 .92.65H17a1 1 0 0 0 .96-.74L20 6H6" 
+        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="9" cy="20" r="1" fill="currentColor"/>
+  <circle cx="17" cy="20" r="1" fill="currentColor"/>
+</svg>
+<span class="cart-count" id="cartCount">0</span>
+
+      </button>
+      <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
+    </div>
+
+    <nav id="menu" class="menu hidden">
+      <a href="index.html">Home</a>
+      <a href="create.html">Create Stories</a>
+      <a href="#">My Profile</a>
+    </nav>
+  </header>
+
+  <main>
+
+<section id="storyHero" class="story-hero fade-up">
+  <div class="story-hero-overlay"></div>
+
+  <article class="story-reader">
+    <h2 id="storyTitle" class="sr-only">Your story</h2>
+
+    <!-- 🧸 Personalised badge (JS fills child's name) -->
+    <div id="personalBadge" class="personal-badge hidden" aria-hidden="true">
+      <span class="dot">🧸</span>
+      <span id="personalBadgeText">Personalised for your child</span>
+    </div>
+
+    <!-- Story content (we’ll apply a half blur via JS) -->
+    <div id="storyContent" class="story-content"></div>
+
+    <!-- Subtle glow at the blur edge (toggled by JS) -->
+    <div id="blurGlow" class="blur-glow hidden" aria-hidden="true"></div>
+
+    <!-- 🔒 Soft-wall gate (hidden when signed in) -->
+<div id="gateOverlay" class="gate-overlay hidden" aria-live="polite">
+  <div class="gate-card gate-card--brand">
+    <h3 id="gateTitle">Continue reading for free</h3>
+    <p id="gateDesc" class="muted">
+      Create your free account to finish tonight’s bedtime story and save it.
+    </p>
+
+    <!-- Primary: Google (keeps your working flow) -->
+    <button type="button" class="btn btn-google" id="gateGoogle">
+      <span class="g-logo" aria-hidden="true"></span>
+      Continue with Google
+    </button>
+
+    <!-- Secondary: Email (opens central modal; no inline form here) -->
+    <button type="button" class="btn btn-email" id="gateEmailOpen">
+      Continue with email
+    </button>
+
+    <!-- Trust row -->
+    <div class="trust-row" aria-hidden="true">
+      <span>🛡️ No payment needed</span>
+      <span>·</span>
+      <span>Free forever for your first story</span>
+    </div>
+  </div>
+</div>
+
+  </article>
+</section>
+
+
+
+    <!-- Products carousel -->
+    <section class="section fade-up">
+      <h2>Unlock more magic</h2>
+
+      <!-- Matching LEGO viewport class as requested -->
+      <div class="Carousel_carouselViewport__ykrK3 sk-scrollbar-horizontal--light carousel-viewport">
+        <div id="productsTrack" class="carousel-track" aria-label="Products"></div>
+      </div>
+
+      <div class="carousel-controls">
+        <button class="btn ghost" id="prevCarousel" aria-label="Previous">‹</button>
+        <button class="btn ghost" id="nextCarousel" aria-label="Next">›</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    © <span id="year"></span> StoryBuds
+  </footer>
+</body>
+</html>

@@ -1,0 +1,51 @@
+/* Homepage-only styles (loaded only on index.html) */
+:root { --radius: 18px; --shadow: 0 6px 18px rgba(0,0,0,0.05); --plum:#7A4EAB; --muted:#7b7b7b; }
+
+/* Age strip (three separate buttons, default first active) */
+.age-strip { padding: 20px 0; }
+.age-strip-inner {
+  max-width: 1100px; margin: 0 auto; display: flex; gap: 10px; flex-wrap: wrap;
+  align-items: center; justify-content: center; background: rgba(255,255,255,.8);
+  padding: 8px; border-radius: 999px; box-shadow: var(--shadow);
+}
+.age-chip {
+  appearance: none; border: 0; background: transparent; color: var(--plum);
+  padding: 10px 16px; border-radius: 999px; font-weight: 700; cursor: pointer;
+}
+.age-chip.is-active { background: #f3effb; }
+
+/* Hero carousel */
+.hero-carousel {
+  padding: 0; position: relative; overflow: hidden; border-radius: var(--radius);
+  max-width: 1200px; margin: 8px auto; box-shadow: var(--shadow); background: #ffffff;
+}
+.hero-carousel .carousel-track {
+  display: flex; will-change: transform;
+  transition: transform 600ms ease;
+}
+.hero-carousel .no-transition { transition: none !important; }
+
+.hero-slide { position: relative; width: 100%; min-height: 420px; display: grid; place-items: center; flex: 0 0 100%; }
+.hero-inner { text-align: center; max-width: 740px; padding: 36px 20px 56px; }
+.hero-inner h1 { font-family:'Nunito',sans-serif; font-size:36px; line-height:1.2; margin:0 0 10px; color:var(--plum); }
+.hero-inner p { color: var(--muted); margin: 0 0 18px; font-size: 18px; }
+
+/* Slide backgrounds */
+.hero-1 { background: linear-gradient(135deg, #fff7e8, #f3f0fa); }
+.hero-2 { background: linear-gradient(135deg, #f0fbff, #f7ebf7); }
+.hero-3 { background: linear-gradient(135deg, #f8faff, #fff3f7); }
+.hero-4 { background: linear-gradient(135deg, #fffaf3, #eef6ff); }
+
+/* Dots */
+.hero-dots {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px;
+}
+.hero-dots .dot { width:10px; height:10px; border-radius:50%; border:0; cursor:pointer; background:#d7cfee; opacity:.7; }
+.hero-dots .dot.is-active { opacity:1; background:#7A4EAB; }
+
+/* Responsive */
+@media (max-width: 900px){
+  .hero-inner h1 { font-size:28px; }
+  .hero-slide { min-height: 360px; }
+}

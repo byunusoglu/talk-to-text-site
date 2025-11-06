@@ -1,0 +1,2320 @@
+:root {
+  --gold: #C59D5F;
+  /* Vibrant purple palette */
+  --plum: #8E44EC;        /* primary (more vibrant than before) */
+  --plum-dark: #6C2E9C;   /* hover/heading accent */
+  --bg1: #fffaf3;
+  --bg2: #f7ebf7;
+  --bg3: #f3f0fa;
+  --text: #2f2a36;
+  --muted: #5a5169;       /* slightly darker for better contrast */
+  --radius: 18px;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+/* ðŸŒˆ Background animation */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ðŸ©µ Base setup */
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+  background-size: 200% 200%;
+  animation: gradientShift 12s ease infinite;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+h1, h2 {
+  font-family: 'Nunito', sans-serif;
+  color: var(--plum-dark); /* stronger heading color */
+}
+
+.section {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.center {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ðŸ§­ Header / Topbar */
+.topbar {
+  position: sticky;
+  top: 0;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  z-index: 100;
+}
+
+/* --- Circular logo that works on mobile + desktop --- */
+.logo { display:flex; align-items:center; text-decoration:none; }
+
+/* The circular clip container */
+.logo .logo-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+  background: transparent;
+}
+
+/* Smaller variant */
+.logo.small .logo-badge {
+  width: 44px;
+  height: 44px;
+}
+
+/* The image itself (use strong selector to beat previous rules) */
+.logo .logo-badge > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  background: transparent;
+  border-radius: 50%;
+}
+
+.logo img {
+  height: 56px;
+  width: 56px;
+  max-width: none;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  background-color: white;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+.logo.small img {
+  height: 44px;
+  width: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.top-actions { display: flex; align-items: center; gap: 10px; }
+
+.hamburger {
+  font-size: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--plum);
+}
+
+/* Cart button (top layer, persistent) */
+.cart-btn {
+  position: relative;
+  background: white;
+  border: 1px solid #ece8f9;
+  border-radius: 999px;
+  padding: 8px 12px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--plum);
+}
+.cart-count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: #6ee7b7;
+  color: #054d2c;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.cart-icon {
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+  color: var(--plum);
+  transition: transform 0.4s ease, color 0.4s ease;
+}
+
+/* gentle "wiggle" animation when hovered or when item added */
+@keyframes cartWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  50% { transform: rotate(8deg); }
+  75% { transform: rotate(-5deg); }
+}
+
+.cart-btn:hover .cart-icon {
+  animation: cartWiggle 0.6s ease;
+  color: #a37cd3;
+}
+
+/* Triggered by JS when item added */
+.cart-btn.shake .cart-icon {
+  animation: cartWiggle 0.6s ease;
+}
+
+/* Hide cart count if empty */
+.cart-count.hidden {
+  display: none;
+}
+
+/* ðŸ” Dropdown menu */
+.menu {
+  position: absolute;
+  top: 56px;
+  right: 16px;
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+.menu a {
+  color: var(--plum-dark);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+.menu a:hover {
+  background: #f8f5ff;
+}
+.hidden { display: none; }
+
+.age-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+/* Age buttons now sit directly on page */
+.age-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  margin-top: clamp(8px, 2vh, 16px);   /* closer to topbar */
+  margin-bottom: clamp(4px, 1.5vh, 12px); /* closer to hero image */
+}
+
+/* Slightly tighter on mobile */
+@media (max-width: 700px) {
+  .age-buttons {
+    gap: 8px;
+    margin-top: 6px;
+    margin-bottom: 8px;
+  }
+}
+
+/* CHANGED: age buttons feel like chips, not primary actions */
+.age-btn {
+  appearance: none;
+  border: 1px solid #e3dcfa;
+  background: #fff;
+  color: var(--plum-dark);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 600;           /* lighter than CTA */
+  font-size: 0.95rem;         /* slightly smaller than CTA */
+  box-shadow: none;           /* remove heavy shadows */
+  cursor: pointer;
+  transition: background .20s ease, color .20s ease, border-color .20s ease;
+  white-space: nowrap;
+  position: relative;
+}
+.age-btn:hover { background: #f9f7ff; }
+.age-btn.selected {
+  background: #f6f1ff;        /* soft selected state */
+  color: var(--plum);
+  border-color: var(--plum);
+  box-shadow: none;
+}
+
+/* Remove hover tooltip label entirely (kept from prior change) */
+.age-btn:hover::after { content: ""; }
+
+@media (max-width: 600px) {
+  .age-buttons { gap: 8px; }
+  .age-btn { font-size: 14px; padding: 9px 14px; }
+}
+
+/* ðŸ’¬ Info section */
+.info p {
+  max-width: 500px;
+  margin: 10px auto 20px;
+  color: var(--muted);
+}
+
+/* =========================
+   CTA buttons (primary action)
+   ========================= */
+.btn {
+  background: var(--plum);
+  color: white;
+  border: none;
+  padding: 16px 32px;        /* slightly larger touch target */
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 800;          /* bold by default */
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, background 0.3s ease, box-shadow 0.3s ease;
+  font-size: 1rem;
+}
+.btn:hover {
+  transform: translateY(-2px);
+  background: var(--plum-dark);
+}
+
+/* Hero CTA gets a stronger look than generic .btn */
+.hero-text #heroCta {
+  background: linear-gradient(135deg, #8E44EC, #B67AF3); /* vivid gradient */
+  box-shadow: 0 10px 26px rgba(142,68,236,0.35);
+  font-weight: 800;
+  font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+  padding: 16px 36px;
+  margin-top: 18px;
+  margin-bottom: 28px;
+  align-self: center;
+  animation: pulseUp 8s ease-in-out infinite;
+}
+.hero-text #heroCta:hover {
+  transform: translateY(-3px);
+  background: linear-gradient(135deg, #7a3ad6, #a367f0);
+  box-shadow: 0 14px 34px rgba(142,68,236,0.45);
+}
+
+@keyframes pulseUp {
+  0%,100% { transform: translateY(0); box-shadow: var(--shadow); }
+  50% { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(142,68,236,0.32); }
+}
+
+/* ðŸ’¬ Testimonials (base) */
+.testimonials {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 24px;
+  font-style: italic;
+  transition: opacity 0.5s ease;
+}
+
+/* ðŸ“ Story input & box (legacy create view) */
+textarea {
+  width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid #e0dcec;
+  padding: 14px;
+  font-family: inherit;
+  font-size: 16px;
+  box-shadow: var(--shadow);
+  resize: vertical;
+  min-height: 140px;
+}
+
+.story-box {
+  margin-top: 30px;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  text-align: left;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ðŸ¦¶ Footer */
+footer {
+  margin-top: auto;
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* âœ¨ Animations */
+.fade-in { animation: fadeIn 0.8s ease both; }
+.fade-up {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.9s ease forwards;
+}
+.fade-out { animation: fadeOut 0.3s ease forwards; }
+
+.delay-1 { animation-delay: 0.3s; }
+.delay-2 { animation-delay: 0.6s; }
+
+@keyframes fadeIn {
+  from { opacity: 0; } to { opacity: 1; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateY(6px); }
+}
+
+/* ðŸ“± Responsive design (base) */
+@media (max-width: 600px) {
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  .age-card { font-size: 16px; padding: 16px 24px; }
+  .btn { width: 100%; }
+  textarea { min-height: 120px; }
+  .logo img { height: 46px; width: 46px; }
+  .logo.small img { height: 36px; width: 36px; }
+}
+
+/* ================================
+   Wizard / Stepper (Create flow)
+   ================================ */
+
+.stepper {
+  list-style: none;
+  padding: 0;
+  margin: 20px auto 28px;
+  max-width: 700px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.step {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 700;
+  color: var(--plum-dark);
+  opacity: 0.8;
+  transition: transform .15s ease, opacity .2s ease, background .2s ease;
+}
+.step .dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #efe7fb;
+  font-size: 14px;
+}
+.step.active {
+  opacity: 1;
+  transform: translateY(-1px);
+  background: #fbf9ff;
+}
+.step.done {
+  opacity: 1;
+  background: #f2f9f3;
+}
+.step.done .dot { background: #e2f4e6; }
+
+.wizard { max-width: 760px; margin: 0 auto; }
+.step-panel {
+  text-align: left;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.step-panel + .step-panel { margin-top: 16px; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-grid label { display: flex; flex-direction: column; gap: 6px; }
+label { display: block; margin: 10px 0; font-weight: 700; }
+label input, label textarea { margin-top: 6px; }
+
+.wizard-nav {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+.btn.ghost {
+  background: white;
+  color: var(--plum-dark);
+  box-shadow: var(--shadow);
+  border: 1px solid #e8e4f6;
+}
+.btn.primary { background: var(--plum); color: white; }
+
+@media (max-width: 700px) {
+  .field-grid { grid-template-columns: 1fr; }
+  .stepper { grid-template-columns: 1fr; }
+}
+
+/* =========================================
+   Checkout: Story hero & age-based backdrop
+   ========================================= */
+
+.story-hero {
+  position: relative;
+  min-height: 52vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+}
+.story-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(2px);
+}
+.story-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(10, 7, 20, 0.15), rgba(10, 7, 20, 0.35));
+}
+
+.story-hero.bg-0-2 { background-image: url('bg-0-2.jpg'); background-size: cover; background-position: center; }
+.story-hero.bg-3-5 { background-image: url('bg-3-5.jpg'); background-size: cover; background-position: center; }
+.story-hero.bg-5-plus { background-image: url('bg-5-plus.jpg'); background-size: cover; background-position: center; }
+
+.story-reader {
+  position: relative;
+  z-index: 2;
+  max-width: 820px;
+  margin: 40px 16px;
+  background: rgba(255,255,255,0.86);
+  border: 1px solid rgba(124, 90, 164, 0.12);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+  border-radius: 22px;
+  padding: 24px 22px;
+}
+.story-content {
+  font-family: 'Alegreya', 'Nunito', serif;
+  color: #2a213b;
+  line-height: 1.7;
+  font-size: 18px;
+}
+.story-content h1, .story-content h2, .story-content h3 {
+  font-family: 'Alegreya', 'Nunito', serif;
+  margin: 0.4em 0 0.2em;
+  color: var(--plum-dark);
+}
+.story-content h1 { font-size: 28px; }
+.story-content h2 { font-size: 24px; }
+.story-content h3 { font-size: 20px; }
+.story-content p { margin: 0.7em 0; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* ===================================
+   Products Carousel (LEGO-style view)
+   =================================== */
+
+.carousel-viewport {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 6px 12px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.7);
+  box-shadow: var(--shadow);
+}
+.carousel-track {
+  display: inline-flex;
+  gap: 14px;
+}
+.product-card {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid #eee9fb;
+}
+.product-body { padding: 16px; text-align: left; }
+.product-body h3 { margin: 0 0 8px; color: var(--plum-dark); font-size: 18px; }
+.product-body .muted { color: var(--muted); margin: 0 0 12px; }
+.price-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.price { font-weight: 800; font-size: 18px; color: #0b5d3c; }
+.price-old { color: #9a9a9a; text-decoration: line-through; font-size: 14px; }
+.add-btn { width: 100%; }
+
+.sk-scrollbar-horizontal--light::-webkit-scrollbar { height: 8px; }
+.sk-scrollbar-horizontal--light::-webkit-scrollbar-track { background: #f2f2f6; border-radius: 999px; }
+.sk-scrollbar-horizontal--light::-webkit-scrollbar-thumb { background: #d6d2f3; border-radius: 999px; }
+
+.carousel-controls { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+
+/* === Split Hero v2 (text card + visual) === */
+.hero {
+  position: relative;
+  padding: clamp(28px, 5vw, 56px) 20px;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+}
+
+.hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr; /* text ~45%, visual ~55% */
+  gap: clamp(16px, 4vw, 40px);
+  align-items: center;
+}
+
+.hero-textCard {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding: clamp(18px, 3vw, 28px);
+  border-radius: 20px;
+  border: 1px solid rgba(124, 90, 164, 0.12);
+  box-shadow: var(--shadow);
+  background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.66));
+  backdrop-filter: blur(8px);
+}
+.hero-textCard h1 {
+  font-family: 'Nunito', sans-serif;
+  color: var(--plum-dark);
+  font-size: clamp(2rem, 3.6vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 4px;
+}
+.hero-textCard p {
+  color: #3a3450;
+  font-weight: 500;
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  margin: 0 0 6px;
+}
+.hero-textCard .btn {
+  margin-top: 6px;
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  padding: 14px 28px;
+  animation: pulseUp 10s ease-in-out infinite; /* calmer */
+}
+.hero-textCard .product-badges {
+  margin-top: 8px;
+  display: inline-flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Right visual */
+.hero-visual {
+  position: relative;
+  height: clamp(320px, 48vw, 560px);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid #eee9fb;
+  background: #fff;
+}
+.hero-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* tiny parallax on scroll (desktop only) */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-visual[data-parallax="on"] img { transition: transform 0.4s ease; }
+}
+
+/* sparkles (very subtle) */
+.sparkles { position: absolute; inset: 0; pointer-events: none; }
+.sp {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, var(--gold));
+  opacity: 0.7;
+  filter: blur(0.2px);
+  animation: drift 14s linear infinite;
+}
+.s1 { top: 12%; left: 8%;  animation-delay: 0s; }
+.s2 { top: 70%; left: 84%; animation-delay: 3s; }
+.s3 { top: 40%; left: 56%; animation-delay: 6s; }
+@keyframes drift {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0.0; }
+  10%  { opacity: .8; }
+  50%  { transform: translateY(-12px) translateX(8px) scale(1.05); opacity: .9; }
+  90%  { opacity: .75; }
+  100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.0; }
+}
+
+/* Responsive stacking */
+@media (max-width: 1024px) {
+  .hero-inner { grid-template-columns: 1fr; }
+  /* Text first on mobile so headline is above the fold */
+  .hero-visual { order: initial; }
+  .hero-visual { height: min(42vh, 360px); } /* tame image height on phones */
+}
+
+/* Mobile refinements */
+@media (max-width: 700px) {
+  .hero-textCard { padding: 16px; gap: 8px; }
+  .hero-textCard h1 { font-size: clamp(1.6rem, 6vw, 2rem); }
+  .hero-textCard p  { font-size: 0.98rem; }
+  .hero-textCard .btn { width: 100%; }
+  /* Optional: fully disable parallax on small devices */
+  .hero-visual[data-parallax="on"] img { transform: none !important; }
+}
+
+
+/* =========================
+   Formats band (below hero)
+   ========================= */
+.formats { padding-top: 36px; }
+.formats h2 { margin-bottom: 6px; }
+.formats-sub { color: var(--muted); margin: 0 auto 18px; max-width: 720px; }
+
+.formats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; max-width: 980px; margin: 0 auto; }
+
+.format-card {
+  background: rgba(255,255,255,0.78);
+  border: 1px solid #eee9fb;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  text-align: left;
+  padding: 18px;
+  transition: transform .18s ease, box-shadow .25s ease, background .25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.format-card:hover { transform: translateY(-3px); background: rgba(255,255,255,0.92); box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
+
+.format-icon { width: 36px; height: 36px; border-radius: 10px; background: #f4eeff; color: var(--plum); display: grid; place-items: center; margin-bottom: 10px; }
+.format-icon svg { width: 22px; height: 22px; }
+
+.format-card h3 { margin: 4px 0 6px; color: var(--plum-dark); font-size: 18px; }
+
+.formats .muted { margin: 0 0 12px; }
+
+.pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #f2f9f3; color: #0b5d3c; border: 1px solid #e2f4e6; }
+.pill.hint { background: #fbf9ff; color: var(--plum-dark); border: 1px solid #eee9fb; }
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .formats-grid { grid-template-columns: 1fr; }
+  .format-card { padding: 16px; }
+  .product-badges { gap: 10px; }
+}
+
+/* ===========================================
+   ðŸª„ Hero alignment & badges fade-in (final)
+   =========================================== */
+
+/* Center the hero stack and keep CTA dominant */
+.hero-text { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+/* CTA clearly separated above badges (reinforced here) */
+.hero-text #heroCta { margin-top: 18px; margin-bottom: 28px; align-self: center; }
+
+/* --- HERO description: darker for readability --- */
+.hero-text p#heroDesc { color: #3a3450; font-weight: 500; }
+
+/* --- Product badges: bulletproof horizontal alignment --- */
+.product-badges { display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+@media (min-width: 768px) { .product-badge { transform: none; } }
+
+.product-badge { display: inline-flex; align-items: center; line-height: 1; gap: 8px; }
+.product-badge .badge-icon { width: 18px; height: 18px; flex: 0 0 18px; display: block; }
+.product-badge span { display: inline-block; line-height: 1; }
+
+/* --- Sticky Mobile CTA --- */
+.mobile-cta { position: fixed; left: 12px; right: 12px; bottom: 14px; display: none; align-items: center; justify-content: center; text-align: center; height: 52px; border-radius: 999px; background: var(--plum); color: #fff; font-weight: 800; font-size: 1.1rem; box-shadow: 0 10px 28px rgba(142,68,236,0.35); z-index: 999; }
+.mobile-cta.show { display: flex; }
+@media (min-width: 768px) { .mobile-cta { display: none !important; } }
+
+/* --- Testimonials: improved card + rotator fades --- */
+.testimonials { background: white; border-radius: var(--radius); box-shadow: var(--shadow); max-width: 560px; margin: 40px auto; padding: 24px; text-align: left; font-style: normal; }
+.testimonial { margin: 0; }
+.t-quote { font-style: italic; line-height: 1.6; color: #3a3450; }
+.t-by { margin-top: 8px; color: var(--muted); }
+
+.t-fade-enter { opacity: 0; transform: translateY(6px); }
+.t-fade-enter.t-fade-enter-active { opacity: 1; transform: translateY(0); transition: all .4s ease; }
+.t-fade-exit { opacity: 1; transform: translateY(0); }
+.t-fade-exit.t-fade-exit-active { opacity: 0; transform: translateY(6px); transition: all .4s ease; }
+
+/* ===========================
+   Real â†’ Animated (scroll morph)
+   =========================== */
+.convert { padding-top: 36px; }
+.convert h2 { margin-bottom: 6px; }
+
+.morph-wrap { height: 240vh; position: relative; --reveal: 0; --parallax: 10; }
+
+.morph-stage { position: sticky; top: 12vh; height: 64vh; border-radius: 22px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid #eee9fb; background: #fff; }
+
+.morph-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: translateZ(0); will-change: opacity, transform; transition: opacity 1.8s ease-in-out, transform 1.8s ease-in-out; }
+
+.morph-img.base { opacity: calc(1 - var(--reveal)); transform: translateY(calc(var(--parallax, 10) * 1px)); transition: opacity 2.4s ease-in-out, transform 1.8s ease-in-out; }
+.morph-img.overlay { opacity: var(--reveal); transform: translateY(calc(var(--parallax, 10) * -1px)); transition: opacity 2.4s ease-in-out, transform 1.8s ease-in-out; }
+
+.morph-label { position: absolute; left: 14px; bottom: 14px; display: inline-flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.82); border: 1px solid #e6dcfa; color: var(--plum-dark); font-weight: 800; box-shadow: var(--shadow); pointer-events: none; }
+.morph-label .arrow { opacity: .7 }
+
+.convert .convert-cta { margin-top: 16px; }
+
+.morph-hint { position: absolute; right: 14px; bottom: 14px; padding: 8px 12px; border-radius: 999px; background: rgba(10,7,20,0.75); color: #fff; font-weight: 800; font-size: 13px; letter-spacing: .2px; opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .25s ease; pointer-events: none; }
+.morph-wrap.hold .morph-hint { opacity: 1; transform: translateY(0); }
+.morph-wrap.hold .morph-label { opacity: .85; }
+
+html.scroll-locked { overscroll-behavior: contain; }
+
+@media (prefers-reduced-motion: reduce) {
+  .morph-wrap { height: auto; }
+  .morph-stage { position: relative; height: auto; }
+  .morph-img.base { position: relative; transform: none; }
+  .morph-img.overlay { position: relative; opacity: 1; transform: none; }
+  .morph-label { position: static; margin-top: 10px; }
+}
+
+/* ==============================
+   Conversational Wizard styling
+   ============================== */
+.chat-wizard { width: min(94vw, 760px); margin: 0 auto 28px; text-align: left; }
+
+.chat-stream { display: grid; gap: 10px; background: #fff; border: 1px solid #eee9fb; border-radius: 16px; box-shadow: var(--shadow); padding: 14px; max-height: 60vh; overflow: auto; }
+
+.chat-row { display: flex; gap: 8px; }
+.chat-row.bot { justify-content: flex-start; }
+.chat-row.user { justify-content: flex-end; }
+
+.bubble { max-width: 82%; padding: 10px 14px; border-radius: 16px; line-height: 1.5; font-size: 16px; border: 1px solid #ece8f9; }
+.bot .bubble { background: #fbf9ff; color: var(--plum-dark); }
+.user .bubble { background: #f6fff9; color: #0b5d3c; border-color: #e2f4e6; }
+
+.chat-form { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-top: 10px; }
+#chatInput { border: 1px solid #e0dcec; border-radius: 999px; padding: 12px 16px; font-size: 16px; box-shadow: var(--shadow); }
+#chatNext, #chatGenerate { padding: 12px 18px; }
+.chat-hint { margin-top: 6px; text-align: center; }
+
+@media (max-width: 700px) {
+  .bubble { max-width: 92%; }
+  .chat-form { grid-template-columns: 1fr auto; }
+  #chatGenerate { grid-column: 1 / -1; }
+}
+
+@media (max-width: 900px) { .chat-stream { max-height: 54vh; } }
+
+/* === Split Hero v2 === */
+.hero {
+  position: relative;
+  padding: clamp(28px, 5vw, 56px) 20px;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+}
+
+.hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr; /* text ~45%, visual ~55% */
+  gap: clamp(16px, 4vw, 40px);
+  align-items: center;
+}
+
+.hero-textCard {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding: clamp(18px, 3vw, 28px);
+  border-radius: 20px;
+  border: 1px solid rgba(124, 90, 164, 0.12); /* matches system */
+  box-shadow: var(--shadow);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.82),
+    rgba(255,255,255,0.66)
+  );
+  backdrop-filter: blur(8px);
+}
+
+.hero-textCard h1 {
+  font-family: 'Nunito', sans-serif;
+  color: var(--plum-dark);
+  font-size: clamp(2rem, 3.6vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 4px;
+}
+
+.hero-textCard p {
+  color: #3a3450; /* improved contrast */
+  font-weight: 500;
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  margin: 0 0 6px;
+}
+
+.hero-textCard .btn {
+  margin-top: 6px;
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  padding: 14px 28px;
+  animation: pulseUp 10s ease-in-out infinite; /* slower/more premium */
+}
+
+/* badges align neatly under CTA */
+.hero-textCard .product-badges {
+  margin-top: 8px;
+  display: inline-flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Right visual */
+.hero-visual {
+  position: relative;
+  height: clamp(320px, 48vw, 560px);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid #eee9fb;
+  background: #fff;
+}
+
+.hero-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* tiny parallax on scroll */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-visual[data-parallax="on"] img {
+    transition: transform 0.4s ease;
+  }
+}
+
+/* sparkles (very subtle) â€” keep definitions for backwards compat, but hide by default */
+.sparkles { position: absolute; inset: 0; pointer-events: none; display: none !important; }
+.sp {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, var(--gold));
+  opacity: 0.7;
+  filter: blur(0.2px);
+  animation: drift 14s linear infinite;
+}
+.s1 { top: 12%; left: 8%;  animation-delay: 0s; }
+.s2 { top: 70%; left: 84%; animation-delay: 3s; }
+.s3 { top: 40%; left: 56%; animation-delay: 6s; }
+
+@keyframes drift {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0.0; }
+  10%  { opacity: .8; }
+  50%  { transform: translateY(-12px) translateX(8px) scale(1.05); opacity: .9; }
+  90%  { opacity: .75; }
+  100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.0; }
+}
+
+/* Responsive stacking */
+@media (max-width: 1024px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+  }
+  .hero-visual { order: -1; } /* image first on mobile/tablet for emotion */
+}
+
+/* Minor refinements to existing badges + CTA hierarchy */
+.product-badge {
+  font-size: 13px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.78);
+  border: 1px solid #e6dcfa;
+  box-shadow: var(--shadow);
+  color: var(--plum-dark);
+}
+
+/* Keep your existing pulseUp keyframes; we slowed duration above. */
+
+/* ======== Merged Hero (no inner container) ======== */
+.hero-visual.cutout {
+  position: relative;
+  height: clamp(320px, 48vw, 540px);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  overflow: hidden;
+  border: 1px solid #eee9fb;
+  box-shadow: var(--shadow);
+  background:
+    radial-gradient(1200px 600px at 50% 50%, rgba(255,255,255,0.0) 60%, rgba(255,255,255,0.6) 100%),
+    linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3)); /* brandy backdrop */
+}
+
+/* Soft cut-out illusion even if PNG isn't transparent yet */
+.hero-visual.cutout img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;           /* prefer contain for character focus */
+  transform: translateZ(0);
+  /* edge fade "mask" so busy backgrounds disappear */
+  --fade: radial-gradient(1200px 600px at 50% 55%, #000 60%, transparent 85%);
+  -webkit-mask-image: var(--fade);
+          mask-image: var(--fade);
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-size: 120% 120%;
+          mask-size: 120% 120%;
+  filter: drop-shadow(0 10px 24px rgba(0,0,0,0.14));
+}
+
+/* Subtle de-emphasis of leftover background via overlay */
+.hero-visual.cutout::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(600px 300px at 50% 50%, rgba(255,255,255,0) 55%, rgba(255,255,255,0.65) 100%);
+  pointer-events: none;
+}
+
+/* Bottom card: square top corners so it fuses with visual above */
+.hero-textCard.fused {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
+  margin-top: -2px; /* remove hairline gap */
+  text-align: center;
+}
+
+/* Keep strong hierarchy you already designed */
+.hero-textCard.fused h1 { margin-top: 2px; }
+.hero-textCard.fused .btn {
+  margin-top: 10px;
+  font-weight: 800;
+}
+
+/* Parallax stays tiny & safe on desktop */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-visual.cutout[data-parallax="on"] img { transition: transform 0.4s ease; }
+}
+
+/* Mobile refinements */
+@media (max-width: 700px) {
+  .hero-visual.cutout { height: min(42vh, 360px); }
+  .hero-textCard.fused .btn { width: 100%; }
+}
+
+/* No-container hero wrapper */
+.hero.hero-merged {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
+}
+
+/* === Premium Full-Bleed Hero === */
+.hero-premium {
+  position: relative;
+  width: 100%;
+  height: min(90vh, 680px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+}
+
+.hero-premium .hero-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.hero-premium .hero-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.85) saturate(1.2);
+  transform: scale(1.02);
+  animation: heroZoom 20s ease-in-out infinite alternate;
+}
+.hero-premium .hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 100%);
+}
+.hero-premium .hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 720px;
+  padding: 0 20px;
+  animation: fadeUp 1s ease forwards;
+}
+.hero-premium h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  margin-bottom: 14px;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+}
+.hero-premium p {
+  font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 24px;
+}
+.hero-premium .btn {
+  background: linear-gradient(135deg, #8E44EC, #B67AF3);
+  box-shadow: 0 10px 28px rgba(142,68,236,0.4);
+}
+
+@keyframes heroZoom {
+  from { transform: scale(1.02); }
+  to { transform: scale(1.07); }
+}
+
+/* === Ultra-simple hero (no boxes, no borders) â€” v3 === */
+.hero-simple {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+  gap: clamp(16px, 5vw, 48px);
+  align-items: center;
+  padding: clamp(28px, 6vw, 72px) clamp(16px, 6vw, 72px);
+  background: transparent;
+}
+
+/* Text column â€” perfectly aligned stack */
+.hero-simple .hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;       /* center headline, paragraph, CTA, tags */
+  justify-content: center;
+  text-align: center;
+  gap: 18px;                 /* consistent rhythm */
+  line-height: 1.4;
+  max-width: 640px;
+}
+
+/* Headline + paragraph spacing */
+.hero-simple .hero-copy h1 {
+  font-weight: 800;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+.hero-simple .hero-copy p {
+  margin: 0;
+  color: #3a3450;
+  font-size: clamp(1rem, 1.3vw, 1.125rem);
+}
+
+/* Create Story button â€” slightly larger for better emphasis */
+.hero-simple .hero-copy .btn {
+  display: inline-block;
+  align-self: center;
+  margin-top: 8px;
+  margin-bottom: 6px;
+  font-size: clamp(1.05rem, 1.8vw, 1.25rem); /* responsive increase */
+  padding: 16px 38px; /* keep proportions consistent */
+  font-weight: 800;
+}
+
+.hero-simple .hero-copy .product-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px; /* consistent spacing between tags */
+  margin-top: 0;
+}
+
+.hero-simple .hero-copy .product-badge {
+  font-size: 0.95rem;       /* slightly larger text */
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #e6dcfa;
+  background: rgba(255,255,255,0.78);
+  color: var(--plum-dark);
+}
+
+.hero-simple .hero-copy .product-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;   /* centered under button */
+  gap: 12px;
+  margin-top: 0;
+}
+.hero-simple .hero-copy .product-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #e6dcfa;
+  background: rgba(255,255,255,0.78);
+  color: var(--plum-dark);
+}
+.hero-simple .hero-copy .badge-icon {
+  width: 18px; height: 18px; flex: 0 0 18px;
+}
+
+/* Image â€” slightly larger but safe */
+.hero-simple .hero-art {
+  justify-self: end;
+  width: clamp(380px, 44vw, 660px);   /* +size */
+  max-width: 100%;
+  height: auto;
+  max-height: min(80vh, 700px);
+  object-fit: contain;
+  display: block;
+}
+
+/* --- Unified, non-cropping hero image area --- */
+.hero-art-wrapper {
+  width: 100%;
+  max-width: clamp(380px, 44vw, 660px);
+  height: clamp(320px, 48vw, 560px);  /* fixed visual height for stability */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;           /* never crop */
+  position: relative;
+  background: transparent;
+}
+
+/* ðŸš« No cropping: the image always fits inside */
+.hero-art-wrapper img.hero-art {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain !important;  /* ensure full image is visible */
+  object-position: center;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* ðŸ“± Mobile adjustments: slightly taller area for portrait screens */
+@media (max-width: 900px) {
+  .hero-art-wrapper {
+    height: min(50vh, 440px);
+    width: min(96vw, 600px);
+  }
+}
+
+
+.hero-art-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* keeps full image visible, avoids cropping */
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* Optional: slightly taller ratio on mobile for better framing */
+@media (max-width: 700px) {
+  .hero-art-wrapper {
+    aspect-ratio: 3 / 4;
+  }
+}
+
+/* Desktop tweaks: nudge the whole hero inward on very wide screens */
+@media (min-width: 1024px) {
+  .hero-simple {
+    padding-left: clamp(64px, 10vw, 180px);
+    padding-right: clamp(32px, 6vw, 120px);
+  }
+  .hero-simple .hero-copy { max-width: 680px; }
+}
+
+@media (min-width: 1400px) {
+  .hero-simple {
+    padding-left: clamp(120px, 14vw, 220px);
+    padding-right: clamp(60px, 8vw, 160px);
+  }
+}
+
+/* Mobile/tablet: stack image first, keep everything centered */
+@media (max-width: 900px) {
+  .hero-simple {
+    grid-template-columns: 1fr;
+    padding: clamp(18px, 6vw, 36px) 16px;
+    justify-items: center;
+    text-align: center;
+  }
+  .hero-simple .hero-art {
+    order: 1;
+    width: min(96vw, 600px);
+    max-height: min(50vh, 440px);
+    margin: 0 auto 10px;
+    justify-self: center;
+  }
+  .hero-simple .hero-copy {
+    order: 2;
+    justify-self: center;
+    max-width: 560px;
+    align-items: center;
+    gap: 16px;
+  }
+  .hero-simple .hero-copy .btn,
+  .hero-simple .hero-copy .product-badges { align-self: center; }
+}
+
+/* --- Mobile refinements: tighter and clearer tags --- */
+@media (max-width: 900px) {
+  /* Bring tags closer to the button */
+  .hero-simple .hero-copy .btn {
+    margin-bottom: 1px;  /* previously 6px or 10px */
+  }
+
+  /* Increase tag font size for readability */
+  .hero-simple .hero-copy .product-badge {
+    font-size: 1rem;     /* slightly larger on mobile (~16px) */
+    padding: 7px 14px;   /* slightly more tappable */
+  }
+
+  /* Keep spacing between tags visually balanced */
+  .hero-simple .hero-copy .product-badges {
+    gap: 8px;
+  }
+}
+
+
+/* Tiny phones */
+@media (max-width: 380px) {
+  .hero-simple .hero-art {
+    width: 88vw;
+    max-height: 36vh;
+  }
+}
+
+/* ðŸš« No cropping: the image shrinks to fit both height & width limits */
+.hero-art-wrapper img.hero-art {
+  max-height: 100%;
+  max-width: 100%;
+  height: auto;
+  width: auto;
+  object-fit: contain !important;   /* force â€œfitâ€ over any legacy rules */
+  object-position: center;
+}
+
+/* On mobile, keep it a touch taller (still no cropping) */
+@media (max-width: 900px) {
+  .hero-art-wrapper {
+    height: min(50vh, 440px);
+    width: min(96vw, 600px);
+  }
+}
+
+/* ===== Soft-wall blur gate ===== */
+.story-reader {
+  position: relative;
+}
+
+/* half-blur: applied by JS as .blur-bottom on #storyContent */
+.story-content.blur-bottom {
+  position: relative;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0 55%, rgba(0,0,0,0) 95%);
+          mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0 55%, rgba(0,0,0,0) 95%);
+  filter: blur(0px);
+}
+
+/* overlay that sits inside the story-reader card, bottom-centered */
+.gate-overlay {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 12px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+}
+
+.gate-card {
+  width: 100%;
+  max-width: 560px;
+  border-radius: 18px;
+  border: 1px solid #eee9fb;
+  background: rgba(255,255,255,0.95);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  text-align: center;
+}
+.gate-card h3 {
+  margin: 0 0 6px;
+  color: var(--plum-dark);
+  font-family: 'Nunito', sans-serif;
+}
+.gate-card p {
+  margin: 0 0 10px;
+  color: #3a3450;
+}
+
+.gate-card .btn { width: 100%; margin-top: 8px; }
+.gate-card .btn.ghost { background: #fff; color: var(--plum-dark); border: 1px solid #e8e4f6; }
+
+/* === StoryBud Checkout Gate — Branded === */
+.gate-card--brand {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,235,247,0.96));
+  border: 1px solid #eee9fb;
+  border-radius: 18px;
+  box-shadow: 0 18px 36px rgba(0,0,0,0.08);
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.gate-card--brand h3 {
+  font-family: 'Nunito', sans-serif;
+  color: var(--plum-dark);
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.gate-card--brand .muted {
+  color: #3a3450;
+  margin-bottom: 12px;
+}
+
+/* Google button (keeps functional ID) */
+.btn.btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: #fff;
+  color: #2f2a36;
+  border: 1px solid #e8e4f6;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+.btn.btn-google:hover { background: #fbf9ff; }
+
+/* Tiny Google "G" mark (inline SVG mask) */
+.btn.btn-google .g-logo {
+  width: 18px; height: 18px; display: inline-block;
+  background: currentColor;
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="%23000" d="M43.6 20.5H42V20H24v8h11.3C33.7 31.6 29.2 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.7 3l5.7-5.7C33.8 5 29.2 3 24 3 12.3 3 3 12.3 3 24s9.3 21 21 21 21-9.3 21-21c0-1.2-.1-2.3-.4-3.5z"/></svg>') center/contain no-repeat;
+          mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="%23000" d="M43.6 20.5H42V20H24v8h11.3C33.7 31.6 29.2 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.7 3l5.7-5.7C33.8 5 29.2 3 24 3 12.3 3 3 12.3 3 24s9.3 21 21 21 21-9.3 21-21c0-1.2-.1-2.3-.4-3.5z"/></svg>') center/contain no-repeat;
+}
+
+/* Email button = plum outline */
+.btn.btn-email {
+  margin-top: 8px;
+  width: 100%;
+  background: #fff;
+  color: var(--plum-dark);
+  border: 1px solid #e8e4f6;
+  border-radius: 999px;
+  padding: 12px 16px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+.btn.btn-email:hover { background: #fbf9ff; }
+
+
+.gate-email {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+.gate-email input {
+  border: 1px solid #e0dcec;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 16px;
+  box-shadow: var(--shadow);
+}
+.linklike {
+  background: none;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 6px 8px;
+}
+
+/* util */
+.hidden { display: none !important; }
+
+/* ====== Conversion UX: badge + blur glow + refined gate ====== */
+
+/* Personalised pill */
+.personal-badge {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #e6dcfa;
+  color: var(--plum-dark);
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+.personal-badge .dot { font-size: 14px; }
+.personal-badge.hidden { display: none; }
+
+/* Half-blur mask (applied by JS as .blur-bottom on #storyContent) */
+.story-content.blur-bottom {
+  position: relative;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0,0,0,1) 0 30%,   /* fully readable top 30% */
+    rgba(0,0,0,0) 60%      /* fully gone by 60% */
+  );
+          mask-image: linear-gradient(
+    to bottom,
+    rgba(0,0,0,1) 0 30%,
+    rgba(0,0,0,0) 60%
+  );
+}
+
+/* --- Prevent overlap between personalised badge and story text --- */
+.story-reader.has-badge .story-content {
+  margin-top: 36px; /* adds space only when badge exists */
+}
+
+@media (max-width: 700px) {
+  .story-reader.has-badge .story-content {
+    margin-top: 28px; /* slightly tighter on mobile */
+  }
+}
+
+/* Glow at the blur edge to invite continuation */
+.blur-glow {
+  position: absolute;
+  left: 0; right: 0; bottom: 80px;
+  height: 60px;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(255,255,255,0.95), rgba(255,255,255,0));
+  filter: drop-shadow(0 -10px 24px rgba(142,68,236,0.25));
+  z-index: 2;
+}
+.blur-glow.hidden { display: none; }
+
+/* Gate overlay container */
+.gate-overlay {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+}
+.gate-overlay.hidden { display: none; }
+
+.gate-card {
+  width: 100%;
+  max-width: 560px;
+  border-radius: 18px;
+  border: 1px solid #eee9fb;
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 18px 36px rgba(0,0,0,0.10);
+  padding: 16px;
+  text-align: center;
+}
+.gate-card h3 {
+  margin: 0 0 6px;
+  color: var(--plum-dark);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+}
+.gate-card p.muted { margin: 0 0 10px; color: #3a3450; }
+
+/* Primary auth button styled as 'Continue with Google' */
+.btn.btn-google {
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 14px 18px;
+  border-radius: 999px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  width: 100%;
+}
+.btn.btn-google:hover { background: #000; }
+
+.linklike {
+  background: none;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+/* Inline email form */
+.gate-email {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.gate-email input {
+  border: 1px solid #e0dcec;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 16px;
+  box-shadow: var(--shadow);
+}
+
+/* Subtle trust row */
+.trust-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+/* Hard clamp for signed-out preview (~10 lines) */
+.story-content.preview-clamp {
+  --clamp-lines: 10;          /* tweak per device if you want */
+  line-height: 1.7;           /* matches your .story-content */
+  position: relative;
+  overflow: hidden;
+  max-height: calc(var(--clamp-lines) * 1.7em);
+}
+
+/* Soft fade at the bottom of the clamped block (invites continuation) */
+.story-content.preview-clamp::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 72px; /* fade height */
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(255,255,255,0.98), rgba(255,255,255,0));
+}
+
+/* Give the story box extra room when the gate is shown */
+.story-reader.gated {
+  padding-bottom: 180px; /* room for the gate card to sit without covering text */
+}
+@media (max-width: 700px) {
+  .story-reader.gated { padding-bottom: 220px; }
+}
+
+/* Make the bottom fade smaller so it doesnâ€™t hide too much text */
+.story-content.preview-clamp::after {
+  height: 48px; /* was 72px */
+}
+
+/* --- Mobile hero image size fix --- */
+@media (max-width: 700px) {
+  .hero-art-wrapper {
+    height: auto;                     /* let height shrink naturally */
+    max-height: 300px;                /* cap image height */
+    width: 90vw;                      /* keep it visually centered */
+    margin: 0 auto 10px;              /* add spacing below */
+  }
+
+  .hero-art-wrapper img.hero-art {
+    max-height: 300px;                /* hard cap for small screens */
+    height: auto;
+    width: auto;
+    object-fit: contain;              /* keep full image visible */
+  }
+
+  /* optional: tighten vertical rhythm */
+  .hero-simple .hero-copy {
+    margin-top: 6px;
+    gap: 12px;                        /* closer headline–CTA spacing */
+  }
+}
+
+/* ===== Micro Demo Modal ===== */
+.modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(10,7,20,0.5); z-index: 999; }
+.modal.hidden { display: none; }
+.modal-card {
+  width: min(680px, 94vw); background: #fff; border: 1px solid #eee9fb; border-radius: 18px; box-shadow: var(--shadow);
+  padding: 18px;
+}
+.modal-close { position: absolute; top: 10px; right: 12px; background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer; }
+.demo-rows { display: grid; gap: 10px; }
+.demo-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: start; }
+.demo-tag { font-weight: 800; color: var(--plum-dark); }
+.demo-bubble { background: #fbf9ff; border: 1px solid #eee9fb; border-radius: 12px; padding: 10px 12px; }
+.demo-actions { display:flex; gap:8px; margin-top: 6px; }
+
+/* ===== How it works ===== */
+.hiw-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; max-width: 980px; margin: 0 auto; }
+.hiw-card { background:#fff; border:1px solid #eee9fb; border-radius:18px; box-shadow: var(--shadow); padding:16px; }
+.hiw-emoji { font-size: 24px; }
+
+/* ===== Why different (simple table) ===== */
+.diff-table { max-width: 980px; margin: 0 auto; display: grid; gap: 8px; }
+.diff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.diff-col { background:#fff; border:1px solid #eee9fb; border-radius:14px; padding:12px; }
+.diff-other { color:#6b6479; }
+.diff-us { color: var(--plum-dark); }
+
+/* ===== Benefits by moment ===== */
+.benefits-grid { display:grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap:12px; max-width:980px; margin:0 auto; }
+.benefit { background:#fff; border:1px solid #eee9fb; border-radius:18px; box-shadow:var(--shadow); padding:16px; text-align:left; }
+@media (max-width: 1024px) {
+  .hiw-grid { grid-template-columns: 1fr; }
+  .diff-row { grid-template-columns: 1fr; }
+  .benefits-grid { grid-template-columns: 1fr; }
+}
+
+/* ===============================
+   StoryBuds — Auth + Gate helpers
+   =============================== */
+
+/* Utilities */
+.hidden { display: none !important; }
+.fade-out { opacity: 0; transition: opacity .18s ease; }
+
+/* Modal */
+.modal {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 12, 20, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  opacity: 1; transition: opacity .18s ease;
+}
+.modal.hidden { opacity: 0; pointer-events: none; }
+.modal-card {
+  width: min(560px, 92vw);
+  background: #fff;
+  border-radius: 16px;
+  padding: clamp(16px, 3vw, 24px);
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  position: relative;
+}
+.modal-card h2 { margin: 0 0 10px; font-size: clamp(18px, 2.4vw, 22px); }
+.modal-close {
+  position: absolute; top: 10px; right: 10px;
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 0; background: #f2f1f6; cursor: pointer;
+}
+.modal .btn { padding: 10px 14px; border-radius: 12px; border: 0; cursor: pointer; }
+.modal .btn.ghost { background: transparent; border: 1px solid #e0dcec; }
+
+/* Gate: clamp + blur */
+.preview-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 10;        /* show first 10 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Optional soft glow at bottom; shown/hidden by JS via #blurGlow */
+#blurGlow {
+  height: 72px; margin-top: -72px;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(248,246,255,1) 60%, rgba(248,246,255,1) 100%);
+}
+@media (prefers-color-scheme: dark) {
+  #blurGlow { background: linear-gradient(180deg, transparent 0%, rgba(16,18,28,1) 60%, rgba(16,18,28,1) 100%); }
+}
+
+/* Alternative: add a gentle blur at the bottom if we aren't clamping lines */
+.blur-bottom {
+  position: relative;
+}
+.blur-bottom::after {
+  content: "";
+  position: absolute; left: 0; right: 0; bottom: 0; height: 120px;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 85%);
+  pointer-events: none;
+}
+@media (prefers-color-scheme: dark) {
+  .blur-bottom::after {
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(6,8,14,1) 85%);
+  }
+}
+
+/* Personalised badge used by gate */
+#personalBadge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; letter-spacing: .2px;
+  background: #f0ecff; color: #4b2bd6; border: 1px solid #e4ddff;
+}
+.story-reader.has-badge { margin-top: 8px; }
+#personalBadge svg, #personalBadge img { width: 14px; height: 14px; }
+
+/* Menu (only if your existing CSS doesn't already cover it) */
+#menu a { margin-right: 14px; text-decoration: none; }
+#menu a:last-child { margin-right: 0; }
+
+/* Small fix so modals and toasts appear above everything */
+.toast, .modal, #gateOverlay { z-index: 1000; }
+
+/* Hide age group UI (kept logic in JS) */
+.age-buttons,
+#ageBar,
+[data-age="buttons"] {
+  display: none !important;
+}
+
+/* When age bar is hidden, tighten vertical spacing */
+body.age-no-bar .hero,
+body.age-no-bar .hero-simple {
+  /* nudge the hero up a bit since the age bar is gone */
+  margin-top: clamp(8px, 2vh, 16px);
+}
+
+/* Optional: close the gap between hero and next section */
+body.age-no-bar .after-hero,
+body.age-no-bar .section-first,
+body.age-no-bar main > section:first-child {
+  margin-top: clamp(8px, 2vh, 16px);
+}
+
+/* Make hero banner image smaller on mobile screens only */
+@media (max-width: 700px) {
+  /* Target the same image class/id you already use */
+  .hero img#heroImage,
+  .hero-simple img#heroImage {
+    width: 70%;          /* reduce size (was 100%) */
+    max-width: 420px;    /* keep it crisp but not huge */
+    height: auto;
+    margin: 0 auto;      /* keep it centered */
+    display: block;
+  }
+
+  /* Optional: tighten vertical spacing a bit */
+  .hero,
+  .hero-simple {
+    margin-top: clamp(8px, 2vh, 16px);
+  }
+}
+
+/* === Mobile hero tightening === */
+@media (max-width: 700px) {
+  /* Reduce space above the banner image */
+  .hero-simple,
+  .hero {
+    padding-top: 0.05vh !important;   /* was around 8–12vh */
+  }
+
+  /* Reduce gap below the banner image before text starts */
+  .hero img#heroImage,
+  .hero-simple img#heroImage {
+    margin-bottom: 0.05rem !important;  /* half of previous spacing */
+  }
+
+  /* Tighten text and button stack */
+  .hero-simple .hero-copy {
+    gap: 10px !important;
+    margin-top: 0.4rem !important;
+  }
+}
+
+/* Hide "Available in digital, printed..." line in hero */
+.hero-simple .formats-sub {
+  display: none !important;
+}
+
+/* Compact hero spacing after removing the formats-sub line */
+.hero-simple .hero-copy {
+  gap: 14px; /* previously ~18px */
+}
+
+.hero-simple .hero-copy .btn {
+  margin-top: 6px;   /* was 8–10px */
+  margin-bottom: 8px;
+}
+
+@media (max-width: 700px) {
+  .hero-simple .hero-copy {
+    gap: 10px !important;
+    margin-top: 0.4rem !important;
+  }
+}
+
+/* === Quick Create overlay === */
+.qc-overlay {
+  position: fixed; inset: 0;
+  display: grid; place-items: center;
+  background: rgba(10,7,20,0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  animation: fadeIn .2s ease both;
+}
+.qc-overlay.hidden { display: none; }
+
+.qc-card {
+  width: min(560px, 92vw);
+  background: #fff;
+  border: 1px solid #eee9fb;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.18);
+  padding: 18px;
+  animation: qcDrop .25s ease both;
+}
+@keyframes qcDrop { from { transform: translateY(6px); opacity: .9; } to { transform: translateY(0); opacity: 1; } }
+
+.qc-close {
+  position: absolute; right: 14px; top: 12px;
+  background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer;
+}
+
+.qc-step h2 { margin: 4px 0 10px; color: var(--plum-dark); }
+
+.qc-chips {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.qc-chip {
+  border: 1px solid #e6dcfa; background: #fff;
+  padding: 10px 14px; border-radius: 999px; cursor: pointer;
+  font-weight: 700; color: #3a3450;
+}
+.qc-chip:hover { background: #fbf9ff; }
+
+.qc-fields { display: grid; gap: 10px; margin-top: 8px; }
+.qc-fields input, .qc-fields select {
+  width: 100%; border: 1px solid #e0dcec; border-radius: 12px; padding: 10px 12px; font-size: 16px;
+}
+.qc-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+
+.hidden { display: none !important; }
+
+/* --- Gate positioning fix: show teaser above --- */
+.story-reader.gated {
+  padding-bottom: 240px; /* give enough room for the gate below */
+  position: relative;
+}
+
+/* Move the gate slightly lower within the story card */
+.gate-overlay {
+  bottom: 0;                /* anchor to bottom edge */
+  transform: translateY(30px); /* push down to reveal story lines */
+}
+
+/* Reduce blur/fade overlap so teaser remains readable */
+.story-content.preview-clamp::after {
+  height: 42px; /* less fade = more visible text */
+}
+
+/* Keep it comfortable on mobile */
+@media (max-width: 700px) {
+  .story-reader.gated {
+    padding-bottom: 280px;
+  }
+  .gate-overlay {
+    transform: translateY(24px);
+  }
+}
+
+
+/* === Checkout "Please wait" transition view === */
+.wait-wrap {
+  display: grid; place-items: center; gap: 10px;
+  min-height: 220px; background: rgba(255,255,255,0.9);
+  border: 1px solid #eee9fb; border-radius: 16px; box-shadow: var(--shadow);
+  padding: 20px; text-align: center;
+}
+.wait-dots {
+  display: inline-grid; grid-auto-flow: column; gap: 6px;
+}
+.wait-dots span {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #8E44EC; opacity: .25; animation: dotPulse 1.2s infinite ease-in-out;
+}
+.wait-dots span:nth-child(2){ animation-delay: .15s; }
+.wait-dots span:nth-child(3){ animation-delay: .3s; }
+@keyframes dotPulse {
+  0%, 100% { transform: translateY(0); opacity: .25; }
+  50%      { transform: translateY(-6px); opacity: 1;  }
+}
+
+/* — Story Detail UX polish (non-breaking) — */
+.sd-topbar-right { display:flex; align-items:center; gap:8px; }
+
+/* Favourite (star) button */
+#favBtn{
+  display:inline-flex; align-items:center; gap:6px;
+  border:1px solid #eee9fb; border-radius:12px; background:#fff;
+  padding:8px 10px; cursor:pointer; font-weight:800; color:#6b6479;
+}
+#favBtn[aria-pressed="true"]{ color:#b35b00; background:#fff7eb; border-color:#ffe1bd; }
+
+/* Parent voice (beta) pill above sticky listen */
+#voiceBtn{
+  position: fixed; left: 16px; right: 16px; bottom: 74px;
+  z-index: 19; border-radius:999px; padding:10px 12px;
+  background:rgba(26,31,46,.92); color:#fff; border:1px solid rgba(255,255,255,.2);
+  font-weight:800; box-shadow:0 8px 24px rgba(0,0,0,.15); text-align:center;
+}
+
+/* Premium look for existing sticky #toggleMic */
+.sticky-listen{
+  background: linear-gradient(135deg, #8E44EC, #B67AF3);
+  color:#fff; font-weight:800;
+}
+
+/* === Visual Storybook (0–2) === */
+.storybook {
+  position: relative;
+  max-width: 980px;
+  margin: 12px auto 16px;
+  padding: 0;
+  border-radius: 18px;
+  border: 1px solid #eee9fb;
+  background: #fff;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.sb-stage {
+  position: relative;
+  width: 100%;
+  /* Compact height so story stays near the fold */
+  height: clamp(220px, 32vh, 340px);
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+}
+
+.sb-page {
+  position: absolute; inset: 0;
+  background-size: cover;
+  background-position: center;
+  will-change: transform, opacity;
+  opacity: 0; transform: scale(1.02);
+  transition: opacity .35s ease, transform .6s ease;
+  border-radius: 12px;
+  margin: 8px; /* soft insets */
+}
+
+.sb-page.sb-active { opacity: 1; transform: scale(1); }
+
+/* Gentle infant-friendly motion */
+@keyframes sbFloat {
+  0%   { transform: scale(1) translateY(0px); }
+  50%  { transform: scale(1.015) translateY(-4px); }
+  100% { transform: scale(1) translateY(0px); }
+}
+.sb-anim.sb-active { animation: sbFloat 6s ease-in-out infinite; }
+
+/* Arrows */
+.sb-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  z-index: 3; background: rgba(255,255,255,.9);
+  border: 1px solid #eee9fb; color: var(--plum-dark);
+  width: 36px; height: 36px; border-radius: 999px;
+  display: grid; place-items: center; font-weight: 800;
+  cursor: pointer; box-shadow: var(--shadow);
+}
+.sb-prev { left: 10px; } .sb-next { right: 10px; }
+.sb-nav:active { transform: translateY(-50%) scale(0.98); }
+
+/* Dots */
+.sb-dots {
+  position: absolute; left: 0; right: 0; bottom: 8px;
+  display: flex; gap: 6px; justify-content: center;
+  z-index: 3; pointer-events: none;
+}
+.sb-dots button {
+  pointer-events: auto;
+  width: 8px; height: 8px; border-radius: 999px;
+  background: rgba(0,0,0,.14); border: 0;
+}
+.sb-dots button[aria-current="true"] { background: var(--plum); }
+
+/* Mobile tweaks: keep footprint small and tappable */
+@media (max-width: 700px) {
+  .sb-stage { height: clamp(200px, 28vh, 280px); }
+  .sb-nav { width: 34px; height: 34px; }
+}
+
+/* === Character Uploader (compact) === */
+.char-uploader {
+  max-width: 980px;
+  margin: 8px auto 14px;
+  padding: 12px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #eee9fb;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+.char-uploader .cu-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  margin-bottom: 8px;
+}
+.char-uploader h3 {
+  margin: 0; color: var(--plum-dark); font-size: 18px; font-family: 'Nunito', sans-serif;
+}
+.char-uploader .muted { margin: 0; }
+
+/* two cards side-by-side on desktop, stacked on mobile */
+.cu-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+@media (max-width: 700px) { .cu-grid { grid-template-columns: 1fr; } }
+
+.cu-card {
+  display: grid; grid-template-columns: 120px 1fr; gap: 10px;
+  background: #fff; border: 1px solid #eee9fb; border-radius: 14px; padding: 10px;
+}
+.cu-thumb {
+  width: 100%; aspect-ratio: 1/1; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2));
+  display: grid; place-items: center; color: #8b83a3; font-weight: 700; font-size: 12px;
+  border: 1px solid #eee9fb;
+}
+.cu-thumb::after { content: "No photo"; opacity: .8; }
+.cu-thumb.has-img::after { content: ""; }
+
+.cu-meta { display: grid; align-content: center; gap: 8px; }
+.cu-label { font-weight: 800; color: var(--plum-dark); }
+.cu-input { display: none; }
+.cu-btn { padding: 10px 12px; }
+
+.cu-actions {
+  display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap;
+}
+.cu-actions .hint { margin-left: 6px; }
+
+/* === Compact Accordion (for photo personalisation) === */
+.acc.acc--compact { 
+  max-width: 980px; 
+  margin: 8px auto 14px; 
+}
+
+.acc-head {
+  width: 100%;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #eee9fb;
+  box-shadow: var(--shadow);
+  color: var(--plum-dark);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.acc-title { font-family: 'Nunito', sans-serif; font-size: 15px; }
+.acc-chevron { transition: transform .2s ease; }
+.acc-head[aria-expanded="true"] .acc-chevron { transform: rotate(90deg); }
+
+.acc-body {
+  overflow: hidden;
+  transition: grid-template-rows .22s ease, padding .22s ease;
+  display: grid;
+  grid-template-rows: 0fr;     /* collapsed */
+  padding: 0 2px;
+}
+
+.acc-body[data-open="1"] {
+  grid-template-rows: 1fr;     /* expanded */
+  padding: 8px 2px 0 2px;
+}
+
+.acc-body > * {
+  min-height: 0; /* needed for grid “0fr/1fr” trick */
+}
+
+/* Ensure hidden truly hides regardless of display overrides */
+.acc-body[hidden] { display: none !important; }
+
+/* Collapse smoothly with inner wrapper that clips content */
+.acc-body {
+  display: grid;
+  grid-template-rows: 0fr;   /* collapsed */
+  overflow: hidden;          /* clip */
+  padding: 0 2px;
+}
+
+.acc-body[data-open="1"] {
+  grid-template-rows: 1fr;   /* expanded */
+  padding: 8px 2px 0 2px;
+}
+
+/* The inner wrapper actually receives the height; it must clip children */
+.acc-content {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Remove outer margins from the uploader when inside accordion
+   (prevents headings from “peeking” when collapsed) */
+.acc .char-uploader { margin: 0; }
+
+/* --- Sticky CTA bar (replaces two separate fixed buttons) --- */
+.sticky-cta-bar{
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+/* Neutralise the old fixed positioning from the standalone styles */
+.sticky-cta-bar #toggleMic,
+.sticky-cta-bar #voiceBtn{
+  position: static !important;
+  left: auto; right: auto; bottom: auto;
+}
+
+/* Primary Play (reuses your .sticky-listen gradient) */
+.sticky-cta-bar #toggleMic{
+  font-weight: 800;
+  height: 48px;
+  border-radius: 999px;
+}
+
+/* Secondary Voice (outline/ghost look, lower visual weight) */
+.btn-voice{
+  background: #fff;
+  color: var(--plum-dark);
+  border: 1px solid #e8e4f6;
+  height: 48px;
+  border-radius: 999px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+.btn-voice:hover{ background:#fbf9ff; }
+
+/* Small screens: full-width bar stays tidy */
+@media (max-width:700px){
+  .sticky-cta-bar{ gap: 8px; }
+  .sticky-cta-bar #toggleMic,
+  .sticky-cta-bar #voiceBtn{ height: 46px; }
+}
+
+/* Fade helper (used by the visibility script below) */
+.sticky-fade{ transition: opacity .25s ease, transform .2s ease; will-change: opacity, transform; }
+.sticky-fade.is-hidden{ opacity:0; transform: translateY(8px); pointer-events:none; }
+
+/* === Voice Picker Overlay + Bottom Sheet === */
+.v-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,12,20,0.55);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity .2s ease;
+  pointer-events: none;
+}
+.v-overlay.show { opacity: 1; pointer-events: auto; }
+
+.v-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -20px 40px rgba(0,0,0,.25);
+  transform: translateY(100%);
+  transition: transform .25s ease;
+  will-change: transform;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 14px;
+}
+.v-overlay.show .v-sheet { transform: translateY(0); }
+
+.v-grip {
+  height: 5px; width: 44px;
+  background: #e9e6f7;
+  border-radius: 999px;
+  margin: 8px auto 10px;
+}
+
+/* Ensure sticky CTA bar disappears under the sheet without layout shifts */
+#stickyCtas.is-hidden,
+#voiceBtn.is-hidden,
+#toggleMic.is-hidden { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+/* (Already present in your page-level helper) */
+.sticky-fade { transition: opacity .25s ease, transform .2s ease; will-change: opacity, transform; }
+
+/* Lock background when modal/bottom-sheet is open */
+html.modal-open, body.modal-open {
+  height: 100%;
+  overflow: hidden;                 /* desktop + Android */
+  overscroll-behavior: contain;     /* stop rubber-banding */
+}
+
+/* While dragging, tell the browser not to treat gestures as scroll */
+.v-overlay, .v-sheet { touch-action: none; }   /* iOS/Safari friendly */
+
+/* === Accordion Chevron (SVG) — clearer, animated === */
+.acc-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+  line-height: 1;
+  color: var(--plum-dark);
+  opacity: 0.8;
+  transition: transform .25s ease, opacity .2s ease;
+}
+.acc-chevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Rotate when expanded (aria-expanded toggled by your JS) */
+.acc-head[aria-expanded="true"] .acc-chevron {
+  transform: rotate(90deg);
+  opacity: 1;
+}
+
+/* Slightly larger on small screens for recognisability */
+@media (max-width: 700px) {
+  .acc-chevron { margin-left: 12px; }
+  .acc-chevron svg { width: 20px; height: 20px; }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .acc-chevron { transition: none; }
+}
+
+

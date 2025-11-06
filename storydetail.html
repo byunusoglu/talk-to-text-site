@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Your Story — Read with Sounds (Beta) | StoryBuds</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="script.js"></script>
+
+  <style>
+    /* === Local layout polish (kept) === */
+    .detail-wrap { max-width: 980px; margin: 20px auto; padding: 0 16px; }
+    .soundbar {
+      position: sticky; top: 68px; z-index: 10;
+      display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px;
+      align-items: center; background: rgba(255,255,255,0.9);
+      border: 1px solid #eee9fb; border-radius: 14px; padding: 10px 12px;
+      box-shadow: var(--shadow);
+    }
+    .soundbar .status { color: #3a3450; font-weight: 600; }
+    .soundbar .hint   { color: var(--muted); font-size: 13px; }
+    .sfx-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .sfx-row .btn { padding: 10px 14px; font-weight: 700; }
+    .inline-field { display:flex; align-items:center; gap:8px; }
+    .inline-field input[type="range"] { width: 160px; }
+    .story-reader { margin-top: 16px; }
+    .badge-beta { display:inline-block; margin-left:6px; font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; background:#fbf9ff; border:1px solid #eee9fb; color: var(--plum-dark); }
+
+    /* === STT Debug Panel === */
+    .stt-debug { margin-top:12px; border:1px solid #eee9fb; border-radius:14px; background:rgba(255,255,255,0.9); box-shadow:var(--shadow); padding:12px; }
+    .stt-controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+    .stt-panels { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .stt-panel { display:flex; flex-direction:column; gap:6px; }
+    .stt-title { font-weight:700; color:#3a3450; font-size:14px; }
+    .stt-box { min-height:80px; padding:10px; border:1px solid #eee9fb; border-radius:10px; background:#fff; overflow:auto; }
+    .monospace { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; white-space:pre-wrap; }
+    .stt-meter-row { display:flex; align-items:center; gap:12px; margin-top:10px; }
+    .stt-meter { flex:1; height:10px; background:#f2f2f6; border-radius:999px; overflow:hidden; border:1px solid #eee9fb; }
+    .stt-meter span { display:block; height:100%; width:0%; background:#8E44EC; transition: width .08s linear; }
+
+    /* Hide heavy UI by default — "production mode" */
+    .dev-only { display: none !important; }
+
+    /* Sticky single CTA for production */
+    .sticky-listen {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 18px;
+      z-index: 20;
+      border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      font-weight: 800;
+    }
+
+    /* Short helper hint under title */
+    .listen-hint {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 6px 0 0;
+      text-align: center;
+    }
+
+    @media (max-width:900px){
+      .soundbar{ grid-template-columns:1fr; }
+      .stt-panels{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+
+<body class="fade-in">
+  <!-- Topbar -->
+  <header class="topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-badge"><img src="logo.png" alt="StoryBuds logo" /></span>
+    </a>
+    <div class="top-actions">
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">
+        <svg class="cart-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3 3h2l3.6 9.59a1 1 0 0 0 .92.65H17a1 1 0 0 0 .96-.74L20 6H6"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="9" cy="20" r="1" fill="currentColor"></circle>
+          <circle cx="17" cy="20" r="1" fill="currentColor"></circle>
+        </svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
+      <button id="favBtn" aria-pressed="false" title="Star this story">⭐ Favourite</button>
+    </div>
+    <nav id="menu" class="menu hidden" aria-label="Main navigation">
+      <a href="home.html">Home</a>
+      <a href="create.html">Create Stories</a>
+      <a href="#">My Profile</a>
+    </nav>
+  </header>
+
+  <main class="detail-wrap">
+
+    <!-- Storybook (0–2) — purely visual, no text -->
+<section class="storybook" id="storybook" aria-label="Visual storybook">
+  <button class="sb-nav sb-prev" id="sbPrev" aria-label="Previous page">‹</button>
+
+  <div class="sb-stage">
+    <!-- Pages are injected by JS as .sb-page elements with background images -->
+    <div class="sb-page sb-anim" data-idx="0"></div>
+  </div>
+
+  <button class="sb-nav sb-next" id="sbNext" aria-label="Next page">›</button>
+
+  <div class="sb-dots" id="sbDots" aria-hidden="true"></div>
+</section>
+
+    <!-- Personalise with photos (accordion, collapsed by default) -->
+<section class="acc acc--compact" id="charAcc" aria-label="Personalise characters">
+  <button class="acc-head" id="charAccToggle" aria-expanded="false" aria-controls="charAccBody">
+    <span class="acc-title">🧸 Make them the hero</span>
+    <span class="acc-chevron" aria-hidden="true">
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+       role="img" focusable="false">
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+</span>
+  </button>
+
+  <div class="acc-body" id="charAccBody" hidden>
+    <div class="acc-content">
+    <!-- Character Uploader (same content as before, unchanged) -->
+    <section class="char-uploader" id="charUploader" aria-label="Personalise characters">
+      <div class="cu-head">
+        <h3>Personalise characters</h3>
+        <p class="muted">Add a photo for your child and pet (optional).</p>
+      </div>
+
+      <div class="cu-grid">
+        <!-- Child -->
+        <div class="cu-card">
+          <div class="cu-thumb" data-role="child" aria-label="Child photo preview"></div>
+          <div class="cu-meta">
+            <div class="cu-label">Child</div>
+            <input type="file" accept="image/*" capture="environment" id="cuChild" class="cu-input" aria-label="Upload child photo">
+            <button class="btn ghost cu-btn" data-for="cuChild">Upload photo</button>
+          </div>
+        </div>
+
+        <!-- Pet (optional) -->
+        <div class="cu-card">
+          <div class="cu-thumb" data-role="pet" aria-label="Pet photo preview"></div>
+          <div class="cu-meta">
+            <div class="cu-label">Pet (optional)</div>
+            <input type="file" accept="image/*" capture="environment" id="cuPet" class="cu-input" aria-label="Upload pet photo">
+            <button class="btn ghost cu-btn" data-for="cuPet">Upload photo</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cu-actions">
+        <button class="btn" id="cuSave">Save photos</button>
+        <button class="btn ghost" id="cuClear">Clear</button>
+        <div class="hint muted">Used for digital personalisation and your printed book later.</div>
+      </div>
+    </section>
+  </div>
+</section>
+
+    
+<!-- Story (kept as-is) -->
+<section class="story-reader">
+  <h2 id="storyTitle" class="sr-only">Your story</h2>
+  <div id="storyContent" class="story-content"></div>
+</section>
+
+    
+    <!-- Sticky CTA bar: Play (primary) + Voice (secondary) -->
+<div class="sticky-cta-bar sticky-fade is-hidden" id="stickyCtas">
+  <button class="btn sticky-listen" id="toggleMic">▶️ Play story</button>
+  <button class="btn btn-voice" id="voiceBtn" title="Choose voice before playing">🎙️ Voice</button>
+</div>
+
+    <!-- Story -->
+    <section class="story-reader">
+      <h2 id="storyTitle" class="sr-only">Your story</h2>
+      <div id="storyContent" class="story-content"></div>
+    </section>
+  </main>
+
+  <footer>© <span id="year"></span> StoryBuds</footer>
+
+  <script>
+    /* =======================
+       Load story + audio base
+    ======================= */
+    const SS = window.sessionStorage;
+    const storyEl = document.getElementById("storyContent");
+    storyEl.innerHTML = SS.getItem("yw_story_html") || '<p class="muted">No story found. Please generate a story first.</p>';
+
+    // Fallback: if no local story and user is signed in, fetch latest from partner API
+(async () => {
+  try {
+    const hasLocal = !!SS.getItem('yw_story_html');
+    if (hasLocal) return;
+
+    // Check auth — /users/me
+    const me = await fetch('https://imaginee-y9nk.onrender.com/api/v1/users/me', {
+      credentials: 'include'
+    });
+    if (!me.ok) return; // not signed in → keep default message
+
+    // Get user's stories — /stories/my
+    const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
+      credentials: 'include'
+    });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const stories = data?.data?.stories || [];
+    if (!stories.length) return;
+
+    // Most recent story first
+    const latest = stories.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
+
+    // If pages included, render; else fetch by id — /stories/:id
+    let html = '';
+    if (latest.pages?.length) {
+      const body = latest.pages.map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
+      html = `<h1>${latest.title || ''}</h1>${body}`;
+    } else if (latest._id) {
+      const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${latest._id}`, {
+        credentials: 'include'
+      });
+      if (one.ok) {
+        const full = (await one.json())?.data?.story || {};
+        const body = (full.pages || []).map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
+        html = `<h1>${full.title || latest.title || ''}</h1>${body}`;
+      }
+    }
+
+    if (html) {
+      SS.setItem('yw_story_html', html);
+      storyEl.innerHTML = html;
+    }
+  } catch (_) {
+    // silent fail to keep UX clean
+  }
+})();
+    
+    // Show full controls in ?debug=1 mode
+    const url = new URL(location.href);
+    const isDebug = url.searchParams.get("debug") === "1";
+    if (isDebug) {
+      document.getElementById('soundbar')?.classList.remove('dev-only');
+      document.getElementById('sttDebug')?.classList.remove('dev-only');
+      // Nudge sticky CTA a bit higher when debug bars appear
+      document.getElementById('toggleMic')?.style.setProperty('bottom','88px');
+    }
+
+    // Audio & ambience disabled for now
+const ctx = null;
+
+
+    // Manual SFX (exists in DOM but hidden by default)
+    (function(){
+      const row = document.getElementById("manualSfx");
+      if (!row) return;
+      row.addEventListener("click", (e) => {
+        const id = e.target.closest('[data-sfx]')?.dataset.sfx; if (!id) return;
+        if (id === "whoosh")  return playWhoosh();
+        if (id === "plip")    return playPlip();
+        if (id === "chime")   return playChime();
+        if (id === "bark")    return playBarkSoft();
+        if (id === "wind")    return playWindGust();
+        if (id === "lullaby") return playLullabyPhrase();
+        if (id === "stop")    return stopAmbience();
+      });
+    })();
+
+    /* ====== Ambience (auto + crossfade) ====== */
+    let amb = { node: null, gain: null, kind: 'off' };
+
+    function makeNoiseLoop(color='white'){
+      const src = ctx.createBufferSource();
+      const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+      const d = b.getChannelData(0);
+      for (let i=0;i<d.length;i++){
+        const white = Math.random()*2-1;
+        d[i] = color === 'ocean' ? ((d[i-1]||0)*0.98 + white*0.02)
+             : color === 'rain'  ? white*0.35
+             : white*0.22;
+      }
+      src.buffer = b; src.loop = true;
+      return src;
+    }
+    function makePad(freqs=[220, 277, 330]){
+      const g = ctx.createGain(); g.gain.value = 0.0;
+      freqs.forEach((f,i) => {
+        const o = ctx.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(f, ctx.currentTime + i*0.03);
+        const og = ctx.createGain(); og.gain.value = 0.06;
+        o.connect(og).connect(g); o.start();
+      });
+      return { node: g, gain: g };
+    }
+    function startAmbience(kind){
+      stopAmbience(0.5);
+      let node=null, gain=null;
+      if (kind === 'forest'){
+        const s = makeNoiseLoop('white'); const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
+        const g = ctx.createGain(); g.gain.value = 0.0; s.connect(lp).connect(g).connect(master); s.start(); node=s; gain=g;
+      } else if (kind === 'ocean'){
+        const s = makeNoiseLoop('ocean'); const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=200; bp.Q.value=0.7;
+        const g = ctx.createGain(); g.gain.value = 0.0; s.connect(bp).connect(g).connect(master); s.start(); node=s; gain=g;
+      } else if (kind === 'rain'){
+        const s = makeNoiseLoop('rain'); const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1800;
+        const g = ctx.createGain(); g.gain.value = 0.0; s.connect(lp).connect(g).connect(master); s.start(); node=s; gain=g;
+      } else if (kind === 'night'){
+        const p = makePad([261.6, 329.6, 392.0]); p.node.connect(master); node=p.node; gain=p.gain;
+      } else if (kind === 'castle'){
+        const p = makePad([329.6, 415.3, 523.3]); p.node.connect(master); node=p.node; gain=p.gain;
+      } else if (kind === 'pad'){
+        const p = makePad([220, 277, 330]); p.node.connect(master); node=p.node; gain=p.gain;
+      }
+      if (gain){
+        const t = ctx.currentTime;
+        gain.gain.cancelScheduledValues(t);
+        gain.gain.linearRampToValueAtTime(0.0, t);
+        gain.gain.linearRampToValueAtTime(0.14, t + 0.8);
+      }
+      amb = { node, gain, kind };
+    }
+    function stopAmbience(fade=0.3){
+      if (!amb.gain){ amb = { node:null, gain:null, kind:'off' }; return; }
+      const t = ctx.currentTime;
+      amb.gain.gain.cancelScheduledValues(t);
+      amb.gain.gain.linearRampToValueAtTime(0, t + fade);
+      if (amb.node && amb.node.stop) amb.node.stop(t + fade + 0.05);
+      amb = { node:null, gain:null, kind:'off' };
+    }
+
+    const ambSel = document.getElementById('amb');
+    function deaccent(str) {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")       // remove diacritics
+    .replace(/[çÇ]/g, "c")
+    .replace(/[ğĞ]/g, "g")
+    .replace(/[ıİ]/g, "i")
+    .replace(/[öÖ]/g, "o")
+    .replace(/[şŞ]/g, "s")
+    .replace(/[üÜ]/g, "u");
+}
+    function pickAmbienceFromStory(text){
+      const s = deaccent(text || '');
+      if (/\brain|storm|puddle/.test(s)) return 'rain';
+      if (/\bocean|sea|wave|beach/.test(s)) return 'ocean';
+      if (/\bforest|woods|tree|owl/.test(s)) return 'forest';
+      if (/\bnight|moon|sleep|star/.test(s)) return 'night';
+      if (/\bcastle|king|queen|magic/.test(s)) return 'castle';
+      return 'pad';
+    }
+    function applyAmbienceSelection(val){
+      if (val === 'off') return stopAmbience(0.4);
+      if (val === 'auto') return startAmbience(pickAmbienceFromStory(storyEl.textContent || ''));
+      startAmbience(val);
+    }
+    const storedAmb = SS.getItem("yw_ambience") || "auto";
+    if (ambSel) {
+      ambSel.value = storedAmb;
+      applyAmbienceSelection(ambSel.value);
+      ambSel.addEventListener('change', e => {
+        const v = e.target.value;
+        SS.setItem("yw_ambience", v);
+        applyAmbienceSelection(v);
+      });
+    } else {
+      applyAmbienceSelection(storedAmb);
+    }
+
+    /* ==========================================
+       Option 1: Story follower + prefix trigger
+       ========================================== */
+    const RAW_TEXT = (storyEl.textContent || "")
+      .toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+      .replace(/[^a-z0-9\s']/g,' ')
+      .replace(/\s+/g,' ')
+      .trim();
+
+    const TRIGGERS = new Set(['magic','sparkle','rain','wind','dog','puppy','star','sleep','fly']);
+    const EFFECT_FOR = {
+      magic:'chime', sparkle:'chime', star:'chime',
+      rain:'plip', wind:'wind', dog:'bark', puppy:'bark',
+      sleep:'lullaby', fly:'whoosh'
+    };
+
+    const TOKENS = RAW_TEXT ? RAW_TEXT.split(' ') : [];
+    let cursor = 0;
+    const MIN_PREFIX = (w) => Math.min(3, Math.max(2, Math.floor(w.length * 0.35)));
+
+    let lastEffectAt = 0;
+    const COOLDOWN_GLOBAL_MS = 380;
+    const lastAtByEffect = Object.create(null);
+    function canTrigger(effectName, cdMs){
+      const now = Date.now();
+      if (now - lastEffectAt < COOLDOWN_GLOBAL_MS) return false;
+      const last = lastAtByEffect[effectName] || 0;
+      if (now - last < cdMs) return false;
+      lastAtByEffect[effectName] = now;
+      lastEffectAt = now;
+      return true;
+    }
+    const EFFECTS = {
+      whoosh: { fn: playWhoosh,       cd: 1600 },
+      plip:   { fn: playPlip,         cd: 1600 },
+      wind:   { fn: playWindGust,     cd: 5000 },
+      chime:  { fn: playChime,        cd: 2500 },
+      bark:   { fn: playBarkSoft,     cd: 2200 },
+      lullaby:{ fn: playLullabyPhrase,cd: 7000 },
+    };
+    function triggerEffect(name){
+      const eff = EFFECTS[name];
+      if (!eff) return;
+      if (canTrigger(name, eff.cd)) eff.fn();
+    }
+
+    function alignAndMaybeTrigger(interimTail) {
+      if (!TOKENS.length) return;
+      const words = interimTail.toLowerCase().split(/\s+/).filter(Boolean).slice(-12);
+      if (!words.length) return;
+
+      const WINDOW = 30;
+      let bestIdx = cursor, bestHit = 0;
+      const start = Math.max(0, cursor - WINDOW);
+      const end   = Math.min(TOKENS.length, cursor + WINDOW);
+
+      for (let i = start; i < end; i++) {
+        const sliceStart = Math.max(0, i - words.length + 1);
+        const slice = TOKENS.slice(sliceStart, i + 1);
+        let hit = 0;
+        const offset = Math.max(0, words.length - slice.length);
+        for (let k = 0; k < slice.length; k++) if (slice[k] === words[offset + k]) hit++;
+        if (hit > bestHit) { bestHit = hit; bestIdx = i; }
+      }
+
+      if (bestIdx > cursor) cursor = Math.min(bestIdx, cursor + 3);
+
+      for (let j = cursor; j < Math.min(cursor + 20, TOKENS.length); j++) {
+        const w = TOKENS[j];
+        if (!TRIGGERS.has(w)) continue;
+
+        const need   = MIN_PREFIX(w);
+        const prefix = w.slice(0, need);
+        const lastWord = words[words.length - 1] || '';
+
+        if (lastWord.startsWith(prefix)) {
+          const eff = EFFECT_FOR[w];
+          if (eff) triggerEffect(eff);
+          cursor = Math.min(j + 1, TOKENS.length - 1);
+          break;
+        }
+        if (j - cursor > 8) break;
+      }
+    }
+
+
+
+    (function(){
+      const clearBtn = document.getElementById("sttClear");
+      if (!clearBtn) return;
+      clearBtn.addEventListener("click", () => {
+        const boxFinal  = document.getElementById('sttFinal');
+        const boxInter  = document.getElementById('sttInterim');
+        const boxEv     = document.getElementById('sttEvents');
+        if (boxFinal) boxFinal.textContent='';
+        if (boxInter) boxInter.textContent='';
+        if (boxEv)    boxEv.textContent='';
+      });
+    })();
+
+
+    // Footer year
+const yearEl = document.getElementById("year");
+if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+  </script>
+  <script>
+/* 1) Optional: hydrate page <h1> from story */
+(function(){
+  const storyH1 = document.getElementById('storyContent')?.querySelector('h1')?.textContent?.trim();
+  const pageH1  = document.querySelector('main h1, .detail-wrap h1');
+  if (storyH1 && pageH1 && !/Read with Sounds/i.test(pageH1.textContent)) pageH1.textContent = storyH1;
+})();
+
+/* 2) Favourites (local only) */
+(function(){
+  const key='yw_starred_stories', btn=document.getElementById('favBtn'); if(!btn) return;
+  const get=()=>{try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(_){return[]}};
+  const set=a=>{try{localStorage.setItem(key,JSON.stringify(a))}catch(_){}};
+  const title=(document.getElementById('storyContent')?.querySelector('h1')?.textContent?.trim()
+               || document.querySelector('main h1, .detail-wrap h1')?.textContent?.trim()
+               || 'Untitled Story');
+  const paint=()=>{const on=get().includes(title); btn.setAttribute('aria-pressed',on?'true':'false'); btn.textContent=on?'🌟 Favourited':'⭐ Favourite';};
+  const toast=m=>{const n=document.createElement('div'); n.textContent=m; n.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:110px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999'; document.body.appendChild(n); setTimeout(()=>n.remove(),1100);};
+  btn.addEventListener('click',()=>{const a=get(); const i=a.indexOf(title); if(i>=0)a.splice(i,1); else a.push(title); set(a); paint(); toast(a.includes(title)?'Saved to favourites':'Removed from favourites');});
+  paint();
+})();
+
+/* 3) Parent voice (teaser) */
+document.getElementById('voiceBtn')?.addEventListener('click', ()=>{
+  alert('🎙️ Parent voice is coming soon.\nRecord a 20-second sample and we’ll narrate in your voice.');
+});
+</script>
+
+  <script>
+(function storybookInit(){
+  const SS = window.sessionStorage;
+  const stage = document.querySelector('.sb-stage');
+  const dots  = document.getElementById('sbDots');
+  const prev  = document.getElementById('sbPrev');
+  const next  = document.getElementById('sbNext');
+  if (!stage || !dots) return;
+
+  // 1) Try story images from backend or session
+  // If your existing loader fetched a full story (with pages), we can read & cache them here.
+  async function getImagePages(){
+    // Prefer cached
+    try {
+      const cached = JSON.parse(SS.getItem('yw_story_pages') || '[]');
+      if (cached.length) return cached;
+    } catch(_) {}
+
+    // Try to extract images from the latest fetched story HTML (none by default)
+    // or fetch the latest signed-in story (your page already does this above):contentReference[oaicite:4]{index=4}.
+    // To keep this decoupled, we only read what earlier logic may have set:
+    // SS.yw_story_images (optional)
+    try {
+      const imgs = JSON.parse(SS.getItem('yw_story_images') || '[]');
+      if (imgs.length) return imgs;
+    } catch(_) {}
+
+    // Fallback: soft, baby-friendly local banners
+    return [
+      'momdaughterbanner.png',
+      'childsdreambanner.png',
+      'grownbanner.png'
+    ];
+  }
+
+  // 2) Render pages
+  function renderPages(imgs){
+    stage.innerHTML = '';
+    dots.innerHTML = '';
+    imgs.forEach((src, i) => {
+      const p = document.createElement('div');
+      p.className = 'sb-page sb-anim' + (i === 0 ? ' sb-active' : '');
+      p.dataset.idx = String(i);
+      p.style.backgroundImage = `url("${src}")`;
+      stage.appendChild(p);
+
+      const d = document.createElement('button');
+      d.type = 'button';
+      d.setAttribute('aria-label', `Page ${i+1}`);
+      if (i === 0) d.setAttribute('aria-current','true');
+      d.addEventListener('click', () => go(i));
+      dots.appendChild(d);
+    });
+  }
+
+  let total = 0, idx = 0;
+  function go(n){
+    const pages = [...stage.querySelectorAll('.sb-page')];
+    if (!pages.length) return;
+    const nextIdx = Math.max(0, Math.min(total-1, n));
+    pages.forEach(el => el.classList.remove('sb-active'));
+    pages[nextIdx]?.classList.add('sb-active');
+    [...dots.children].forEach((b, i) => b.toggleAttribute('aria-current', i === nextIdx));
+    idx = nextIdx;
+  }
+  function goRel(d){ go(idx + d); }
+
+  // 3) Input: arrows + tap + swipe
+  prev?.addEventListener('click', () => goRel(-1));
+  next?.addEventListener('click', () => goRel( 1));
+  stage.addEventListener('click', (e) => {
+    // Tap left/right halves to navigate
+    const x = (e.clientX || 0) - stage.getBoundingClientRect().left;
+    goRel( x > stage.clientWidth/2 ? 1 : -1 );
+  });
+  stage.addEventListener('touchstart', handleTouch, {passive:true});
+  stage.addEventListener('touchend', handleTouchEnd, {passive:true});
+  let touchX = null;
+  function handleTouch(ev){ touchX = ev.changedTouches?.[0]?.clientX ?? null; }
+  function handleTouchEnd(ev){
+    if (touchX == null) return;
+    const dx = (ev.changedTouches?.[0]?.clientX ?? 0) - touchX;
+    if (Math.abs(dx) > 30) goRel(dx < 0 ? 1 : -1);
+    touchX = null;
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') goRel(1);
+    if (e.key === 'ArrowLeft')  goRel(-1);
+  });
+
+  // 4) Boot
+  (async () => {
+    const imgs = await getImagePages();
+    renderPages(imgs);
+    total = imgs.length;
+  })();
+})();
+</script>
+
+  <script>
+(function charUploaderInit(){
+  const SS = window.sessionStorage;
+  const $  = (s, r=document)=>r.querySelector(s);
+
+  const wrap   = $('#charUploader'); if (!wrap) return;
+  const btns   = wrap.querySelectorAll('.cu-btn');
+  const prevs  = { child: wrap.querySelector('.cu-thumb[data-role="child"]'),
+                   pet:   wrap.querySelector('.cu-thumb[data-role="pet"]') };
+  const inputs = { child: $('#cuChild'), pet: $('#cuPet') };
+  const saveBtn = $('#cuSave');
+  const clearBtn= $('#cuClear');
+
+  const KEY = 'yw_char_photos_v1'; // { child: dataURL?, pet: dataURL? }
+
+  function readPhotos(){
+    try { return JSON.parse(SS.getItem(KEY) || '{}'); } catch(_) { return {}; }
+  }
+  function writePhotos(obj){
+    try { SS.setItem(KEY, JSON.stringify(obj||{})); } catch(_) {}
+  }
+
+  function paint(role, dataUrl){
+    const slot = prevs[role]; if (!slot) return;
+    if (dataUrl) {
+      slot.style.backgroundImage = `url("${dataUrl}")`;
+      slot.style.backgroundSize = 'cover';
+      slot.style.backgroundPosition = 'center';
+      slot.classList.add('has-img');
+    } else {
+      slot.style.backgroundImage = '';
+      slot.classList.remove('has-img');
+    }
+  }
+
+  async function fileToDataURL(file, max = 1200){
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    await new Promise((res, rej)=>{ img.onload=res; img.onerror=rej; img.src=url; });
+
+    // downscale to keep storage + upload light
+    const ratio = Math.min(1, max / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * ratio));
+    const h = Math.max(1, Math.round(img.height * ratio));
+
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    return c.toDataURL('image/jpeg', 0.85);
+  }
+
+  // wire “Upload photo” buttons
+  btns.forEach(b=>{
+    const forId = b.getAttribute('data-for');
+    const input = document.getElementById(forId);
+    b.addEventListener('click', ()=> input?.click());
+  });
+
+  // react to file selection
+  Object.entries(inputs).forEach(([role, input])=>{
+    input?.addEventListener('change', async ()=>{
+      const f = input.files?.[0]; if (!f) return;
+      // basic guard: images only
+      if (!/^image\//.test(f.type)) { alert('Please choose an image.'); return; }
+      const dataUrl = await fileToDataURL(f);
+      const cur = readPhotos();
+      cur[role] = dataUrl;
+      writePhotos(cur);
+      paint(role, dataUrl);
+    });
+  });
+
+  saveBtn?.addEventListener('click', async ()=>{
+    const cur = readPhotos();
+    if (!cur.child && !cur.pet) { alert('Please add at least one photo.'); return; }
+
+    // TODO: when backend upload endpoint is ready, POST the data URLs and store returned URLs
+    // Example sketch:
+    // const res = await fetch('/api/upload', { method:'POST', body: JSON.stringify(cur) });
+    // const { childUrl, petUrl } = await res.json();
+
+    // For now we just toast and keep in sessionStorage
+    toast('Photos saved for personalisation.');
+  });
+
+  clearBtn?.addEventListener('click', ()=>{
+    writePhotos({});
+    paint('child', ''); paint('pet', '');
+  });
+
+  function toast(msg){
+    const n = document.createElement('div');
+    n.textContent = msg;
+    n.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:110px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999';
+    document.body.appendChild(n); setTimeout(()=>n.remove(),1200);
+  }
+
+  // boot: paint from cache
+  (function boot(){
+    const cur = readPhotos();
+    paint('child', cur.child || '');
+    paint('pet',   cur.pet   || '');
+  })();
+})();
+</script>
+
+  <script>
+(function charAccordion(){
+  const toggle = document.getElementById('charAccToggle');
+  const body   = document.getElementById('charAccBody');
+
+  if (!toggle || !body) return;
+
+  let inited = false;
+
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    const next = !expanded;
+
+    toggle.setAttribute('aria-expanded', String(next));
+    if (next) {
+      body.hidden = false;           // make it measurable
+      requestAnimationFrame(() => {  // allow style to apply
+        body.setAttribute('data-open', '1');
+      });
+      if (!inited) { inited = true; window.initCharUploader?.(); }
+    } else {
+      body.removeAttribute('data-open');
+      // wait for transition then hide so it's out of a11y flow
+      setTimeout(() => { if (!toggle || toggle.getAttribute('aria-expanded') !== 'true') body.hidden = true; }, 240);
+    }
+  });
+})();
+</script>
+
+  <script>
+(function(){
+  function initCharUploader(){
+    const SS = window.sessionStorage;
+    const $  = (s, r=document)=>r.querySelector(s);
+
+    const wrap   = $('#charUploader'); if (!wrap) return;
+    const btns   = wrap.querySelectorAll('.cu-btn');
+    const prevs  = { child: wrap.querySelector('.cu-thumb[data-role="child"]'),
+                     pet:   wrap.querySelector('.cu-thumb[data-role="pet"]') };
+    const inputs = { child: $('#cuChild'), pet: $('#cuPet') };
+    const saveBtn = $('#cuSave');
+    const clearBtn= $('#cuClear');
+
+    const KEY = 'yw_char_photos_v1';
+
+    function readPhotos(){ try { return JSON.parse(SS.getItem(KEY) || '{}'); } catch(_) { return {}; } }
+    function writePhotos(obj){ try { SS.setItem(KEY, JSON.stringify(obj||{})); } catch(_) {} }
+
+    function paint(role, dataUrl){
+      const slot = prevs[role]; if (!slot) return;
+      if (dataUrl) {
+        slot.style.backgroundImage = `url("${dataUrl}")`;
+        slot.style.backgroundSize = 'cover';
+        slot.style.backgroundPosition = 'center';
+        slot.classList.add('has-img');
+      } else {
+        slot.style.backgroundImage = '';
+        slot.classList.remove('has-img');
+      }
+    }
+
+    async function fileToDataURL(file, max = 1200){
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      await new Promise((res, rej)=>{ img.onload=res; img.onerror=rej; img.src=url; });
+      const ratio = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * ratio));
+      const h = Math.max(1, Math.round(img.height * ratio));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      return c.toDataURL('image/jpeg', 0.85);
+    }
+
+    // wire “Upload photo” buttons
+    btns.forEach(b=>{
+      const forId = b.getAttribute('data-for');
+      const input = document.getElementById(forId);
+      b.addEventListener('click', ()=> input?.click());
+    });
+
+    // react to file selection
+    Object.entries(inputs).forEach(([role, input])=>{
+      input?.addEventListener('change', async ()=>{
+        const f = input.files?.[0]; if (!f) return;
+        if (!/^image\//.test(f.type)) { alert('Please choose an image.'); return; }
+        const dataUrl = await fileToDataURL(f);
+        const cur = readPhotos();
+        cur[role] = dataUrl; writePhotos(cur); paint(role, dataUrl);
+      });
+    });
+
+    saveBtn?.addEventListener('click', ()=>{
+      const cur = readPhotos();
+      if (!cur.child && !cur.pet) { alert('Please add at least one photo.'); return; }
+      toast('Photos saved for personalisation.');
+      // TODO: swap to server upload when endpoint is ready; store returned URLs.
+    });
+
+    clearBtn?.addEventListener('click', ()=>{
+      writePhotos({}); paint('child',''); paint('pet','');
+    });
+
+    function toast(msg){
+      const n = document.createElement('div');
+      n.textContent = msg;
+      n.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:110px;background:#1a1f2e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 24px rgba(0,0,0,.2);z-index:999';
+      document.body.appendChild(n); setTimeout(()=>n.remove(),1200);
+    }
+
+    // paint from cache immediately
+    const cur = readPhotos();
+    paint('child', cur.child || '');
+    paint('pet',   cur.pet   || '');
+  }
+
+  // expose for accordion
+  window.initCharUploader = initCharUploader;
+})();
+</script>
+
+  <!-- Sticky CTAs: reveal only after ~10 lines are visible -->
+<style>
+  /* tiny helper so we can animate without touching your existing classes */
+  .sticky-fade { transition: opacity .25s ease, transform .2s ease; will-change: opacity, transform; }
+  .sticky-fade.is-hidden { opacity: 0; transform: translateY(8px); pointer-events: none; }
+</style>
+
+  <script>
+(function manageStickyVisibility(){
+  const storyEl = document.getElementById('storyContent');
+  const bar     = document.getElementById('stickyCtas');
+  const btnPlay = document.getElementById('toggleMic');
+  const btnVoice= document.getElementById('voiceBtn');
+  if (!storyEl || !bar || !btnPlay || !btnVoice) return;
+
+  function stickyOcclusionPx(){
+    // only count truly fixed UI ABOVE the bar (we’re the bar, so 0 here)
+    return 0;
+  }
+
+  function visibleLinesCount(){
+    const rect = storyEl.getBoundingClientRect();
+    const lh   = parseFloat(getComputedStyle(storyEl).lineHeight) || 24;
+    const vpH  = window.innerHeight || 0;
+    const available = Math.max(0, vpH - stickyOcclusionPx() - Math.max(0, rect.top));
+    return Math.floor(available / lh);
+  }
+
+  function update(){
+    const show = visibleLinesCount() >= 10;
+    bar.classList.toggle('is-hidden', !show);
+  }
+
+  requestAnimationFrame(update);
+  window.addEventListener('scroll', update, { passive:true });
+  window.addEventListener('resize', update);
+  setTimeout(update, 200); // story HTML may hydrate late
+})();
+</script>
+
+
+  
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>StoryBuds — Personalised Bedtime Stories</title>
+  <meta name="description" content="Show love and respect to your kid through personalised stories. Invest in your family bonds. Invest in you." />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Inter:wght@400;600&family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="script.js"></script>
+</head>
+<body class="fade-in">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-badge">
+        <img src="logo.png" alt="StoryBuds logo" />
+      </span>
+    </a>
+
+    <div class="top-actions">
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">
+        <svg class="cart-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3 3h2l3.6 9.59a1 1 0 0 0 .92.65H17a1 1 0 0 0 .96-.74L20 6H6"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="9" cy="20" r="1" fill="currentColor"></circle>
+          <circle cx="17" cy="20" r="1" fill="currentColor"></circle>
+        </svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <button class="hamburger" id="menuBtn" aria-label="Menu">☰</button>
+    </div>
+
+    <nav id="menu" class="menu hidden" aria-label="Main navigation">
+      <a href="index.html">Home</a>
+      <a href="create.html">Create Stories</a>
+      <a href="#">My Profile</a>
+    </nav>
+  </header>
+
+<!-- Age selector (no container) -->
+<div class="age-buttons" role="group" aria-label="Choose age group">
+  <button class="age-btn selected" data-age="0-2" data-target="create.html">0–2 years</button>
+  <button class="age-btn" data-age="3-5" data-target="create.html">3–5 years</button>
+  <button class="age-btn" data-age="5+" data-target="create.html">5+</button>
+</div>
+
+<!-- HERO — instant clarity -->
+<section class="hero-simple" aria-label="Hero">
+  <div class="hero-copy">
+    <h1>Your little chats become magical stories — day or night.</h1>
+    <p>Say what your child loves. We craft a gentle, personalised tale with voice & sounds.</p>
+
+    <!-- Optional supporting line for format clarity -->
+    <p class="formats-sub">Available in digital, printed, or animated keepsake.</p>
+
+    <button class="btn" id="heroCta">Create your free story</button>
+
+    <!-- Restored format badges -->
+    <div class="product-badges" aria-label="Available formats">
+      <div class="product-badge"><span>📱 Digital</span></div>
+      <div class="product-badge"><span>📖 Printed</span></div>
+      <div class="product-badge"><span>🎬 Animated</span></div>
+    </div>
+  </div>
+
+  <div class="hero-art-wrapper">
+    <img id="heroImage" src="momdaughterbanner.png" alt="Parent and child enjoying a personalised story" loading="eager" decoding="async" class="hero-art" />
+  </div>
+</section>
+
+
+
+<!-- MICRO DEMO (inline modal) -->
+<section id="demoModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="demoTitle">
+  <div class="modal-card">
+    <button class="modal-close" id="demoCloseBtn" aria-label="Close">✕</button>
+    <h2 id="demoTitle">How it feels in 10 seconds</h2>
+
+    <div class="demo-rows">
+      <div class="demo-row">
+        <div class="demo-tag">Parent says</div>
+        <div class="demo-bubble">“Arthur loves the moon and puppies.”</div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-tag">StoryBuds creates</div>
+        <div class="demo-bubble">
+          Once upon a time, Arthur followed a silver moonbeam… <em>(plip-plop)</em>
+        </div>
+      </div>
+      <div class="demo-actions">
+        <button class="btn" id="demoPlayVoice">Play voice line</button>
+        <button class="btn ghost" id="demoPlaySfx">Play gentle SFX</button>
+      </div>
+      <p class="muted" style="margin-top:8px">Screen-optional: you can just listen together.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section fade-up" aria-label="How it works">
+  <h2>How it works</h2>
+  <p class="formats-sub">Made for quick moments in the day and calm wind-downs at night.</p>
+  <div class="hiw-grid">
+    <article class="hiw-card">
+      <div class="hiw-emoji">🎤</div>
+      <h3>Give us hints</h3>
+      <p>Tell us a few things your child loves — kittens, rainbows, the moon.</p>
+    </article>
+    <article class="hiw-card">
+      <div class="hiw-emoji">🪄</div>
+      <h3>Personalise story series in minutes</h3>
+      <p>A fresh fairytale appears, personalised with their name and moments.</p>
+    </article>
+    <article class="hiw-card">
+      <div class="hiw-emoji">🌙</div>
+      <h3>Read. Listen. Watch.</h3>
+      <p>Play a gentle voice with ambience & soft sound effects — or print it.</p>
+    </article>
+  </div>
+</section>
+
+<!-- WHY DIFFERENT -->
+<section class="section fade-up" aria-label="Why StoryBuds is different">
+  <h2>What makes us different</h2>
+  <div class="diff-table">
+    <div class="diff-row">
+      <div class="diff-col diff-other">Generic AI stories</div>
+      <div class="diff-col diff-us"><strong>Personal stories from your words</strong></div>
+    </div>
+    <div class="diff-row">
+      <div class="diff-col diff-other">Screen required</div>
+      <div class="diff-col diff-us"><strong>Screen-optional audio mode</strong></div>
+    </div>
+    <div class="diff-row">
+      <div class="diff-col diff-other">No sound design</div>
+      <div class="diff-col diff-us"><strong>Calming ambience & gentle SFX</strong></div>
+    </div>
+    <div class="diff-row">
+      <div class="diff-col diff-other">Generic characters</div>
+      <div class="diff-col diff-us"><strong>Your child’s name & family moments</strong></div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFITS BY MOMENT -->
+<section class="section fade-up" aria-label="Daytime & bedtime benefits">
+  <h2>Made for daytime & bedtime</h2>
+  <div class="benefits-grid">
+    <article class="benefit">
+      <h3>Bedtime routine</h3>
+      <p>Short, soothing stories with gentle pacing to help them wind down.</p>
+    </article>
+    <article class="benefit">
+      <h3>Daytime quiet time</h3>
+      <p>Engaging, screen-free listening for after nursery or rainy afternoons.</p>
+    </article>
+    <article class="benefit">
+      <h3>On the go</h3>
+      <p>Car rides and waiting rooms feel calmer with a quick 3–5 min tale.</p>
+    </article>
+    <article class="benefit">
+      <h3>Language & confidence</h3>
+      <p>Stories use names and topics they love — boosting attention and speech.</p>
+    </article>
+  </div>
+</section>
+
+<!-- SCIENCE & SAFETY -->
+<section class="section fade-up" aria-label="Science & Safety">
+  <h2>Calm by design</h2>
+  <p class="formats-sub">
+    Voices and sounds are tuned for gentle listening. You control volume, voices, and ambience. No scary content.
+  </p>
+</section>
+
+<!-- MID-PAGE CTA -->
+<section class="section fade-up" aria-label="Try it now">
+  <h2>Make your next story together</h2>
+  <button class="btn js-open-create">Create your free story</button>
+</section>
+
+
+
+
+
+  <!-- Formats -->
+  <section class="section formats fade-up">
+    <h2>Your story, your way.</h2>
+    <p class="formats-sub">One magical story that you can read, hold, or watch—whichever fits your bedtime ritual.</p>
+
+    <div class="formats-grid">
+      <!-- Digital -->
+      <article class="format-card">
+        <div class="format-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="4" y="3" width="16" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <circle cx="12" cy="18" r="1" fill="currentColor"/>
+          </svg>
+        </div>
+        <h3>Digital Access</h3>
+        <p class="muted">Read instantly online with your child—anytime, anywhere.</p>
+        <div class="pill hint">Popular for nightly reading</div>
+      </article>
+
+      <!-- Printed -->
+      <article class="format-card">
+        <div class="format-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 5.5C4 4.67 4.67 4 5.5 4H19v14.5c0 .83-.67 1.5-1.5 1.5H6.5A2.5 2.5 0 0 1 4 17.5V5.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M8 4v15" stroke="currentColor" stroke-width="1.2" opacity=".55"/>
+          </svg>
+        </div>
+        <h3>Printed Book</h3>
+        <p class="muted">A beautiful keepsake with your child’s name on every page.</p>
+        <div class="pill">Gift-ready</div>
+      </article>
+
+      <!-- Animated -->
+      <article class="format-card">
+        <div class="format-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <polygon points="10,9 16,12 10,15" fill="currentColor"/>
+          </svg>
+        </div>
+        <h3>Animated Movie</h3>
+        <p class="muted">Watch your child’s imagination come to life in a short film.</p>
+        <div class="pill">Wow factor</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- MICRO DEMO (inline modal) -->
+<section id="demoModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="demoTitle">
+  <div class="modal-card">
+    <button class="modal-close" id="demoCloseBtn" aria-label="Close">✕</button>
+    <h2 id="demoTitle">How it feels in 10 seconds</h2>
+
+    <div class="demo-rows">
+      <div class="demo-row">
+        <div class="demo-tag">Parent says</div>
+        <div class="demo-bubble">“Arthur loves the moon and puppies.”</div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-tag">StoryBuds creates</div>
+        <div class="demo-bubble">
+          Once upon a time, Arthur followed a silver moonbeam… <em>(plip-plop)</em>
+        </div>
+      </div>
+      <div class="demo-actions">
+        <button class="btn" id="demoPlayVoice">Play voice line</button>
+        <button class="btn ghost" id="demoPlaySfx">Play gentle SFX</button>
+      </div>
+      <p class="muted" style="margin-top:8px">Screen-optional: you can just listen together.</p>
+    </div>
+  </div>
+</section>
+
+<!-- WHY DIFFERENT -->
+<section class="section fade-up" aria-label="Why StoryBuds is different">
+  <h2>What makes us different</h2>
+  <div class="diff-table">
+    <div class="diff-row">
+      <div class="diff-col diff-other">Generic AI stories</div>
+      <div class="diff-col diff-us"><strong>Personal stories from your words</strong></div>
+    </div>
+    <div class="diff-row">
+      <div class="diff-col diff-other">Screen required</div>
+      <div class="diff-col diff-us"><strong>Screen-optional audio mode</strong></div>
+    </div>
+    <div class="diff-row">
+      <div class="diff-col diff-other">No sound design</div>
+      <div class="diff-col diff-us"><strong>Calming ambience & gentle SFX</strong></div>
+    </div>
+    <div class="diff-row">
+      <div class="diff-col diff-other">Generic characters</div>
+      <div class="diff-col diff-us"><strong>Your child’s name & family moments</strong></div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFITS BY MOMENT -->
+<section class="section fade-up" aria-label="Daytime & bedtime benefits">
+  <h2>Made for daytime & bedtime</h2>
+  <div class="benefits-grid">
+    <article class="benefit">
+      <h3>Bedtime routine</h3>
+      <p>Short, soothing stories with gentle pacing to help them wind down.</p>
+    </article>
+    <article class="benefit">
+      <h3>Daytime quiet time</h3>
+      <p>Engaging, screen-free listening for after nursery or rainy afternoons.</p>
+    </article>
+    <article class="benefit">
+      <h3>On the go</h3>
+      <p>Car rides and waiting rooms feel calmer with a quick 3–5 min tale.</p>
+    </article>
+    <article class="benefit">
+      <h3>Language & confidence</h3>
+      <p>Stories use names and topics they love — boosting attention and speech.</p>
+    </article>
+  </div>
+</section>
+
+<!-- SCIENCE & SAFETY -->
+<section class="section fade-up" aria-label="Science & Safety">
+  <h2>Calm by design</h2>
+  <p class="formats-sub">
+    Voices and sounds are tuned for gentle listening. You control volume, voices, and ambience. No scary content.
+  </p>
+</section>
+
+<!-- MID-PAGE CTA -->
+<section class="section fade-up" aria-label="Try it now">
+  <h2>Make your next story together</h2>
+  <button class="btn js-open-create">Create your free story</button>
+</section>
+
+
+  <section class="section convert fade-up" id="convert">
+  <h2>From your photo to animation.</h2>
+  <p class="formats-sub">Upload a family photo — watch it become your story’s characters.</p>
+
+  <div class="morph-wrap" id="morph">
+    <figure class="morph-stage" aria-label="Conversion from real photo to animation">
+      <!-- Base: REAL photo -->
+      <img src="familyreality.png" alt="Family photo" class="morph-img base" />
+
+      <!-- Overlay: ANIMATED version (revealed as you scroll) -->
+      <img src="familyanimation.png" alt="Animated version of the family" class="morph-img overlay" />
+
+      <!-- Corner label -->
+      <figcaption class="morph-label">
+        <span>Real</span>
+        <span class="arrow">→</span>
+        <span>Animated</span>
+      </figcaption>
+      <div class="morph-hint" aria-hidden="true">Scroll to continue ↓</div>
+    </figure>
+  </div>
+
+  <div class="convert-cta">
+    <button class="btn js-open-create">Try with your photo</button>
+  </div>
+</section>
+
+  <!-- Info CTA -->
+  <section class="section info fade-up delay-1">
+    <h1>MORE QUALITY TIME. STRONGER BONDS WITH YOUR KID.</h1>
+    <p>Show love and respect to your kid by personalised stories. Invest in your family bonds. Invest in you.</p>
+    <button class="btn js-open-create">YOUR FIRST FREE STORY</button>
+  </section>
+
+  <!-- Testimonials (rotator-ready) -->
+  <section class="section testimonials fade-up delay-2" id="testimonials" aria-label="What parents say">
+    <figure class="testimonial">
+      <blockquote class="t-quote">“Our 4-year-old asks for ‘dino kitty’ every night now. It feels like she’s writing it with us.”</blockquote>
+      <figcaption class="t-by">— <b>Elif</b></figcaption>
+    </figure>
+
+    <!-- Hidden pool for JS rotator -->
+    <template id="t-pool">
+      <figure>
+        <blockquote>“Bedtime became our favourite 10 minutes. She laughs at the whooosh and plip-plop bits.”</blockquote>
+        <figcaption>— <b>James</b></figcaption>
+      </figure>
+      <figure>
+        <blockquote>“Personalised names make him light up. We finally look forward to the routine.”</blockquote>
+        <figcaption>— <b>Zeynep</b></figcaption>
+      </figure>
+      <figure>
+        <blockquote>“It feels like co-creating. The app listens while we talk, then the story appears. Magic.”</blockquote>
+        <figcaption>— <b>Ana</b></figcaption>
+      </figure>
+    </template>
+  </section>
+
+  <footer>
+    © <span id="year"></span> StoryBuds
+  </footer>
+
+  <!-- Sticky CTA for mobile -->
+  <a class="mobile-cta" id="mobileCta" href="create.html" aria-label="Create your story">
+    ✨ Create your story
+  </a>
+  <!-- Quick Create Overlay -->
+<section id="quickCreate" class="qc-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="qcTitle">
+  <div class="qc-card">
+    <button class="qc-close" id="qcClose" aria-label="Close">✕</button>
+
+    <!-- Step: Place -->
+    <div class="qc-step" data-step="place">
+      <h2 id="qcTitle">Pick the place</h2>
+      <div class="qc-chips">
+        <button class="qc-chip" data-place="forest">🌲 Forest</button>
+        <button class="qc-chip" data-place="castle">🏰 Castle</button>
+        <button class="qc-chip" data-place="home">🏠 Home</button>
+      </div>
+    </div>
+
+    <!-- Step: Pets (yes/no) -->
+    <div class="qc-step hidden" data-step="pets-yn">
+      <h2>Any pets?</h2>
+      <div class="qc-chips">
+        <button class="qc-chip" data-pets="yes">Yes</button>
+        <button class="qc-chip" data-pets="no">No</button>
+      </div>
+    </div>
+
+    <!-- Step: Pet details (only if yes) -->
+    <div class="qc-step hidden" data-step="pet-details">
+      <h2>Tell us about the pet</h2>
+      <div class="qc-fields">
+        <label>Type (e.g., dog, cat)
+          <input id="qcPetType" type="text" placeholder="Dog" />
+        </label>
+        <label>Name
+          <input id="qcPetName" type="text" placeholder="Charlie" />
+        </label>
+      </div>
+      <div class="qc-actions">
+        <button class="btn" id="qcPetNext">Next</button>
+      </div>
+    </div>
+
+    <!-- Step: Kid details -->
+    <div class="qc-step hidden" data-step="kid">
+      <h2>About the kid</h2>
+      <div class="qc-fields">
+        <label>Child’s name
+          <input id="qcKidName" type="text" placeholder="Arthur" />
+        </label>
+        <label>Gender
+          <select id="qcKidGender">
+            <option value="" disabled selected>Select</option>
+            <option>Boy</option>
+            <option>Girl</option>
+            <option>Non-binary</option>
+            <option>Prefer not to say</option>
+          </select>
+        </label>
+        <label>Age
+          <input id="qcKidAge" type="number" min="0" max="12" placeholder="4" />
+        </label>
+      </div>
+      <div class="qc-actions">
+        <button class="btn" id="qcCreate">Create my first free story</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+  
+</body>
+</html>
