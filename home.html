@@ -229,137 +229,14 @@
     ✨ Upgrade to Pro — £3.99
   </a>
 
-  <!-- Inline wiring for personalization + signed-in state + CTA behavior -->
-  <script>
-    (function() {
-
-        (async () => {
-    // HARD GUARD: only signed-in users may view home.html
-    try {
-      const me = await fetch('https://imaginee-y9nk.onrender.com/api/v1/users/me', {
-        credentials: 'include'
-      });
-      if (!me.ok) {
-        // Not authenticated → go to public landing
-        document.body.classList.add('fade-out');
-        setTimeout(() => { window.location.href = 'index.html'; }, 120);
-        return;
-      }
-    } catch (_) {
-      document.body.classList.add('fade-out');
-      setTimeout(() => { window.location.href = 'index.html'; }, 120);
-      return;
-    }
-          
-      // 2) Personalise welcome with child's name (if we have one)
-      function getChildNameFromTranscript() {
-        try {
-          const raw = sessionStorage.getItem('yw_transcript') || '';
-          const m = raw.match(/Child name:\s*([^\n]+)/i);
-          const name = (m && m[1] ? m[1].trim() : '').replace(/[^A-Za-zÇĞİÖŞÜçğıöşü' -]/g, '');
-          return name || '';
-        } catch (_) { return ''; }
-      }
-      const kid = getChildNameFromTranscript();
-      const title = document.getElementById('welcomeTitle');
-      const desc  = document.getElementById('welcomeDesc');
-      if (kid && title && desc) {
-        title.textContent = `Welcome to your story world, ${kid} 🌙`;
-        desc.textContent  = `Your first magical story is ready to read with ${kid} tonight.`;
-      }
-
-const openBtn = document.getElementById('openStoryBtn');
-if (openBtn) {
-  openBtn.addEventListener('click', function() {
-    document.body.classList.add('fade-out');
-    setTimeout(() => { window.location.href = 'storydetail.html'; }, 120);
-  });
-}
-
-      // 4) Upgrade buttons (placeholder handlers)
-      function goUpgrade(tier) {
-        // TODO: replace with real checkout/Stripe link.
-        // For now, go to checkout with a query param or show a modal.
-        window.location.href = 'checkout.html?upgrade=' + encodeURIComponent(tier);
-      }
-      document.querySelectorAll('[data-upgrade]').forEach(btn => {
-        btn.addEventListener('click', () => goUpgrade(btn.getAttribute('data-upgrade')));
-      });
-
-      // 5) StoryBud CTA (placeholder)
-      const buy = document.getElementById('buyStoryBudBtn');
-      const learn = document.getElementById('learnStoryBudBtn');
-      if (buy)   buy.addEventListener('click', () => alert('StoryBud purchase flow coming soon. Includes 3 months of Premium.'));
-      if (learn) learn.addEventListener('click', () => alert('StoryBud details page coming soon.'));
-
-      // 6) Mobile sticky CTA
-      const mobileCta = document.getElementById('mobileCta');
-      if (mobileCta) {
-        mobileCta.addEventListener('click', (e) => {
-          e.preventDefault();
-          goUpgrade('pro');
-        });
-      }
-    })();
-  </script>
   <script>
 (async () => {
-  try {
-    // If a story is already in session (e.g., just signed up), skip fetching
-    if (sessionStorage.getItem('yw_story_html')) return;
-
-    // Check if user is signed in — /users/me
-    const me = await fetch('https://imaginee-y9nk.onrender.com/api/v1/users/me', {
-      credentials:'include'
-    });
-    if (!me.ok) return; // guest → nothing to load
-
-    // Fetch their stories — /stories/my
-    const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
-      credentials:'include'
-    });
-    if (!res.ok) return;
-
-    const data = await res.json();
-    const stories = data?.data?.stories || [];
-    if (!stories.length) return;
-
-    // Most recent first
-    const latest = stories.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
-    let html = '';
-
-    // If story list already includes pages, render directly
-    if (latest.pages?.length) {
-      const body = latest.pages.map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
-      html = `<h1>${latest.title || ''}</h1>${body}`;
-    } else if (latest._id) {
-      // Otherwise fetch by ID — /stories/:id
-      const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${latest._id}`, {
-        credentials:'include'
-      });
-      if (one.ok) {
-        const full = (await one.json())?.data?.story || {};
-        const body = (full.pages || []).map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
-        html = `<h1>${full.title || latest.title || ''}</h1>${body}`;
-      }
-    }
-
-    if (html) sessionStorage.setItem('yw_story_html', html);
-  } catch (_) {
-    // silent fail keeps UX smooth
-  }
-})();
-</script>
-
-  <script>
-(async () => {
-  // ===== 1) AUTH GUARD: guests must not see home.html =====
+  // ===== 1) AUTH GUARD: only signed-in users may view home.html =====
   try {
     const me = await fetch('https://imaginee-y9nk.onrender.com/api/v1/users/me', {
       credentials: 'include'
     });
     if (!me.ok) {
-      // Not authenticated → go back to public landing
       document.body.classList.add('fade-out');
       setTimeout(() => { window.location.href = 'index.html'; }, 120);
       return;
@@ -370,14 +247,29 @@ if (openBtn) {
     return;
   }
 
-  // ===== 2) PERSONAL WELCOME (keep your existing logic if you have one) =====
-  try {
-    const kid = localStorage.getItem('sb_kid_name') || 'there';
-    const title = document.querySelector('[data-welcome-title]');
-    const desc  = document.querySelector('[data-welcome-desc]');
-    if (title) title.textContent = `Welcome to your story world, ${kid} 🌙`;
-    if (desc)  desc.textContent  = `Your first magical story is ready to read with ${kid} tonight.`;
-  } catch (_) {}
+  // ===== 2) PERSONAL WELCOME =====
+  function getChildNameFromTranscript() {
+    try {
+      const raw = sessionStorage.getItem('yw_transcript') || '';
+      const m = raw.match(/Child name:\s*([^\n]+)/i);
+      const name = (m && m[1] ? m[1].trim() : '').replace(/[^A-Za-zÇĞİÖŞÜçğıöşü' -]/g, '');
+      return name || '';
+    } catch (_) { return ''; }
+  }
+  const kid =
+    getChildNameFromTranscript() ||
+    (localStorage.getItem('sb_kid_name') || '').trim();
+
+  const titleEl = document.getElementById('welcomeTitle');
+  const descEl  = document.getElementById('welcomeDesc');
+  if (titleEl && descEl) {
+    if (kid) {
+      titleEl.textContent = `Welcome to your story world, ${kid} 🌙`;
+      descEl.textContent  = `Your first magical story is ready to read with ${kid} tonight.`;
+    } else {
+      // keep your defaults already in HTML
+    }
+  }
 
   // ===== 3) OPEN STORY CTA → storydetail.html =====
   const openBtn = document.getElementById('openStoryBtn');
@@ -389,18 +281,66 @@ if (openBtn) {
     });
   }
 
-  // ===== 4) (Optional) Other buttons you already had =====
+  // ===== 4) PREFETCH LATEST STORY INTO SESSION (used by storydetail.html) =====
+  try {
+    if (!sessionStorage.getItem('yw_story_html')) {
+      const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
+        credentials: 'include'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const stories = data?.data?.stories || [];
+        if (stories.length) {
+          const latest = stories.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
+          let html = '';
+          if (latest.pages?.length) {
+            const body = latest.pages.map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
+            html = `<h1>${latest.title || ''}</h1>${body}`;
+          } else if (latest._id) {
+            const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${latest._id}`, {
+              credentials: 'include'
+            });
+            if (one.ok) {
+              const full = (await one.json())?.data?.story || {};
+              const body = (full.pages || []).map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
+              html = `<h1>${full.title || latest.title || ''}</h1>${body}`;
+            }
+          }
+          if (html) sessionStorage.setItem('yw_story_html', html);
+        }
+      }
+    }
+  } catch (_) { /* silent fail is fine */ }
+
+  // ===== 5) UPGRADE BUTTONS =====
   function goUpgrade(tier) {
-    // Replace with your real checkout later
-    window.location.href = `checkout.html?tier=${encodeURIComponent(tier)}`;
+    window.location.href = `checkout.html?upgrade=${encodeURIComponent(tier)}`;
+  }
+  document.querySelectorAll('[data-upgrade]').forEach(btn => {
+    btn.addEventListener('click', () => goUpgrade(btn.getAttribute('data-upgrade')));
+  });
+
+  // ===== 6) STORYBUD CTAS (IDs must match your HTML) =====
+  const buy   = document.getElementById('buyStoryBudBtn');   // matches your markup
+  const learn = document.getElementById('learnStoryBudBtn'); // matches your markup
+  if (buy)   buy.addEventListener('click', () => alert('StoryBud purchase flow coming soon. Includes 3 months of Premium.'));
+  if (learn) learn.addEventListener('click', () => alert('StoryBud details page coming soon.'));
+
+  // ===== 7) MOBILE STICKY CTA =====
+  const mobileCta = document.getElementById('mobileCta');
+  if (mobileCta) {
+    mobileCta.addEventListener('click', (e) => {
+      e.preventDefault();
+      goUpgrade('pro');
+    });
   }
 
-  const buy   = document.getElementById('btnBuyStoryBud');
-  const learn = document.getElementById('btnLearnStoryBud');
-  if (buy)   buy.addEventListener('click', () => goUpgrade('pro'));
-  if (learn) learn.addEventListener('click', () => alert('StoryBud details coming soon.'));
+  // ===== 8) FOOTER YEAR =====
+  const y = document.getElementById('year');
+  if (y) y.textContent = String(new Date().getFullYear());
 })();
 </script>
+
 
 
 </body>
