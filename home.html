@@ -351,5 +351,57 @@ if (openBtn) {
 })();
 </script>
 
+  <script>
+(async () => {
+  // ===== 1) AUTH GUARD: guests must not see home.html =====
+  try {
+    const me = await fetch('https://imaginee-y9nk.onrender.com/api/v1/users/me', {
+      credentials: 'include'
+    });
+    if (!me.ok) {
+      // Not authenticated → go back to public landing
+      document.body.classList.add('fade-out');
+      setTimeout(() => { window.location.href = 'index.html'; }, 120);
+      return;
+    }
+  } catch (_) {
+    document.body.classList.add('fade-out');
+    setTimeout(() => { window.location.href = 'index.html'; }, 120);
+    return;
+  }
+
+  // ===== 2) PERSONAL WELCOME (keep your existing logic if you have one) =====
+  try {
+    const kid = localStorage.getItem('sb_kid_name') || 'there';
+    const title = document.querySelector('[data-welcome-title]');
+    const desc  = document.querySelector('[data-welcome-desc]');
+    if (title) title.textContent = `Welcome to your story world, ${kid} 🌙`;
+    if (desc)  desc.textContent  = `Your first magical story is ready to read with ${kid} tonight.`;
+  } catch (_) {}
+
+  // ===== 3) OPEN STORY CTA → storydetail.html =====
+  const openBtn = document.getElementById('openStoryBtn');
+  if (openBtn) {
+    openBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.body.classList.add('fade-out');
+      setTimeout(() => { window.location.href = 'storydetail.html'; }, 120);
+    });
+  }
+
+  // ===== 4) (Optional) Other buttons you already had =====
+  function goUpgrade(tier) {
+    // Replace with your real checkout later
+    window.location.href = `checkout.html?tier=${encodeURIComponent(tier)}`;
+  }
+
+  const buy   = document.getElementById('btnBuyStoryBud');
+  const learn = document.getElementById('btnLearnStoryBud');
+  if (buy)   buy.addEventListener('click', () => goUpgrade('pro'));
+  if (learn) learn.addEventListener('click', () => alert('StoryBud details coming soon.'));
+})();
+</script>
+
+
 </body>
 </html>
