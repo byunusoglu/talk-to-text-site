@@ -232,9 +232,25 @@
   <!-- Inline wiring for personalization + signed-in state + CTA behavior -->
   <script>
     (function() {
-      // 1) Ensure the user is considered "signed in" post-signup
-      try { localStorage.setItem('yw_signed_in', '1'); } catch (e) {}
 
+        (async () => {
+    // HARD GUARD: only signed-in users may view home.html
+    try {
+      const me = await fetch('https://imaginee-y9nk.onrender.com/api/v1/users/me', {
+        credentials: 'include'
+      });
+      if (!me.ok) {
+        // Not authenticated → go to public landing
+        document.body.classList.add('fade-out');
+        setTimeout(() => { window.location.href = 'index.html'; }, 120);
+        return;
+      }
+    } catch (_) {
+      document.body.classList.add('fade-out');
+      setTimeout(() => { window.location.href = 'index.html'; }, 120);
+      return;
+    }
+          
       // 2) Personalise welcome with child's name (if we have one)
       function getChildNameFromTranscript() {
         try {
