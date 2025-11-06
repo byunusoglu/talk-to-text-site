@@ -294,139 +294,142 @@
     ✨ Upgrade to Pro — £3.99
   </a>
 
-  <!-- Inline wiring (kept) + new My Stories logic -->
   <script>
-    (function() {
-      // Consider user "signed in" post-signup for routing smoothness (existing behavior)
-      try { localStorage.setItem('yw_signed_in', '1'); } catch (e) {}
+  (function() {
+    // Consider user "signed in" post-signup for routing smoothness (existing behavior)
+    try { localStorage.setItem('yw_signed_in', '1'); } catch (e) {}
 
-      // Personalize welcome with child's name (if transcript captured)
-      function getChildNameFromTranscript() {
-        try {
-          const raw = sessionStorage.getItem('yw_transcript') || '';
-          const m = raw.match(/Child name:\\s*([^\\n]+)/i);
-          const name = (m && m[1] ? m[1].trim() : '').replace(/[^A-Za-zÇĞİÖŞÜçğıöşü' -]/g, '');
-          return name || '';
-        } catch (_) { return ''; }
-      }
-      const kid = getChildNameFromTranscript();
-      const title = document.getElementById('welcomeTitle');
-      const desc  = document.getElementById('welcomeDesc');
-      if (kid && title && desc) {
-        title.textContent = \`Welcome to your story world, \${kid} 🌙\`;
-        desc.textContent  = \`Your first magical story is ready to read with \${kid} tonight.\`;
-      }
+    // Personalize welcome with child's name (if transcript captured)
+    function getChildNameFromTranscript() {
+      try {
+        const raw = sessionStorage.getItem('yw_transcript') || '';
+        const m = raw.match(/Child name:\s*([^\n]+)/i);
+        const name = (m && m[1] ? m[1].trim() : '').replace(/[^A-Za-zÇĞİÖŞÜçğıöşü' -]/g, '');
+        return name || '';
+      } catch (_) { return ''; }
+    }
+    const kid = getChildNameFromTranscript();
+    const title = document.getElementById('welcomeTitle');
+    const desc  = document.getElementById('welcomeDesc');
+    if (kid && title && desc) {
+      title.textContent = `Welcome to your story world, ${kid} 🌙`;
+      desc.textContent  = `Your first magical story is ready to read with ${kid} tonight.`;
+    }
 
-      // Open free story → detail page
-      const openBtn = document.getElementById('openStoryBtn');
-      if (openBtn) {
-        openBtn.addEventListener('click', function() {
-          document.body.classList.add('fade-out');
-          setTimeout(() => { window.location.href = 'storydetail.html'; }, 120);
-        });
-      }
-
-      // Upgrade buttons (placeholder)
-      function goUpgrade(tier) {
-        window.location.href = 'checkout.html?upgrade=' + encodeURIComponent(tier);
-      }
-      document.querySelectorAll('[data-upgrade]').forEach(btn => {
-        btn.addEventListener('click', () => goUpgrade(btn.getAttribute('data-upgrade')));
-      });
-
-      // StoryBud CTAs (placeholder)
-      const buy = document.getElementById('buyStoryBudBtn');
-      const learn = document.getElementById('learnStoryBudBtn');
-      if (buy)   buy.addEventListener('click', () => alert('StoryBud purchase flow coming soon. Includes 3 months of Premium.'));
-      if (learn) learn.addEventListener('click', () => alert('StoryBud details page coming soon.'));
-
-      // Mobile sticky CTA → upgrade
-      const mobileCta = document.getElementById('mobileCta');
-      if (mobileCta) {
-        mobileCta.addEventListener('click', (e) => {
-          e.preventDefault();
-          goUpgrade('pro');
-        });
-      }
-
-      // ===== NEW: Load My Stories for signed-in users =====
-      const API_BASE = 'https://imaginee-y9nk.onrender.com/api/v1'; // your backend base:contentReference[oaicite:2]{index=2}
-      async function loadMyStories() {
-        const listEl = document.getElementById('storiesList');
-        if (!listEl) return;
-
-        // Helper: paint empty states
-        const paintEmpty = (msg) => {
-          listEl.innerHTML = '';
-          const empty = document.createElement('div');
-          empty.className = 'stories-empty';
-          empty.innerHTML = msg;
-          listEl.parentElement.insertBefore(empty, listEl);
-          listEl.style.display = 'none';
-        };
-
-        try {
-          // Try asking for user stories (cookie-based auth)
-          const res = await fetch(\`\${API_BASE}/stories/my\`, { credentials: 'include' });
-          if (!res.ok) throw new Error('UNAUTH');
-          const data = await res.json();
-          const stories = data?.data?.stories || [];
-
-          if (!stories.length) {
-            paintEmpty(\`<b>No stories yet.</b> Create your first one below!\`);
-            return;
-          }
-
-          // Clear any prior empty
-          const prevEmpty = listEl.previousElementSibling;
-          if (prevEmpty && prevEmpty.classList.contains('stories-empty')) prevEmpty.remove();
-          listEl.style.display = '';
-
-          listEl.innerHTML = stories
-            .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))
-            .map(s => {
-              // Try to find a cover image from pages[0].imageUrl if present in your API shape:contentReference[oaicite:3]{index=3}
-              const cover = (s.pages && s.pages[0] && s.pages[0].imageUrl) || s.coverUrl || 'childsdreambanner.png';
-              const created = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '';
-              return \`
-                <li class="story-item">
-                  <div class="story-cover"><img src="\${cover}" alt="\${s.title || 'Story cover'}" /></div>
-                  <div class="story-info">
-                    <h3>\${s.title || 'Untitled Story'}</h3>
-                    <p class="story-meta">\${created ? 'Created ' + created : ''}</p>
-                    <button class="btn ghost small" data-open-story="\${s._id}">Open</button>
-                  </div>
-                </li>\`;
-            }).join('');
-
-          // Delegate open clicks
-          listEl.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-open-story]');
-            if (!btn) return;
-            const id = btn.getAttribute('data-open-story');
-            if (!id) return;
-
-            // Optional: store id for storydetail to fetch full story
-            try { sessionStorage.setItem('yw_story_id', id); } catch(_) {}
-            document.body.classList.add('fade-out');
-            setTimeout(()=>{ window.location.href = 'storydetail.html'; }, 120);
-          });
-
-        } catch (_) {
-          // Not signed in or server unavailable → graceful message
-          paintEmpty('Sign in to see your saved stories.');
-        }
-      }
-
-      // Create new story → your chat experience page (create.html):contentReference[oaicite:4]{index=4}
-      document.getElementById('createNewStoryBtn')?.addEventListener('click', () => {
+    // Open free story → detail page
+    const openBtn = document.getElementById('openStoryBtn');
+    if (openBtn) {
+      openBtn.addEventListener('click', function() {
         document.body.classList.add('fade-out');
-        setTimeout(()=>{ window.location.href = 'create.html'; }, 120);
+        setTimeout(() => { window.location.href = 'storydetail.html'; }, 120);
       });
+    }
 
-      // Kick it off
-      loadMyStories();
-    })();
-  </script>
+    // Upgrade buttons (placeholder)
+    function goUpgrade(tier) {
+      window.location.href = 'checkout.html?upgrade=' + encodeURIComponent(tier);
+    }
+    document.querySelectorAll('[data-upgrade]').forEach(btn => {
+      btn.addEventListener('click', () => goUpgrade(btn.getAttribute('data-upgrade')));
+    });
+
+    // StoryBud CTAs (placeholder)
+    const buy = document.getElementById('buyStoryBudBtn');
+    const learn = document.getElementById('learnStoryBudBtn');
+    if (buy)   buy.addEventListener('click', () => alert('StoryBud purchase flow coming soon. Includes 3 months of Premium.'));
+    if (learn) learn.addEventListener('click', () => alert('StoryBud details page coming soon.'));
+
+    // Mobile sticky CTA → upgrade
+    const mobileCta = document.getElementById('mobileCta');
+    if (mobileCta) {
+      mobileCta.addEventListener('click', (e) => {
+        e.preventDefault();
+        goUpgrade('pro');
+      });
+    }
+
+    // ===== NEW: Load My Stories for signed-in users =====
+    const API_BASE = 'https://imaginee-y9nk.onrender.com/api/v1'; // your backend base
+    async function loadMyStories() {
+      const listEl = document.getElementById('storiesList');
+      if (!listEl) return;
+
+      // Helper: paint empty states
+      const paintEmpty = (msg) => {
+        listEl.innerHTML = '';
+        let empty = listEl.previousElementSibling;
+        // Remove previous empties if re-rendered
+        if (empty && empty.classList && empty.classList.contains('stories-empty')) {
+          empty.remove();
+        }
+        empty = document.createElement('div');
+        empty.className = 'stories-empty';
+        empty.innerHTML = msg;
+        listEl.parentElement.insertBefore(empty, listEl);
+        listEl.style.display = 'none';
+      };
+
+      try {
+        // Ask for user stories (cookie-based auth)
+        const res = await fetch(`${API_BASE}/stories/my`, { credentials: 'include' });
+        if (!res.ok) throw new Error('UNAUTH');
+        const data = await res.json();
+        const stories = data?.data?.stories || [];
+
+        if (!stories.length) {
+          paintEmpty(`<b>No stories yet.</b> Create your first one below!`);
+          return;
+        }
+
+        // Clear previous empty and show list
+        const prevEmpty = listEl.previousElementSibling;
+        if (prevEmpty && prevEmpty.classList.contains('stories-empty')) prevEmpty.remove();
+        listEl.style.display = '';
+
+        listEl.innerHTML = stories
+          .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))
+          .map(s => {
+            // Try a cover from pages[0].imageUrl if present in your API shape
+            const cover = (s.pages && s.pages[0] && s.pages[0].imageUrl) || s.coverUrl || 'childsdreambanner.png';
+            const created = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '';
+            return `
+              <li class="story-item">
+                <div class="story-cover"><img src="${cover}" alt="${(s.title || 'Story cover').replace(/"/g,'&quot;')}" /></div>
+                <div class="story-info">
+                  <h3>${s.title || 'Untitled Story'}</h3>
+                  <p class="story-meta">${created ? 'Created ' + created : ''}</p>
+                  <button class="btn ghost small" data-open-story="${s._id}">Open</button>
+                </div>
+              </li>`;
+          }).join('');
+
+        // Delegate open clicks
+        listEl.addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-open-story]');
+          if (!btn) return;
+          const id = btn.getAttribute('data-open-story');
+          if (!id) return;
+          try { sessionStorage.setItem('yw_story_id', id); } catch(_) {}
+          document.body.classList.add('fade-out');
+          setTimeout(()=>{ window.location.href = 'storydetail.html'; }, 120);
+        });
+
+      } catch (_) {
+        // Not signed in or server unavailable → graceful message
+        paintEmpty('Sign in to see your saved stories.');
+      }
+    }
+
+    // Create new story → your chat experience page (create.html)
+    document.getElementById('createNewStoryBtn')?.addEventListener('click', () => {
+      document.body.classList.add('fade-out');
+      setTimeout(()=>{ window.location.href = 'create.html'; }, 120);
+    });
+
+    // Kick it off
+    loadMyStories();
+  })();
+</script>
+
 </body>
 </html>
