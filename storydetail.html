@@ -255,94 +255,113 @@
       document.getElementById('toggleMic')?.style.setProperty('bottom','88px');
     }
 
-    // Audio & ambience disabled for now
-const ctx = null;
+// === Audio context (lazy + safe) ===
+let ctx = null, master = null;
+function ensureCtx() {
+  if (ctx) return true;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  ctx = new AC();
+  master = ctx.createGain();
+  master.gain.value = 0.22;
+  master.connect(ctx.destination);
+  return true;
+}
 
+// Manual SFX (exists in DOM but hidden by default)
+(function(){
+  const row = document.getElementById("manualSfx");
+  if (!row) return;
+  row.addEventListener("click", (e) => {
+    if (!ensureCtx()) return;
+    const id = e.target.closest('[data-sfx]')?.dataset.sfx; if (!id) return;
+    if (id === "whoosh")  return playWhoosh();
+    if (id === "plip")    return playPlip();
+    if (id === "chime")   return playChime();
+    if (id === "bark")    return playBarkSoft();
+    if (id === "wind")    return playWindGust();
+    if (id === "lullaby") return playLullabyPhrase();
+    if (id === "stop")    return stopAmbience();
+  });
+})();
 
-    // Manual SFX (exists in DOM but hidden by default)
-    (function(){
-      const row = document.getElementById("manualSfx");
-      if (!row) return;
-      row.addEventListener("click", (e) => {
-        const id = e.target.closest('[data-sfx]')?.dataset.sfx; if (!id) return;
-        if (id === "whoosh")  return playWhoosh();
-        if (id === "plip")    return playPlip();
-        if (id === "chime")   return playChime();
-        if (id === "bark")    return playBarkSoft();
-        if (id === "wind")    return playWindGust();
-        if (id === "lullaby") return playLullabyPhrase();
-        if (id === "stop")    return stopAmbience();
-      });
-    })();
+/* ====== Ambience (auto + crossfade) ====== */
+let amb = { node: null, gain: null, kind: 'off' };
 
-    /* ====== Ambience (auto + crossfade) ====== */
-    let amb = { node: null, gain: null, kind: 'off' };
+function makeNoiseLoop(color='white'){
+  if (!ensureCtx()) return null;
+  const src = ctx.createBufferSource();
+  const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i=0;i<d.length;i++){
+    const white = Math.random()*2-1;
+    d[i] = color === 'ocean' ? ((d[i-1]||0)*0.98 + white*0.02)
+         : color === 'rain'  ? white*0.35
+         : white*0.22;
+  }
+  src.buffer = b; src.loop = true;
+  return src;
+}
 
-    function makeNoiseLoop(color='white'){
-      const src = ctx.createBufferSource();
-      const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-      const d = b.getChannelData(0);
-      for (let i=0;i<d.length;i++){
-        const white = Math.random()*2-1;
-        d[i] = color === 'ocean' ? ((d[i-1]||0)*0.98 + white*0.02)
-             : color === 'rain'  ? white*0.35
-             : white*0.22;
-      }
-      src.buffer = b; src.loop = true;
-      return src;
-    }
-    function makePad(freqs=[220, 277, 330]){
-      const g = ctx.createGain(); g.gain.value = 0.0;
-      freqs.forEach((f,i) => {
-        const o = ctx.createOscillator(); o.type = 'sine';
-        o.frequency.setValueAtTime(f, ctx.currentTime + i*0.03);
-        const og = ctx.createGain(); og.gain.value = 0.06;
-        o.connect(og).connect(g); o.start();
-      });
-      return { node: g, gain: g };
-    }
-    function startAmbience(kind){
-      stopAmbience(0.5);
-      let node=null, gain=null;
-      if (kind === 'forest'){
-        const s = makeNoiseLoop('white'); const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
-        const g = ctx.createGain(); g.gain.value = 0.0; s.connect(lp).connect(g).connect(master); s.start(); node=s; gain=g;
-      } else if (kind === 'ocean'){
-        const s = makeNoiseLoop('ocean'); const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=200; bp.Q.value=0.7;
-        const g = ctx.createGain(); g.gain.value = 0.0; s.connect(bp).connect(g).connect(master); s.start(); node=s; gain=g;
-      } else if (kind === 'rain'){
-        const s = makeNoiseLoop('rain'); const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1800;
-        const g = ctx.createGain(); g.gain.value = 0.0; s.connect(lp).connect(g).connect(master); s.start(); node=s; gain=g;
-      } else if (kind === 'night'){
-        const p = makePad([261.6, 329.6, 392.0]); p.node.connect(master); node=p.node; gain=p.gain;
-      } else if (kind === 'castle'){
-        const p = makePad([329.6, 415.3, 523.3]); p.node.connect(master); node=p.node; gain=p.gain;
-      } else if (kind === 'pad'){
-        const p = makePad([220, 277, 330]); p.node.connect(master); node=p.node; gain=p.gain;
-      }
-      if (gain){
-        const t = ctx.currentTime;
-        gain.gain.cancelScheduledValues(t);
-        gain.gain.linearRampToValueAtTime(0.0, t);
-        gain.gain.linearRampToValueAtTime(0.14, t + 0.8);
-      }
-      amb = { node, gain, kind };
-    }
-    function stopAmbience(fade=0.3){
-      if (!amb.gain){ amb = { node:null, gain:null, kind:'off' }; return; }
-      const t = ctx.currentTime;
-      amb.gain.gain.cancelScheduledValues(t);
-      amb.gain.gain.linearRampToValueAtTime(0, t + fade);
-      if (amb.node && amb.node.stop) amb.node.stop(t + fade + 0.05);
-      amb = { node:null, gain:null, kind:'off' };
-    }
+function makePad(freqs=[220, 277, 330]){
+  if (!ensureCtx()) return { node:null, gain:null };
+  const g = ctx.createGain(); g.gain.value = 0.0;
+  freqs.forEach((f,i) => {
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(f, ctx.currentTime + i*0.03);
+    const og = ctx.createGain(); og.gain.value = 0.06;
+    o.connect(og).connect(g); o.start();
+  });
+  return { node: g, gain: g };
+}
 
-    const ambSel = document.getElementById('amb');
-    function deaccent(str) {
+function startAmbience(kind){
+  if (!ensureCtx()) return;
+  stopAmbience(0.5);
+  let node=null, gain=null;
+  if (kind === 'forest'){
+    const s = makeNoiseLoop('white'); if (!s) return;
+    const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
+    const g = ctx.createGain(); g.gain.value = 0.0; s.connect(lp).connect(g).connect(master); s.start(); node=s; gain=g;
+  } else if (kind === 'ocean'){
+    const s = makeNoiseLoop('ocean'); if (!s) return;
+    const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=200; bp.Q.value=0.7;
+    const g = ctx.createGain(); g.gain.value = 0.0; s.connect(bp).connect(g).connect(master); s.start(); node=s; gain=g;
+  } else if (kind === 'rain'){
+    const s = makeNoiseLoop('rain'); if (!s) return;
+    const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1800;
+    const g = ctx.createGain(); g.gain.value = 0.0; s.connect(lp).connect(g).connect(master); s.start(); node=s; gain=g;
+  } else if (kind === 'night'){
+    const p = makePad([261.6, 329.6, 392.0]); if (!p.node) return; p.node.connect(master); node=p.node; gain=p.gain;
+  } else if (kind === 'castle'){
+    const p = makePad([329.6, 415.3, 523.3]); if (!p.node) return; p.node.connect(master); node=p.node; gain=p.gain;
+  } else if (kind === 'pad'){
+    const p = makePad([220, 277, 330]); if (!p.node) return; p.node.connect(master); node=p.node; gain=p.gain;
+  }
+  if (gain){
+    const t = ctx.currentTime;
+    gain.gain.cancelScheduledValues(t);
+    gain.gain.linearRampToValueAtTime(0.0, t);
+    gain.gain.linearRampToValueAtTime(0.14, t + 0.8);
+  }
+  amb = { node, gain, kind };
+}
+
+function stopAmbience(fade=0.3){
+  if (!ctx || !amb.gain){ amb = { node:null, gain:null, kind:'off' }; return; }
+  const t = ctx.currentTime;
+  amb.gain.gain.cancelScheduledValues(t);
+  amb.gain.gain.linearRampToValueAtTime(0, t + fade);
+  if (amb.node && amb.node.stop) amb.node.stop(t + fade + 0.05);
+  amb = { node:null, gain:null, kind:'off' };
+}
+
+const ambSel = document.getElementById('amb');
+function deaccent(str) {
   if (!str) return "";
   return str
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")       // remove diacritics
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[çÇ]/g, "c")
     .replace(/[ğĞ]/g, "g")
     .replace(/[ıİ]/g, "i")
@@ -350,32 +369,46 @@ const ctx = null;
     .replace(/[şŞ]/g, "s")
     .replace(/[üÜ]/g, "u");
 }
-    function pickAmbienceFromStory(text){
-      const s = deaccent(text || '');
-      if (/\brain|storm|puddle/.test(s)) return 'rain';
-      if (/\bocean|sea|wave|beach/.test(s)) return 'ocean';
-      if (/\bforest|woods|tree|owl/.test(s)) return 'forest';
-      if (/\bnight|moon|sleep|star/.test(s)) return 'night';
-      if (/\bcastle|king|queen|magic/.test(s)) return 'castle';
-      return 'pad';
-    }
-    function applyAmbienceSelection(val){
-      if (val === 'off') return stopAmbience(0.4);
-      if (val === 'auto') return startAmbience(pickAmbienceFromStory(storyEl.textContent || ''));
-      startAmbience(val);
-    }
-    const storedAmb = SS.getItem("yw_ambience") || "auto";
-    if (ambSel) {
-      ambSel.value = storedAmb;
-      applyAmbienceSelection(ambSel.value);
-      ambSel.addEventListener('change', e => {
-        const v = e.target.value;
-        SS.setItem("yw_ambience", v);
-        applyAmbienceSelection(v);
-      });
-    } else {
-      applyAmbienceSelection(storedAmb);
-    }
+function pickAmbienceFromStory(text){
+  const s = deaccent(text || '');
+  if (/\brain|storm|puddle/.test(s)) return 'rain';
+  if (/\bocean|sea|wave|beach/.test(s)) return 'ocean';
+  if (/\bforest|woods|tree|owl/.test(s)) return 'forest';
+  if (/\bnight|moon|sleep|star/.test(s)) return 'night';
+  if (/\bcastle|king|queen|magic/.test(s)) return 'castle';
+  return 'pad';
+}
+function applyAmbienceSelection(val){
+  if (val === 'off') return stopAmbience(0.4);
+  if (val === 'auto') return startAmbience(pickAmbienceFromStory(storyEl.textContent || ''));
+  startAmbience(val);
+}
+
+const storedAmb = SS.getItem("yw_ambience") || "auto";
+
+// Wait for user gesture to start ambience (fix autoplay + null errors)
+const playBtn  = document.getElementById('toggleMic');
+const voiceBtn = document.getElementById('voiceBtn');
+const armAmbience = () => {
+  if (!ensureCtx()) return;
+  applyAmbienceSelection(storedAmb);
+  playBtn?.removeEventListener('click', armAmbience);
+  voiceBtn?.removeEventListener('click', armAmbience);
+};
+playBtn?.addEventListener('click', armAmbience, { once: true });
+voiceBtn?.addEventListener('click', armAmbience, { once: true });
+
+// Keep dropdown working (no auto-start on load)
+if (ambSel) {
+  ambSel.value = storedAmb;
+  ambSel.addEventListener('change', e => {
+    if (!ensureCtx()) return;
+    const v = e.target.value;
+    SS.setItem("yw_ambience", v);
+    applyAmbienceSelection(v);
+  });
+}
+
 
     /* ==========================================
        Option 1: Story follower + prefix trigger
