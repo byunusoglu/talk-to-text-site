@@ -272,38 +272,32 @@
     setTimeout(hydrateTopbarAuth, 0);
   }
 
-   function wireLogoSmartRouting() {
+function wireLogoSmartRouting() {
   const logo = document.querySelector('a.logo');
   if (!logo) return;
 
-  // Set an immediate best-guess href before hydration
-  try {
-    const optimistic = localStorage.getItem('yw_signed_in') === '1';
-    logo.setAttribute('href', optimistic ? 'home.html' : 'index.html');
-  } catch (_) {}
+  // Default-safe: assume guest until session proves otherwise
+  logo.setAttribute('href', 'index.html');
 
   const hardNav = (url) => {
     try { document.body.classList.add('fade-out'); } catch (_) {}
     setTimeout(() => { window.location.href = url; }, 80);
   };
 
-  // Decide at click-time (wins the race on mobile)
   logo.addEventListener('click', (e) => {
-    // If hydrateTopbarAuth already set correct href, just let it go
-    const hydratedHref = logo.getAttribute('href') || '';
-    const optimistic = (() => {
-      try { return localStorage.getItem('yw_signed_in') === '1'; } catch (_) { return false; }
-    })();
-
-    const signed = isSignedIn() || optimistic;
+    // Decide at click using the current session snapshot only
+    const signed = isSignedIn(); // strictly cookie/session-backed
     const target = signed ? 'home.html' : 'index.html';
 
-    if (hydratedHref !== target) {
+    // If hydration hasn’t updated href yet or is wrong, hard-nav
+    if ((logo.getAttribute('href') || '') !== target) {
       e.preventDefault();
       hardNav(target);
     }
+    // else let the normal link work
   }, { passive: false });
 }
+
 
 
   /* ---------------------------------------------
@@ -317,6 +311,23 @@
       fadeOutAnd(()=>{ window.location.href = "home.html"; }, 80);
     }
   }
+   function guardHomeOnlyForSignedIn() {
+  const isHome = /(?:^|\/)home\.html(?:$|\?)/i.test(location.pathname + location.search);
+  if (!isHome) return;
+  if (!isSignedIn()) {
+    // If session isn’t ready yet we’ll be conservative; refresh & re-check
+    const doRedirect = () => {
+      try { document.body.classList.add('fade-out'); } catch (_) {}
+      setTimeout(() => { window.location.href = 'index.html'; }, 80);
+    };
+    // We might already have SESSION_READY from refreshSession(); if not, route safely
+    if (typeof window.StoryBuds === 'object') {
+      // no-op; keep public API clean
+    }
+    doRedirect();
+  }
+}
+
 
   /* ---------------------------------------------
      Auth Modal (Sign Up / Sign In) — works anywhere
@@ -1470,6 +1481,7 @@ function initAgePreview() {
      await refreshSession();
     hydrateTopbarAuth();
     guardLandingRedirect();
+     guardHomeOnlyForSignedIn();
 
     initChrome();
     initAgeButtons();
