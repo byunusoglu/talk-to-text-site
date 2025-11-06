@@ -338,6 +338,18 @@ const ctx = null;
     }
 
     const ambSel = document.getElementById('amb');
+    function deaccent(str) {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")       // remove diacritics
+    .replace(/[çÇ]/g, "c")
+    .replace(/[ğĞ]/g, "g")
+    .replace(/[ıİ]/g, "i")
+    .replace(/[öÖ]/g, "o")
+    .replace(/[şŞ]/g, "s")
+    .replace(/[üÜ]/g, "u");
+}
     function pickAmbienceFromStory(text){
       const s = deaccent(text || '');
       if (/\brain|storm|puddle/.test(s)) return 'rain';
