@@ -56,6 +56,12 @@
   function isSignedIn() { return !!SESSION_USER; }
   function getUser()    { return SESSION_USER;  }
 
+   function isProbablySignedIn() {
+  if (isSignedIn()) return true;
+  try { return localStorage.getItem('yw_signed_in') === '1'; } catch (_) { return false; }
+}
+
+
   // ---- API wrappers ----
   async function apiSignup({ childName, email, password, birthYear, gender }) {
     const res = await fetch(`${API_BASE}/users/signup`, {
@@ -183,14 +189,14 @@
   function hydrateTopbarAuth() {
     // Logo routing
     const logoA = document.querySelector('a.logo');
-    if (logoA) logoA.setAttribute("href", isSignedIn() ? "home.html" : "index.html");
+    if (logoA) logoA.setAttribute("href", isProbablySignedIn() ? "home.html" : "index.html");
 
     // Hamburger / top menu (expects #menu, degrades gracefully)
     const menu = $("#menu");
     if (!menu) return;
 
     menu.innerHTML = "";
-    if (isSignedIn()) {
+    if (isProbablySignedIn()) {
       menu.insertAdjacentHTML("beforeend",
         `<a href="home.html" aria-current="page">Home</a>
          <a href="create.html">Create Stories</a>
@@ -286,7 +292,7 @@ function wireLogoSmartRouting() {
 
   logo.addEventListener('click', (e) => {
     // Decide at click using the current session snapshot only
-    const signed = isSignedIn(); // strictly cookie/session-backed
+    const signed = isProbablySignedIn(); // tolerant: allows fresh mobile sessions
     const target = signed ? 'home.html' : 'index.html';
 
     // If hydration hasn’t updated href yet or is wrong, hard-nav
@@ -314,6 +320,15 @@ function wireLogoSmartRouting() {
    function guardHomeOnlyForSignedIn() {
   const isHome = /(?:^|\/)home\.html(?:$|\?)/i.test(location.pathname + location.search);
   if (!isHome) return;
+      // Allow the very first load after auth even if /me hasn't confirmed yet
+const justAuthed = (() => {
+  try { return sessionStorage.getItem('yw_postauth') === '1'; } catch (_) { return false; }
+})();
+if (justAuthed) {
+  try { sessionStorage.removeItem('yw_postauth'); } catch (_){}
+  return; // skip redirect once
+}
+
   if (!isSignedIn()) {
     // If session isn’t ready yet we’ll be conservative; refresh & re-check
     const doRedirect = () => {
@@ -408,24 +423,22 @@ function wireLogoSmartRouting() {
           if (switcher) switcher.textContent = "New here? Create an account";
           if (signupFields) signupFields.style.display = "none";
 
-          if (primary) primary.onclick = async () => {
-            const email = $("#authEmail")?.value.trim();
-            const pass  = $("#authPass")?.value;
-            if (!email || !pass) { alert("Please enter email and password."); return; }
-            try {
-              await apiLogin({ email, password: pass });
-              try { await apiGetMe(); } catch(_){}
-              close();
-              // NOTE: you had a 5-minute delay; leaving as-is
-              fadeOutAnd(() => {
-                setTimeout(() => {
-                  window.location.href = "home.html";
-                }, 5 * 60 * 1000);
-              }, 120);
-            } catch (err) {
-              alert(err?.message || "Could not sign in.");
-            }
-          };
+          primary.onclick = async () => {
+  const email = $("#authEmail")?.value.trim();
+  const pass  = $("#authPass")?.value;
+  if (!email || !pass) { alert("Please enter email and password."); return; }
+  try {
+    await apiLogin({ email, password: pass });
+    try { await apiGetMe(); } catch(_){}
+    try { localStorage.setItem('yw_signed_in', '1'); } catch (_) {}
+    try { sessionStorage.setItem('yw_postauth', '1'); } catch (_) {}
+    close();
+    fadeOutAnd(() => { window.location.href = "home.html"; }, 120);
+  } catch (err) {
+    alert(err?.message || "Could not sign in.");
+  }
+};
+
           if (switcher) switcher.onclick = () => setMode("signup");
         } else {
           if (title)   title.textContent = "Create your free account";
@@ -450,6 +463,8 @@ function wireLogoSmartRouting() {
             try {
               await apiSignup({ childName, email, password, birthYear, gender });
 try { await apiGetMe(); } catch(_) {}
+                 try { localStorage.setItem('yw_signed_in', '1'); } catch (_) {}
+  try { sessionStorage.setItem('yw_postauth', '1'); } catch (_) {}
 close();
 
 // Seed a first story and go straight to the reader on first run
