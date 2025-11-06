@@ -19,6 +19,18 @@
   100% { background-position: 0% 50%; }
 }
 
+/* 📱 Mobile Debug Animation */
+@keyframes slideIn {
+  from {
+    transform: translateX(-50%) translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
 /* ðŸ©µ Base setup */
 body {
   margin: 0;

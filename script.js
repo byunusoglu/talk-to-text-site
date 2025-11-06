@@ -27,6 +27,47 @@
   const SS = window.sessionStorage;
 
   /* ---------------------------------------------
+     Mobile Debug Helper
+  --------------------------------------------- */
+  const ENABLE_MOBILE_DEBUG = true; // Mobil debug modunu açık/kapalı yap
+
+  function mobileDebug(message, type = 'info') {
+    console.log(`[DEBUG] ${message}`);
+
+    if (!ENABLE_MOBILE_DEBUG) return;
+
+    // Ekranda görsel mesaj göster
+    const debugDiv = document.createElement('div');
+    debugDiv.textContent = message;
+    debugDiv.style.cssText = `
+      position: fixed;
+      top: ${20 + (document.querySelectorAll('.mobile-debug').length * 45)}px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${type === 'error' ? '#ff4444' : type === 'warn' ? '#ffaa00' : '#4CAF50'};
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 999999;
+      max-width: 90%;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: slideIn 0.3s ease;
+    `;
+    debugDiv.className = 'mobile-debug';
+    document.body.appendChild(debugDiv);
+
+    // 4 saniye sonra kaldır
+    setTimeout(() => {
+      debugDiv.style.opacity = '0';
+      debugDiv.style.transition = 'opacity 0.3s';
+      setTimeout(() => debugDiv.remove(), 300);
+    }, 4000);
+  }
+
+  /* ---------------------------------------------
      REAL Auth client (JWT)
   --------------------------------------------- */
   const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
@@ -46,8 +87,15 @@
       const token = localStorage.getItem('yw_jwt_token');
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        console.log('[getAuthHeaders] Token eklendi, uzunluk:', token.length);
+      } else {
+        console.log('[getAuthHeaders] Token bulunamadı');
+        mobileDebug('⚠️ Token bulunamadı!', 'warn');
       }
-    } catch (_) {}
+    } catch (e) {
+      console.error('[getAuthHeaders] localStorage hatası:', e);
+      mobileDebug('❌ localStorage hatası', 'error');
+    }
     return headers;
   }
 
@@ -96,7 +144,17 @@
 
     // Token'ı localStorage'a kaydet (mobil cihazlar için fallback)
     if (token) {
-      try { localStorage.setItem('yw_jwt_token', token); } catch (_) {}
+      try {
+        localStorage.setItem('yw_jwt_token', token);
+        console.log('[apiSignup] Token localStorage\'a kaydedildi, uzunluk:', token.length);
+        mobileDebug('✅ Signup başarılı!');
+      } catch (e) {
+        console.error('[apiSignup] Token kaydetme hatası:', e);
+        mobileDebug('❌ Token kaydetme hatası', 'error');
+      }
+    } else {
+      console.warn('[apiSignup] Token response\'da yok!');
+      mobileDebug('⚠️ Token gelmedi!', 'warn');
     }
 
     return { token, user };
@@ -119,7 +177,17 @@
 
     // Token'ı localStorage'a kaydet (mobil cihazlar için fallback)
     if (token) {
-      try { localStorage.setItem('yw_jwt_token', token); } catch (_) {}
+      try {
+        localStorage.setItem('yw_jwt_token', token);
+        console.log('[apiLogin] Token localStorage\'a kaydedildi, uzunluk:', token.length);
+        mobileDebug('✅ Login başarılı!');
+      } catch (e) {
+        console.error('[apiLogin] Token kaydetme hatası:', e);
+        mobileDebug('❌ Token kaydetme hatası', 'error');
+      }
+    } else {
+      console.warn('[apiLogin] Token response\'da yok!');
+      mobileDebug('⚠️ Token gelmedi!', 'warn');
     }
 
     return { token, user };
@@ -137,18 +205,38 @@
   }
 
   async function signOut() {
-  try {
-    await fetch(`${API_BASE}/users/logout`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      credentials: "include"
-    });
-  } catch (_) {}
+  mobileDebug('🔄 Çıkış yapılıyor...');
+
+  // Önce local state'i temizle (backend hatası olsa bile logout olsun)
   SESSION_USER = null;
   try {
     localStorage.removeItem('yw_signed_in');
-    localStorage.removeItem('yw_jwt_token'); // JWT token'ı da temizle
-  } catch (_) {}
+    localStorage.removeItem('yw_jwt_token');
+    mobileDebug('🗑️ Local data temizlendi');
+  } catch (e) {
+    console.warn('[signOut] localStorage temizleme hatası:', e);
+    mobileDebug('⚠️ Local temizleme hatası', 'warn');
+  }
+
+  // Sonra backend'e logout isteği gönder
+  try {
+    mobileDebug('📡 Backend\'e istek gönderiliyor...');
+    const response = await fetch(`${API_BASE}/users/logout`, {
+      method: "POST",
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: "include"
+    });
+    console.log('[signOut] Backend response:', response.status);
+    mobileDebug(`✅ Backend: ${response.status}`);
+    if (!response.ok) {
+      console.warn('[signOut] Backend logout başarısız:', response.status);
+      mobileDebug(`⚠️ Backend: ${response.status}`, 'warn');
+    }
+  } catch (e) {
+    console.error('[signOut] Backend isteği başarısız:', e);
+    mobileDebug(`❌ Backend hatası: ${e.message}`, 'error');
+    // Hata olsa bile devam et, local state zaten temizlendi
+  }
 }
 
   // Helper: try to derive child fields from transcript if present
@@ -236,9 +324,18 @@
         `<a href="home.html" aria-current="page">Home</a>
          <a href="create.html">Create Stories</a>
          <a href="#" id="menuSignOut">Sign Out</a>`);
-      $("#menuSignOut")?.addEventListener("click", (e) => {
+      $("#menuSignOut")?.addEventListener("click", async (e) => {
         e.preventDefault();
-        signOut();
+        mobileDebug('🖱️ Sign Out tıklandı');
+        console.log('[Menu] Sign Out tıklandı');
+        try {
+          await signOut();
+          console.log('[Menu] Sign Out başarılı, yönlendiriliyor...');
+          mobileDebug('✅ Çıkış başarılı, yönlendiriliyor...');
+        } catch (err) {
+          console.error('[Menu] Sign Out hatası:', err);
+          mobileDebug(`❌ Hata: ${err.message}`, 'error');
+        }
         fadeOutAnd(()=>{ window.location.href = "index.html"; }, 120);
       });
     } else {
