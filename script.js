@@ -137,9 +137,13 @@
     const payload = { childName, email, password, birthYear, gender };
     
     // Include pending jobId if it exists so backend can associate the story
+    // Note: Backend must support this optional field
     if (pendingJobId) {
+      console.log('[apiSignup] Including pendingStoryJobId:', pendingJobId);
       payload.pendingStoryJobId = pendingJobId;
     }
+    
+    console.log('[apiSignup] Sending payload:', JSON.stringify(payload, null, 2));
     
     const res = await fetch(`${API_BASE}/users/signup`, {
       method: "POST",
@@ -147,9 +151,13 @@
       body: JSON.stringify(payload),
       credentials: "include"
     });
+    
+    console.log('[apiSignup] Response status:', res.status);
+    
     const data = await res.json().catch(()=>({}));
     if (!res.ok) {
       const msg = data?.message || data?.error || `Signup failed (${res.status})`;
+      console.error('[apiSignup] Signup failed:', msg);
       throw new Error(msg);
     }
     const token = data?.token || "";
