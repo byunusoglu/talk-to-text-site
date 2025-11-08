@@ -128,36 +128,16 @@
 
   // ---- API wrappers ----
   async function apiSignup({ childName, email, password, birthYear, gender }) {
-    // Check if there's a pending story jobId from pre-signup generation
-    let pendingJobId = null;
-    try { 
-      pendingJobId = sessionStorage.getItem('yw_pending_story_jobid'); 
-    } catch(_) {}
-    
-    const payload = { childName, email, password, birthYear, gender };
-    
-    // Include pending jobId if it exists so backend can associate the story
-    // Note: Backend must support this optional field
-    if (pendingJobId) {
-      console.log('[apiSignup] Including pendingStoryJobId:', pendingJobId);
-      payload.pendingStoryJobId = pendingJobId;
-    }
-    
-    console.log('[apiSignup] Sending payload:', JSON.stringify(payload, null, 2));
-    
+    // Don't send pendingStoryJobId to backend - handle story association client-side
     const res = await fetch(`${API_BASE}/users/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ childName, email, password, birthYear, gender }),
       credentials: "include"
     });
-    
-    console.log('[apiSignup] Response status:', res.status);
-    
     const data = await res.json().catch(()=>({}));
     if (!res.ok) {
       const msg = data?.message || data?.error || `Signup failed (${res.status})`;
-      console.error('[apiSignup] Signup failed:', msg);
       throw new Error(msg);
     }
     const token = data?.token || "";
