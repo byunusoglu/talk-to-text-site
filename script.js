@@ -2392,3 +2392,239 @@ function openVoicePicker() {
 
   document.addEventListener('keydown', (e) => { if (!modal.classList.contains('hidden') && e.key === 'Escape') close(); });
 })();
+
+/* =====================================================
+   Storybook Page-Turning Navigation
+===================================================== */
+(() => {
+  const storybook = document.getElementById('storybook');
+  if (!storybook) return; // Only run on storydetail page
+
+  const bookContainer = storybook.querySelector('.sb-book');
+  const prevBtn = document.getElementById('sbPrev');
+  const nextBtn = document.getElementById('sbNext');
+  const dotsContainer = document.getElementById('sbDots');
+  
+  if (!bookContainer || !prevBtn || !nextBtn || !dotsContainer) return;
+
+  let currentPage = 0;
+  let pages = [];
+  let isAnimating = false;
+
+  // Initialize storybook with demo images (these will be replaced by actual story images)
+  function initStorybook() {
+    // Example placeholder images - these should be replaced with actual story page images
+    const demoImages = [
+      'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1476362555312-ab9e108a0b7e?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&h=600&fit=crop'
+    ];
+
+    // Clear existing pages
+    bookContainer.innerHTML = '';
+    pages = [];
+
+    // Create pages
+    demoImages.forEach((img, idx) => {
+      const page = document.createElement('div');
+      page.className = 'sb-page';
+      page.setAttribute('data-idx', idx);
+      page.style.backgroundImage = `url(${img})`;
+      
+      // Set initial state
+      if (idx === 0) {
+        page.classList.add('sb-active', 'sb-animate');
+      } else {
+        page.classList.add('sb-right');
+      }
+      
+      bookContainer.appendChild(page);
+      pages.push(page);
+    });
+
+    // Create dots
+    dotsContainer.innerHTML = '';
+    demoImages.forEach((_, idx) => {
+      const dot = document.createElement('button');
+      dot.setAttribute('aria-current', idx === 0 ? 'true' : 'false');
+      dot.setAttribute('aria-label', `Go to page ${idx + 1}`);
+      dot.addEventListener('click', () => goToPage(idx));
+      dotsContainer.appendChild(dot);
+    });
+
+    updateNavigationState();
+  }
+
+  // Navigate to a specific page
+  function goToPage(targetIndex) {
+    if (isAnimating || targetIndex === currentPage || targetIndex < 0 || targetIndex >= pages.length) {
+      return;
+    }
+
+    isAnimating = true;
+    const direction = targetIndex > currentPage ? 'forward' : 'backward';
+    const oldPage = currentPage;
+    currentPage = targetIndex;
+
+    if (direction === 'forward') {
+      // Turning pages forward
+      for (let i = oldPage; i < targetIndex; i++) {
+        turnPageForward(i);
+      }
+    } else {
+      // Turning pages backward
+      for (let i = oldPage; i > targetIndex; i--) {
+        turnPageBackward(i);
+      }
+    }
+
+    // Update UI after animation
+    setTimeout(() => {
+      updatePageStates();
+      updateNavigationState();
+      isAnimating = false;
+    }, 800);
+  }
+
+  // Turn a page forward (to the left)
+  function turnPageForward(pageIndex) {
+    const page = pages[pageIndex];
+    if (!page) return;
+
+    page.classList.remove('sb-active', 'sb-animate', 'sb-right');
+    page.classList.add('sb-turning-forward');
+
+    setTimeout(() => {
+      page.classList.remove('sb-turning-forward');
+      page.classList.add('sb-left');
+    }, 800);
+  }
+
+  // Turn a page backward (to the right)
+  function turnPageBackward(pageIndex) {
+    const page = pages[pageIndex - 1];
+    if (!page) return;
+
+    page.classList.remove('sb-left');
+    page.classList.add('sb-turning-backward');
+
+    setTimeout(() => {
+      page.classList.remove('sb-turning-backward');
+      page.classList.add('sb-active', 'sb-animate');
+    }, 800);
+  }
+
+  // Update all page states based on current page
+  function updatePageStates() {
+    pages.forEach((page, idx) => {
+      page.classList.remove('sb-left', 'sb-active', 'sb-animate', 'sb-right', 'sb-turning-forward', 'sb-turning-backward');
+      
+      if (idx < currentPage) {
+        page.classList.add('sb-left');
+      } else if (idx === currentPage) {
+        page.classList.add('sb-active', 'sb-animate');
+      } else {
+        page.classList.add('sb-right');
+      }
+    });
+  }
+
+  // Update navigation buttons and dots
+  function updateNavigationState() {
+    // Update buttons
+    prevBtn.disabled = currentPage === 0;
+    nextBtn.disabled = currentPage === pages.length - 1;
+
+    // Update dots
+    const dots = dotsContainer.querySelectorAll('button');
+    dots.forEach((dot, idx) => {
+      dot.setAttribute('aria-current', idx === currentPage ? 'true' : 'false');
+    });
+  }
+
+  // Event listeners
+  prevBtn.addEventListener('click', () => {
+    goToPage(currentPage - 1);
+  });
+
+  nextBtn.addEventListener('click', () => {
+    goToPage(currentPage + 1);
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') {
+      goToPage(currentPage - 1);
+    } else if (e.key === 'ArrowRight') {
+      goToPage(currentPage + 1);
+    }
+  });
+
+  // Touch swipe support for mobile
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  bookContainer.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  bookContainer.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, { passive: true });
+
+  function handleSwipe() {
+    const swipeThreshold = 50;
+    const diff = touchStartX - touchEndX;
+
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        // Swipe left - next page
+        goToPage(currentPage + 1);
+      } else {
+        // Swipe right - previous page
+        goToPage(currentPage - 1);
+      }
+    }
+  }
+
+  // API function to update storybook with actual story images
+  window.updateStorybookPages = function(imageUrls) {
+    if (!Array.isArray(imageUrls) || imageUrls.length === 0) return;
+
+    bookContainer.innerHTML = '';
+    pages = [];
+    currentPage = 0;
+
+    imageUrls.forEach((url, idx) => {
+      const page = document.createElement('div');
+      page.className = 'sb-page';
+      page.setAttribute('data-idx', idx);
+      page.style.backgroundImage = `url(${url})`;
+      
+      if (idx === 0) {
+        page.classList.add('sb-active', 'sb-animate');
+      } else {
+        page.classList.add('sb-right');
+      }
+      
+      bookContainer.appendChild(page);
+      pages.push(page);
+    });
+
+    // Update dots
+    dotsContainer.innerHTML = '';
+    imageUrls.forEach((_, idx) => {
+      const dot = document.createElement('button');
+      dot.setAttribute('aria-current', idx === 0 ? 'true' : 'false');
+      dot.setAttribute('aria-label', `Go to page ${idx + 1}`);
+      dot.addEventListener('click', () => goToPage(idx));
+      dotsContainer.appendChild(dot);
+    });
+
+    updateNavigationState();
+  };
+
+  // Initialize with demo content
+  initStorybook();
+})();

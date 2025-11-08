@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storybook Page-Turning Demo</title>
+  <style>
+    :root {
+      --plum: #8E44EC;
+      --plum-dark: #6C2E9C;
+      --bg1: #fffaf3;
+      --bg2: #f7ebf7;
+      --bg3: #f3f0fa;
+      --shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--plum-dark);
+      margin-bottom: 30px;
+    }
+
+    .demo-controls {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .demo-controls button {
+      margin: 0 5px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: var(--plum);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .demo-controls button:hover {
+      background: var(--plum-dark);
+      transform: translateY(-2px);
+    }
+
+    /* Storybook styles (copied from style.css) */
+    .storybook {
+      position: relative;
+      max-width: 980px;
+      width: 100%;
+      margin: 12px auto 16px;
+      padding: 0;
+      border-radius: 18px;
+      border: 1px solid #eee9fb;
+      background: #fff;
+      box-shadow: var(--shadow);
+      overflow: visible;
+    }
+
+    .sb-stage {
+      position: relative;
+      width: 100%;
+      height: clamp(300px, 40vh, 450px);
+      background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+      perspective: 1500px;
+      perspective-origin: center;
+      overflow: hidden;
+      border-radius: 18px;
+    }
+
+    .sb-book {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+    }
+
+    .sb-page {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      border-radius: 12px;
+      margin: 8px;
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .sb-page.sb-hidden {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .sb-page.sb-left {
+      transform: rotateY(-180deg);
+      transform-origin: right center;
+      z-index: 1;
+    }
+
+    .sb-page.sb-active {
+      transform: rotateY(0deg);
+      z-index: 2;
+    }
+
+    .sb-page.sb-right {
+      transform: rotateY(0deg);
+      z-index: 1;
+      opacity: 0;
+    }
+
+    .sb-page.sb-turning-forward {
+      animation: pageFlipForward 0.8s ease-in-out forwards;
+      z-index: 3;
+    }
+
+    .sb-page.sb-turning-backward {
+      animation: pageFlipBackward 0.8s ease-in-out forwards;
+      z-index: 3;
+    }
+
+    @keyframes pageFlipForward {
+      0% {
+        transform: rotateY(0deg);
+        transform-origin: right center;
+      }
+      50% {
+        transform: rotateY(-90deg) scale(1.02);
+        box-shadow: -10px 4px 20px rgba(0, 0, 0, 0.3);
+      }
+      100% {
+        transform: rotateY(-180deg);
+        transform-origin: right center;
+      }
+    }
+
+    @keyframes pageFlipBackward {
+      0% {
+        transform: rotateY(-180deg);
+        transform-origin: right center;
+      }
+      50% {
+        transform: rotateY(-90deg) scale(1.02);
+        box-shadow: -10px 4px 20px rgba(0, 0, 0, 0.3);
+      }
+      100% {
+        transform: rotateY(0deg);
+        transform-origin: right center;
+      }
+    }
+
+    @keyframes sbBreathe {
+      0%, 100% { 
+        transform: scale(1) translateY(0px); 
+      }
+      50% { 
+        transform: scale(1.01) translateY(-2px); 
+      }
+    }
+
+    .sb-page.sb-active.sb-animate {
+      animation: sbBreathe 4s ease-in-out infinite;
+    }
+
+    .sb-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #eee9fb;
+      color: var(--plum-dark);
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .sb-nav:hover {
+      background: rgba(255, 255, 255, 1);
+      transform: translateY(-50%) scale(1.1);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .sb-nav:active {
+      transform: translateY(-50%) scale(0.95);
+    }
+
+    .sb-nav:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .sb-prev { left: 10px; }
+    .sb-next { right: 10px; }
+
+    .sb-dots {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 12px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .sb-dots button {
+      pointer-events: auto;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .sb-dots button:hover {
+      background: rgba(0, 0, 0, 0.4);
+      transform: scale(1.2);
+    }
+
+    .sb-dots button[aria-current="true"] {
+      background: var(--plum);
+      width: 24px;
+      border-radius: 5px;
+    }
+
+    .info {
+      text-align: center;
+      margin-top: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      max-width: 600px;
+    }
+
+    .info p {
+      margin: 5px 0;
+      color: #666;
+    }
+
+    .info code {
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📖 Storybook Page-Turning Animation Demo</h1>
+  
+  <div class="demo-controls">
+    <p style="margin: 0 0 10px 0; color: #666;">Try the navigation:</p>
+    <button onclick="testPrevious()">← Previous</button>
+    <button onclick="testNext()">Next →</button>
+    <button onclick="testJumpTo(0)">Jump to Page 1</button>
+    <button onclick="testJumpTo(2)">Jump to Page 3</button>
+  </div>
+
+  <section class="storybook" id="storybook">
+    <button class="sb-nav sb-prev" id="sbPrev">‹</button>
+    
+    <div class="sb-stage">
+      <div class="sb-book" id="bookContainer">
+        <!-- Pages will be generated by JavaScript -->
+      </div>
+    </div>
+    
+    <button class="sb-nav sb-next" id="sbNext">›</button>
+    
+    <div class="sb-dots" id="sbDots"></div>
+  </section>
+
+  <div class="info">
+    <p><strong>Features:</strong></p>
+    <p>✓ 3D page flip animation with realistic depth</p>
+    <p>✓ Keyboard navigation: <code>←</code> and <code>→</code> arrow keys</p>
+    <p>✓ Touch swipe support on mobile devices</p>
+    <p>✓ Click dots to jump to any page</p>
+    <p>✓ Gentle breathing animation when idle</p>
+  </div>
+
+  <script>
+    // Storybook navigation logic
+    const bookContainer = document.getElementById('bookContainer');
+    const prevBtn = document.getElementById('sbPrev');
+    const nextBtn = document.getElementById('sbNext');
+    const dotsContainer = document.getElementById('sbDots');
+    
+    let currentPage = 0;
+    let pages = [];
+    let isAnimating = false;
+
+    // Demo pages with colors
+    const demoPages = [
+      { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', label: 'Page 1' },
+      { bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', label: 'Page 2' },
+      { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', label: 'Page 3' },
+      { bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', label: 'Page 4' },
+      { bg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', label: 'Page 5' }
+    ];
+
+    function initStorybook() {
+      bookContainer.innerHTML = '';
+      pages = [];
+
+      demoPages.forEach((pageData, idx) => {
+        const page = document.createElement('div');
+        page.className = 'sb-page';
+        page.setAttribute('data-idx', idx);
+        page.style.background = pageData.bg;
+        page.textContent = pageData.label;
+        
+        if (idx === 0) {
+          page.classList.add('sb-active', 'sb-animate');
+        } else {
+          page.classList.add('sb-right');
+        }
+        
+        bookContainer.appendChild(page);
+        pages.push(page);
+      });
+
+      dotsContainer.innerHTML = '';
+      demoPages.forEach((_, idx) => {
+        const dot = document.createElement('button');
+        dot.setAttribute('aria-current', idx === 0 ? 'true' : 'false');
+        dot.setAttribute('aria-label', `Go to page ${idx + 1}`);
+        dot.addEventListener('click', () => goToPage(idx));
+        dotsContainer.appendChild(dot);
+      });
+
+      updateNavigationState();
+    }
+
+    function goToPage(targetIndex) {
+      if (isAnimating || targetIndex === currentPage || targetIndex < 0 || targetIndex >= pages.length) {
+        return;
+      }
+
+      isAnimating = true;
+      const direction = targetIndex > currentPage ? 'forward' : 'backward';
+      const oldPage = currentPage;
+      currentPage = targetIndex;
+
+      if (direction === 'forward') {
+        for (let i = oldPage; i < targetIndex; i++) {
+          turnPageForward(i);
+        }
+      } else {
+        for (let i = oldPage; i > targetIndex; i--) {
+          turnPageBackward(i);
+        }
+      }
+
+      setTimeout(() => {
+        updatePageStates();
+        updateNavigationState();
+        isAnimating = false;
+      }, 800);
+    }
+
+    function turnPageForward(pageIndex) {
+      const page = pages[pageIndex];
+      if (!page) return;
+
+      page.classList.remove('sb-active', 'sb-animate', 'sb-right');
+      page.classList.add('sb-turning-forward');
+
+      setTimeout(() => {
+        page.classList.remove('sb-turning-forward');
+        page.classList.add('sb-left');
+      }, 800);
+    }
+
+    function turnPageBackward(pageIndex) {
+      const page = pages[pageIndex - 1];
+      if (!page) return;
+
+      page.classList.remove('sb-left');
+      page.classList.add('sb-turning-backward');
+
+      setTimeout(() => {
+        page.classList.remove('sb-turning-backward');
+        page.classList.add('sb-active', 'sb-animate');
+      }, 800);
+    }
+
+    function updatePageStates() {
+      pages.forEach((page, idx) => {
+        page.classList.remove('sb-left', 'sb-active', 'sb-animate', 'sb-right', 'sb-turning-forward', 'sb-turning-backward');
+        
+        if (idx < currentPage) {
+          page.classList.add('sb-left');
+        } else if (idx === currentPage) {
+          page.classList.add('sb-active', 'sb-animate');
+        } else {
+          page.classList.add('sb-right');
+        }
+      });
+    }
+
+    function updateNavigationState() {
+      prevBtn.disabled = currentPage === 0;
+      nextBtn.disabled = currentPage === pages.length - 1;
+
+      const dots = dotsContainer.querySelectorAll('button');
+      dots.forEach((dot, idx) => {
+        dot.setAttribute('aria-current', idx === currentPage ? 'true' : 'false');
+      });
+    }
+
+    // Event listeners
+    prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
+    nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') goToPage(currentPage - 1);
+      else if (e.key === 'ArrowRight') goToPage(currentPage + 1);
+    });
+
+    // Touch swipe
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    bookContainer.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    bookContainer.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      const swipeThreshold = 50;
+      const diff = touchStartX - touchEndX;
+
+      if (Math.abs(diff) > swipeThreshold) {
+        if (diff > 0) goToPage(currentPage + 1);
+        else goToPage(currentPage - 1);
+      }
+    }, { passive: true });
+
+    // Demo control functions
+    function testPrevious() { goToPage(currentPage - 1); }
+    function testNext() { goToPage(currentPage + 1); }
+    function testJumpTo(page) { goToPage(page); }
+
+    // Initialize
+    initStorybook();
+  </script>
+</body>
+</html>
