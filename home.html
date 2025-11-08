@@ -443,6 +443,30 @@
         });
         console.log('[loadMyStories] ========================================');
 
+        // Check if there's a cached story in sessionStorage that's not in the database
+        let cachedStory = null;
+        try {
+          const cachedStoryJson = sessionStorage.getItem('yw_current_story');
+          if (cachedStoryJson) {
+            cachedStory = JSON.parse(cachedStoryJson);
+            console.log('[loadMyStories] Found cached story in sessionStorage:', cachedStory.title);
+          }
+        } catch(e) {
+          console.error('[loadMyStories] Error parsing cached story:', e);
+        }
+
+        // If no stories in database but we have a cached one, add it to the list
+        if (!stories.length && cachedStory) {
+          console.log('[loadMyStories] No stories in DB, but found cached story. Adding to display.');
+          stories.push({
+            _id: 'cached-story',
+            title: cachedStory.title || 'Your Story',
+            createdAt: new Date().toISOString(),
+            pages: cachedStory.pages || [],
+            isCached: true
+          });
+        }
+
         if (!stories.length) {
           paintEmpty(`<b>No stories yet.</b> Create your first one below!`);
           return;
@@ -459,12 +483,13 @@
             // Try a cover from pages[0].imageUrl if present in your API shape
             const cover = (s.pages && s.pages[0] && s.pages[0].imageUrl) || s.coverUrl || 'childsdreambanner.png';
             const created = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '';
+            const badge = s.isCached ? '<span style="display:inline-block;background:#ff9800;color:white;font-size:11px;padding:2px 6px;border-radius:4px;margin-left:6px;">Cached</span>' : '';
             return `
               <li class="story-item">
                 <div class="story-cover"><img src="${cover}" alt="${(s.title || 'Story cover').replace(/"/g,'&quot;')}" /></div>
                 <div class="story-info">
-                  <h3>${s.title || 'Untitled Story'}</h3>
-                  <p class="story-meta">${created ? 'Created ' + created : ''}</p>
+                  <h3>${s.title || 'Untitled Story'}${badge}</h3>
+                  <p class="story-meta">${created ? 'Created ' + created : ''}${s.isCached ? ' • Not yet saved to account' : ''}</p>
                   <button class="btn ghost small" data-open-story="${s._id}">Open</button>
                 </div>
               </li>`;
@@ -476,7 +501,17 @@
           if (!btn) return;
           const id = btn.getAttribute('data-open-story');
           if (!id) return;
-          try { sessionStorage.setItem('yw_story_id', id); } catch(_) {}
+          
+          // If it's a cached story, we already have it in sessionStorage
+          if (id === 'cached-story') {
+            console.log('[loadMyStories] Opening cached story from sessionStorage');
+            // Story data is already in sessionStorage as yw_current_story and yw_story_html
+            // Just navigate to storydetail page
+          } else {
+            // For database stories, store the ID so storydetail can fetch it
+            try { sessionStorage.setItem('yw_story_id', id); } catch(_) {}
+          }
+          
           document.body.classList.add('fade-out');
           setTimeout(()=>{ window.location.href = 'storydetail.html'; }, 120);
         });
