@@ -128,10 +128,23 @@
 
   // ---- API wrappers ----
   async function apiSignup({ childName, email, password, birthYear, gender }) {
+    // Check if there's a pending story jobId from pre-signup generation
+    let pendingJobId = null;
+    try { 
+      pendingJobId = sessionStorage.getItem('yw_pending_story_jobid'); 
+    } catch(_) {}
+    
+    const payload = { childName, email, password, birthYear, gender };
+    
+    // Include pending jobId if it exists so backend can associate the story
+    if (pendingJobId) {
+      payload.pendingStoryJobId = pendingJobId;
+    }
+    
     const res = await fetch(`${API_BASE}/users/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ childName, email, password, birthYear, gender }),
+      body: JSON.stringify(payload),
       credentials: "include"
     });
     const data = await res.json().catch(()=>({}));
@@ -594,14 +607,28 @@ if (justAuthed) {
 
             try {
               await apiSignup({ childName, email, password, birthYear, gender });
-try { await apiGetMe(); } catch(_) {}
-                 try { localStorage.setItem('yw_signed_in', '1'); } catch (_) {}
-  try { sessionStorage.setItem('yw_postauth', '1'); } catch (_) {}
-close();
+              try { await apiGetMe(); } catch(_) {}
+              try { localStorage.setItem('yw_signed_in', '1'); } catch (_) {}
+              try { sessionStorage.setItem('yw_postauth', '1'); } catch (_) {}
+              close();
 
-// Seed a first story and go straight to the reader on first run
-const seeded = seedFirstStoryIfNeeded();
-fadeOutAnd(()=>{ window.location.href = seeded ? "storydetail.html" : "home.html"; }, 120);
+              // Check if there's a pending story from pre-signup generation
+              const hasPendingStory = (() => {
+                try { 
+                  return !!sessionStorage.getItem('yw_pending_story_jobid'); 
+                } catch(_) { 
+                  return false; 
+                }
+              })();
+
+              // If user signed up from checkout with a pending story, go to storydetail
+              // Otherwise, seed a first story and decide based on that
+              if (hasPendingStory) {
+                fadeOutAnd(() => { window.location.href = "storydetail.html"; }, 120);
+              } else {
+                const seeded = seedFirstStoryIfNeeded();
+                fadeOutAnd(() => { window.location.href = seeded ? "storydetail.html" : "home.html"; }, 120);
+              }
 
             } catch (err) {
               const msg = err?.message || "Could not create account.";
@@ -688,6 +715,7 @@ fadeOutAnd(()=>{ window.location.href = seeded ? "storydetail.html" : "home.html
   --------------------------------------------- */
   const isCreateChatPage = () => Boolean($('#chatWizard'));
   const isCheckoutPage   = () => Boolean($('#storyContent') && $('#productsTrack'));
+  const isStoryDetailPage = () => Boolean($('#storybook'));
   const goCheckout       = () => fadeOutAnd(() => { window.location.href = "checkout.html"; });
 
   /* ---------------------------------------------
@@ -1129,6 +1157,9 @@ if (!html && !md && !pending && teaser) {
 
           // 1) Start job
           const jobId = await startGuestGeneration(payload);
+          
+          // Store jobId for post-signup story retrieval
+          try { SS.setItem('yw_pending_story_jobid', jobId); } catch(_) {}
 
           // 2) Poll until we get firstPageText, then paint the preview
           pollForFirstPage(jobId, {
@@ -1263,6 +1294,163 @@ if (!html && !md && !pending && teaser) {
       cartCountEl.classList.remove("hidden");
     } else {
       cartCountEl.classList.add("hidden");
+    }
+  }
+
+  /* ---------------------------------------------
+     Story Detail: Load pending story after signup
+  --------------------------------------------- */
+  async function initStoryDetail() {
+    if (!isSignedIn()) {
+      // If not signed in, redirect to home
+      console.log('[initStoryDetail] User not signed in, redirecting to home');
+      fadeOutAnd(() => { window.location.href = "home.html"; }, 300);
+      return;
+    }
+
+    // Check if there's a pending story jobId from pre-signup generation
+    let pendingJobId = null;
+    try {
+      pendingJobId = sessionStorage.getItem('yw_pending_story_jobid');
+    } catch(_) {}
+
+    if (!pendingJobId) {
+      // No pending story, check if we have a regular story to display
+      console.log('[initStoryDetail] No pending jobId, checking for existing story');
+      return; // Let existing storydetail logic handle it
+    }
+
+    console.log('[initStoryDetail] Found pending jobId:', pendingJobId);
+    mobileDebug('📖 Loading your story...');
+
+    // Show loading state in storybook
+    const storybook = $('#storybook');
+    if (storybook) {
+      const stage = storybook.querySelector('.sb-stage');
+      if (stage) {
+        stage.innerHTML = `
+          <div class="sb-page" style="display:flex;align-items:center;justify-content:center;flex-direction:column;padding:20px;text-align:center;">
+            <div class="wait-wrap">
+              <div class="wait-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+              <p style="margin-top:20px;font-weight:700;color:#3a3450;">Preparing your story...</p>
+              <p class="muted" style="margin-top:8px;font-size:14px;">This may take a few moments</p>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Poll for the story completion using authenticated endpoint
+    try {
+      const pollAuthenticatedStory = async (storyJobId) => {
+        let attempts = 0;
+        const maxAttempts = 60; // Poll for up to 5 minutes (60 * 5s)
+        
+        const poll = async () => {
+          attempts++;
+          
+          try {
+            // Use authenticated job endpoint
+            const res = await fetch(`${API_BASE}/jobs/${storyJobId}`, {
+              method: "GET",
+              headers: getAuthHeaders({ "Content-Type": "application/json" }),
+              credentials: "include"
+            });
+            
+            if (!res.ok) {
+              throw new Error(`Failed to fetch job: ${res.status}`);
+            }
+            
+            const data = await res.json();
+            const status = data?.data?.job?.status || data?.status;
+            const outputData = data?.data?.job?.outputData || data?.data?.outputData || {};
+            
+            console.log('[pollAuthenticatedStory] Status:', status, 'Attempt:', attempts);
+            
+            if (status === 'completed' && outputData.storyId) {
+              // Story is complete! Fetch the full story
+              console.log('[pollAuthenticatedStory] Story completed! ID:', outputData.storyId);
+              mobileDebug('✨ Story ready!');
+              
+              // Clear the pending jobId
+              try { 
+                sessionStorage.removeItem('yw_pending_story_jobid'); 
+                sessionStorage.removeItem(K_PENDING);
+              } catch(_) {}
+              
+              // Fetch the full story
+              const storyRes = await fetch(`${API_BASE}/stories/${outputData.storyId}`, {
+                method: "GET",
+                headers: getAuthHeaders({ "Content-Type": "application/json" }),
+                credentials: "include"
+              });
+              
+              if (storyRes.ok) {
+                const storyData = await storyRes.json();
+                const story = storyData?.data?.story;
+                
+                if (story && story.pages) {
+                  // Store story data for the page to use
+                  try {
+                    sessionStorage.setItem('yw_current_story', JSON.stringify(story));
+                  } catch(_) {}
+                  
+                  // Reload the page to let existing storydetail logic render it
+                  mobileDebug('🎉 Displaying your story!');
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 500);
+                }
+              }
+            } else if (status === 'failed' || status === 'error') {
+              console.error('[pollAuthenticatedStory] Story generation failed');
+              mobileDebug('❌ Story generation failed', 'error');
+              
+              // Clear pending state
+              try { 
+                sessionStorage.removeItem('yw_pending_story_jobid'); 
+              } catch(_) {}
+              
+              // Show error in storybook
+              const stage = storybook?.querySelector('.sb-stage');
+              if (stage) {
+                stage.innerHTML = `
+                  <div class="sb-page" style="display:flex;align-items:center;justify-content:center;flex-direction:column;padding:20px;text-align:center;">
+                    <p style="font-weight:700;color:#e63946;margin-bottom:12px;">Story generation failed</p>
+                    <p class="muted" style="margin-bottom:20px;">Please try creating a new story.</p>
+                    <button class="btn" onclick="window.location.href='create.html'">Create New Story</button>
+                  </div>
+                `;
+              }
+            } else if (attempts < maxAttempts) {
+              // Still processing, poll again
+              setTimeout(poll, 5000); // Poll every 5 seconds
+            } else {
+              // Max attempts reached
+              console.error('[pollAuthenticatedStory] Max polling attempts reached');
+              mobileDebug('⏱️ Taking longer than expected...', 'warn');
+            }
+          } catch (err) {
+            console.error('[pollAuthenticatedStory] Error:', err);
+            
+            if (attempts < maxAttempts) {
+              // Retry on error
+              setTimeout(poll, 5000);
+            } else {
+              mobileDebug('❌ Error loading story', 'error');
+            }
+          }
+        };
+        
+        // Start polling
+        poll();
+      };
+      
+      await pollAuthenticatedStory(pendingJobId);
+      
+    } catch (err) {
+      console.error('[initStoryDetail] Error:', err);
+      mobileDebug('❌ Error loading story', 'error');
     }
   }
 
@@ -1637,6 +1825,7 @@ function initAgePreview() {
 
     if (isCreateChatPage()) initCreateChatWizard();
     if (isCheckoutPage())   initCheckout();
+    if (isStoryDetailPage()) initStoryDetail();
 
     initTestimonials();
     initScrollMorph();
