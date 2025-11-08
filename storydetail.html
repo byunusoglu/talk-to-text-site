@@ -351,6 +351,7 @@ const ctx = null;
       return 'pad';
     }
     function applyAmbienceSelection(val){
+      if (!ctx) return; // Audio context not initialized
       if (val === 'off') return stopAmbience(0.4);
       if (val === 'auto') return startAmbience(pickAmbienceFromStory(storyEl.textContent || ''));
       startAmbience(val);
