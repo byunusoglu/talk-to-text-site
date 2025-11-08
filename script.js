@@ -1346,17 +1346,17 @@ if (!html && !md && !pending && teaser) {
           attempts++;
           
           try {
-            // Use guest job endpoint (jobs created before signup are guest jobs)
-            const res = await fetch(`${API_BASE}/jobs/guest/${storyJobId}`, {
+            // Use authenticated job endpoint to get full story
+            const res = await fetch(`${API_BASE}/jobs/${storyJobId}`, {
               method: "GET",
               headers: getAuthHeaders({ "Content-Type": "application/json" }),
               credentials: "include"
             });
             
             if (!res.ok) {
-              // Guest job might not be available anymore (expired or cleaned up after signup)
+              // Job might not be available anymore (expired or not found)
               // Fall back to fetching user's stories instead
-              console.log('[pollAuthenticatedStory] Guest job not found, fetching user stories instead');
+              console.log('[pollAuthenticatedStory] Job not found, fetching user stories instead');
               
               try {
                 const storiesRes = await fetch(`${API_BASE}/stories/my`, {
