@@ -361,9 +361,23 @@
       };
 
       try {
-        // Ask for user stories (cookie-based auth)
-        const res = await fetch(`${API_BASE}/stories/my`, { credentials: 'include' });
-        if (!res.ok) throw new Error('UNAUTH');
+        // Get JWT token from localStorage for authentication
+        const token = localStorage.getItem('yw_jwt_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        // Ask for user stories with JWT auth
+        const res = await fetch(`${API_BASE}/stories/my`, { 
+          credentials: 'include',
+          headers: headers
+        });
+        
+        if (!res.ok) {
+          console.error('Failed to load stories:', res.status);
+          throw new Error('UNAUTH');
+        }
         const data = await res.json();
         const stories = data?.data?.stories || [];
 
