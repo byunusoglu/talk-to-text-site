@@ -1558,18 +1558,27 @@ if (!html && !md && !pending && teaser) {
               
               if (story && story.pages) {
                 // Convert story to HTML format for storydetail page
+                console.log('[pollAuthenticatedStory] Converting story to HTML');
+                console.log('[pollAuthenticatedStory] Story title:', story.title);
+                console.log('[pollAuthenticatedStory] Number of pages:', story.pages.length);
+                console.log('[pollAuthenticatedStory] Story pages:', JSON.stringify(story.pages, null, 2));
+                
                 let storyHtml = '';
                 if (story.title) {
                   storyHtml += `<h1>${story.title}</h1>\n`;
                 }
                 
                 story.pages.forEach((page, idx) => {
+                  console.log('[pollAuthenticatedStory] Processing page', idx + 1, ':', page.text?.substring(0, 50) + '...');
                   // Add page number as heading if there are multiple pages
                   if (story.pages.length > 1) {
                     storyHtml += `<h2>Page ${page.pageNumber || idx + 1}</h2>\n`;
                   }
                   storyHtml += `<p>${page.text}</p>\n`;
                 });
+                
+                console.log('[pollAuthenticatedStory] Final HTML length:', storyHtml.length, 'characters');
+                console.log('[pollAuthenticatedStory] HTML preview:', storyHtml.substring(0, 200) + '...');
                 
                 // Store story data in the format storydetail.html expects
                 try {
