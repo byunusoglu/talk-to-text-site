@@ -1586,18 +1586,11 @@ if (!html && !md && !pending && teaser) {
                   sessionStorage.setItem('yw_current_story', JSON.stringify(story));
                 } catch(_) {}
                 
-                // Show debug info before reload
-                mobileDebug(`📖 Story: ${story.pages.length} pages, ${storyHtml.length} chars`);
-                
-                // DON'T reload - let the page stay so we can see the logs
-                // Comment out the reload temporarily for debugging
-                console.log('[pollAuthenticatedStory] ⚠️ AUTO-RELOAD DISABLED FOR DEBUGGING');
-                console.log('[pollAuthenticatedStory] Story is ready in sessionStorage. Manually refresh to see it.');
-                
-                // Uncomment this when debugging is done:
-                // setTimeout(() => {
-                //   window.location.reload();
-                // }, 500);
+                // Reload the page to display the story
+                mobileDebug('🎉 Displaying your story!');
+                setTimeout(() => {
+                  window.location.reload();
+                }, 500);
                 
                 return; // Stop polling
               } else {
