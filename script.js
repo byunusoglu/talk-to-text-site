@@ -2394,23 +2394,20 @@ function openVoicePicker() {
 })();
 
 /* =====================================================
-   Storybook Page-Turning Navigation
+   Real Book Page-Turning Animation
 ===================================================== */
 (() => {
   const storybook = document.getElementById('storybook');
-  if (!storybook) return; // Only run on storydetail page
+  if (!storybook) return;
 
-  // Get or create the book container
   let bookContainer = storybook.querySelector('.sb-book');
   const prevBtn = document.getElementById('sbPrev');
   const nextBtn = document.getElementById('sbNext');
   const dotsContainer = document.getElementById('sbDots');
   
-  // Ensure we have the necessary DOM structure
   if (!bookContainer) {
     const stage = storybook.querySelector('.sb-stage');
     if (stage) {
-      // Clear any loading messages and create the book container
       stage.innerHTML = '<div class="sb-book"></div>';
       bookContainer = stage.querySelector('.sb-book');
     }
@@ -2422,51 +2419,60 @@ function openVoicePicker() {
   let pages = [];
   let isAnimating = false;
 
-  // Initialize storybook with demo images (these will be replaced by actual story images)
+  // Initialize with demo book pages
   function initStorybook() {
-    // Use gradient placeholders instead of external images for instant loading
     const demoPages = [
-      { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', label: '📖 Page 1' },
-      { bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', label: '📖 Page 2' },
-      { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', label: '📖 Page 3' }
+      { 
+        leftBg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        rightBg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        leftText: '📖 Page 1',
+        rightText: '📖 Page 2'
+      },
+      {
+        leftBg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        rightBg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+        leftText: '📖 Page 3',
+        rightText: '📖 Page 4'
+      },
+      {
+        leftBg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+        rightBg: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+        leftText: '📖 Page 5',
+        rightText: '📖 Page 6'
+      }
     ];
 
-    // Clear existing pages
     bookContainer.innerHTML = '';
+    bookContainer.classList.add('breathing');
     pages = [];
 
-    // Create pages with gradients and labels
     demoPages.forEach((pageData, idx) => {
-      const page = document.createElement('div');
-      page.className = 'sb-page';
-      page.setAttribute('data-idx', idx);
-      page.style.background = pageData.bg;
-      page.style.display = 'flex';
-      page.style.alignItems = 'center';
-      page.style.justifyContent = 'center';
-      page.style.fontSize = '32px';
-      page.style.fontWeight = '700';
-      page.style.color = 'white';
-      page.style.textShadow = '2px 2px 4px rgba(0,0,0,0.3)';
-      page.textContent = pageData.label;
-      
-      // Set initial state
-      if (idx === 0) {
-        page.classList.add('sb-active', 'sb-animate');
-      } else {
-        page.classList.add('sb-right');
-      }
-      
-      bookContainer.appendChild(page);
-      pages.push(page);
+      const pageSpread = document.createElement('div');
+      pageSpread.className = 'sb-page';
+      if (idx === 0) pageSpread.classList.add('active');
+      pageSpread.setAttribute('data-idx', idx);
+
+      const leftPage = document.createElement('div');
+      leftPage.className = 'sb-page-left';
+      leftPage.style.background = pageData.leftBg;
+      leftPage.innerHTML = `<div style="font-size: 28px; font-weight: 700; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">${pageData.leftText}</div>`;
+
+      const rightPage = document.createElement('div');
+      rightPage.className = 'sb-page-right';
+      rightPage.style.background = pageData.rightBg;
+      rightPage.innerHTML = `<div style="font-size: 28px; font-weight: 700; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">${pageData.rightText}</div>`;
+
+      pageSpread.appendChild(leftPage);
+      pageSpread.appendChild(rightPage);
+      bookContainer.appendChild(pageSpread);
+      pages.push(pageSpread);
     });
 
-    // Create dots
     dotsContainer.innerHTML = '';
     demoPages.forEach((_, idx) => {
       const dot = document.createElement('button');
       dot.setAttribute('aria-current', idx === 0 ? 'true' : 'false');
-      dot.setAttribute('aria-label', `Go to page ${idx + 1}`);
+      dot.setAttribute('aria-label', `Go to spread ${idx + 1}`);
       dot.addEventListener('click', () => goToPage(idx));
       dotsContainer.appendChild(dot);
     });
@@ -2474,87 +2480,48 @@ function openVoicePicker() {
     updateNavigationState();
   }
 
-  // Navigate to a specific page
+  // Navigate to spread
   function goToPage(targetIndex) {
     if (isAnimating || targetIndex === currentPage || targetIndex < 0 || targetIndex >= pages.length) {
       return;
     }
 
+    bookContainer.classList.remove('breathing');
     isAnimating = true;
-    const direction = targetIndex > currentPage ? 'forward' : 'backward';
-    const oldPage = currentPage;
-    currentPage = targetIndex;
-
-    if (direction === 'forward') {
-      // Turning pages forward
-      for (let i = oldPage; i < targetIndex; i++) {
-        turnPageForward(i);
+    
+    pages.forEach((page, idx) => {
+      page.classList.remove('active', 'turning', 'turning-back', 'flipped');
+      
+      if (idx < targetIndex) {
+        page.classList.add('flipped');
+      } else if (idx === targetIndex) {
+        page.classList.add('active');
       }
-    } else {
-      // Turning pages backward
-      for (let i = oldPage; i > targetIndex; i--) {
-        turnPageBackward(i);
+    });
+
+    if (targetIndex > currentPage) {
+      for (let i = currentPage; i < targetIndex; i++) {
+        pages[i].classList.add('turning');
+      }
+    } else if (targetIndex < currentPage) {
+      for (let i = targetIndex; i < currentPage; i++) {
+        pages[i].classList.add('turning-back');
       }
     }
 
-    // Update UI after animation
+    currentPage = targetIndex;
+
     setTimeout(() => {
-      updatePageStates();
       updateNavigationState();
       isAnimating = false;
-    }, 800);
+      bookContainer.classList.add('breathing');
+    }, 850);
   }
 
-  // Turn a page forward (to the left)
-  function turnPageForward(pageIndex) {
-    const page = pages[pageIndex];
-    if (!page) return;
-
-    page.classList.remove('sb-active', 'sb-animate', 'sb-right');
-    page.classList.add('sb-turning-forward');
-
-    setTimeout(() => {
-      page.classList.remove('sb-turning-forward');
-      page.classList.add('sb-left');
-    }, 800);
-  }
-
-  // Turn a page backward (to the right)
-  function turnPageBackward(pageIndex) {
-    const page = pages[pageIndex - 1];
-    if (!page) return;
-
-    page.classList.remove('sb-left');
-    page.classList.add('sb-turning-backward');
-
-    setTimeout(() => {
-      page.classList.remove('sb-turning-backward');
-      page.classList.add('sb-active', 'sb-animate');
-    }, 800);
-  }
-
-  // Update all page states based on current page
-  function updatePageStates() {
-    pages.forEach((page, idx) => {
-      page.classList.remove('sb-left', 'sb-active', 'sb-animate', 'sb-right', 'sb-turning-forward', 'sb-turning-backward');
-      
-      if (idx < currentPage) {
-        page.classList.add('sb-left');
-      } else if (idx === currentPage) {
-        page.classList.add('sb-active', 'sb-animate');
-      } else {
-        page.classList.add('sb-right');
-      }
-    });
-  }
-
-  // Update navigation buttons and dots
   function updateNavigationState() {
-    // Update buttons
     prevBtn.disabled = currentPage === 0;
     nextBtn.disabled = currentPage === pages.length - 1;
 
-    // Update dots
     const dots = dotsContainer.querySelectorAll('button');
     dots.forEach((dot, idx) => {
       dot.setAttribute('aria-current', idx === currentPage ? 'true' : 'false');
@@ -2562,52 +2529,33 @@ function openVoicePicker() {
   }
 
   // Event listeners
-  prevBtn.addEventListener('click', () => {
-    goToPage(currentPage - 1);
-  });
-
-  nextBtn.addEventListener('click', () => {
-    goToPage(currentPage + 1);
-  });
+  prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
+  nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
 
   // Keyboard navigation
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') {
-      goToPage(currentPage - 1);
-    } else if (e.key === 'ArrowRight') {
-      goToPage(currentPage + 1);
-    }
+    if (e.key === 'ArrowLeft') goToPage(currentPage - 1);
+    else if (e.key === 'ArrowRight') goToPage(currentPage + 1);
   });
 
-  // Touch swipe support for mobile
+  // Touch swipe
   let touchStartX = 0;
-  let touchEndX = 0;
-
   bookContainer.addEventListener('touchstart', (e) => {
     touchStartX = e.changedTouches[0].screenX;
   }, { passive: true });
 
   bookContainer.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-  }, { passive: true });
-
-  function handleSwipe() {
-    const swipeThreshold = 50;
+    const touchEndX = e.changedTouches[0].screenX;
     const diff = touchStartX - touchEndX;
+    const swipeThreshold = 50;
 
     if (Math.abs(diff) > swipeThreshold) {
-      if (diff > 0) {
-        // Swipe left - next page
-        goToPage(currentPage + 1);
-      } else {
-        // Swipe right - previous page
-        goToPage(currentPage - 1);
-      }
+      if (diff > 0) goToPage(currentPage + 1);
+      else goToPage(currentPage - 1);
     }
-  }
+  }, { passive: true });
 
-  // API function to update storybook with actual story images
+  // API to update with real story images
   window.updateStorybookPages = function(imageUrls) {
     if (!Array.isArray(imageUrls) || imageUrls.length === 0) return;
 
@@ -2615,28 +2563,38 @@ function openVoicePicker() {
     pages = [];
     currentPage = 0;
 
-    imageUrls.forEach((url, idx) => {
-      const page = document.createElement('div');
-      page.className = 'sb-page';
-      page.setAttribute('data-idx', idx);
-      page.style.backgroundImage = `url(${url})`;
-      
-      if (idx === 0) {
-        page.classList.add('sb-active', 'sb-animate');
-      } else {
-        page.classList.add('sb-right');
-      }
-      
-      bookContainer.appendChild(page);
-      pages.push(page);
-    });
+    // Convert single images into spreads (2 images per spread)
+    for (let i = 0; i < imageUrls.length; i += 2) {
+      const pageSpread = document.createElement('div');
+      pageSpread.className = 'sb-page';
+      if (i === 0) pageSpread.classList.add('active');
+      pageSpread.setAttribute('data-idx', i / 2);
 
-    // Update dots
+      const leftPage = document.createElement('div');
+      leftPage.className = 'sb-page-left';
+      leftPage.style.backgroundImage = `url(${imageUrls[i]})`;
+      leftPage.style.backgroundSize = 'cover';
+      leftPage.style.backgroundPosition = 'center';
+
+      const rightPage = document.createElement('div');
+      rightPage.className = 'sb-page-right';
+      if (imageUrls[i + 1]) {
+        rightPage.style.backgroundImage = `url(${imageUrls[i + 1]})`;
+        rightPage.style.backgroundSize = 'cover';
+        rightPage.style.backgroundPosition = 'center';
+      }
+
+      pageSpread.appendChild(leftPage);
+      pageSpread.appendChild(rightPage);
+      bookContainer.appendChild(pageSpread);
+      pages.push(pageSpread);
+    }
+
     dotsContainer.innerHTML = '';
-    imageUrls.forEach((_, idx) => {
+    pages.forEach((_, idx) => {
       const dot = document.createElement('button');
       dot.setAttribute('aria-current', idx === 0 ? 'true' : 'false');
-      dot.setAttribute('aria-label', `Go to page ${idx + 1}`);
+      dot.setAttribute('aria-label', `Go to spread ${idx + 1}`);
       dot.addEventListener('click', () => goToPage(idx));
       dotsContainer.appendChild(dot);
     });
@@ -2644,6 +2602,5 @@ function openVoicePicker() {
     updateNavigationState();
   };
 
-  // Initialize with demo content
   initStorybook();
 })();
