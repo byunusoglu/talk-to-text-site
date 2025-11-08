@@ -1429,13 +1429,14 @@ if (!html && !md && !pending && teaser) {
             const data = await res.json();
             
             // Handle different response formats
-            const jobData = data?.data || {};
+            const jobData = data?.data?.job || data?.data || {};
             const status = jobData.status || data?.status;
-            const outputData = data?.data?.job?.outputData || data?.data?.outputData || {};
-            const guestData = data?.data?.job?.guestData || {};
+            const outputData = jobData.outputData || {};
+            const guestData = jobData.guestData || {};
             
             console.log('[pollAuthenticatedStory] Status:', status, 'Attempt:', attempts);
             console.log('[pollAuthenticatedStory] Full response:', JSON.stringify(data, null, 2));
+            console.log('[pollAuthenticatedStory] JobData:', JSON.stringify(jobData, null, 2));
             console.log('[pollAuthenticatedStory] OutputData:', JSON.stringify(outputData, null, 2));
             console.log('[pollAuthenticatedStory] GuestData:', JSON.stringify(guestData, null, 2));
             
