@@ -143,8 +143,8 @@
     console.log('[apiSignup] Errors:', JSON.stringify(data?.errors, null, 2));
     
     if (!res.ok) {
-      const msg = data?.message || data?.error || (data?.errors?.[0]?.msg || data?.errors?.[0]) || `Signup failed (${res.status})`;
-      throw new Error(msg);
+      const errorMsg = data?.errors?.[0]?.msg || data?.message || data?.error || `Signup failed (${res.status})`;
+      throw new Error(errorMsg);
     }
     const token = data?.token || "";
     const user  = data?.data?.user || {};
@@ -534,6 +534,7 @@ if (justAuthed) {
         <label style="font-weight:700">Password</label>
         <input id="authPass" type="password" placeholder="••••••••"
           style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
+        <p class="muted" style="font-size:12px;margin-top:4px;">Must include uppercase, lowercase, and a number</p>
       </div>
 
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
