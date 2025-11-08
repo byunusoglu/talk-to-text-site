@@ -1346,8 +1346,8 @@ if (!html && !md && !pending && teaser) {
           attempts++;
           
           try {
-            // Use authenticated job endpoint
-            const res = await fetch(`${API_BASE}/jobs/${storyJobId}`, {
+            // Use guest job endpoint (jobs created before signup are guest jobs)
+            const res = await fetch(`${API_BASE}/jobs/guest/${storyJobId}`, {
               method: "GET",
               headers: getAuthHeaders({ "Content-Type": "application/json" }),
               credentials: "include"
