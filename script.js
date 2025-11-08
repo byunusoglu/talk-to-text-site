@@ -129,13 +129,18 @@
   // ---- API wrappers ----
   async function apiSignup({ childName, email, password, birthYear, gender }) {
     // Don't send pendingStoryJobId to backend - handle story association client-side
+    console.log('[apiSignup] Sending signup request:', { childName, email, birthYear, gender });
+    
     const res = await fetch(`${API_BASE}/users/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ childName, email, password, birthYear, gender }),
       credentials: "include"
     });
+    
     const data = await res.json().catch(()=>({}));
+    console.log('[apiSignup] Response:', res.status, data);
+    
     if (!res.ok) {
       const msg = data?.message || data?.error || `Signup failed (${res.status})`;
       throw new Error(msg);
