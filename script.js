@@ -1495,20 +1495,65 @@ if (!html && !md && !pending && teaser) {
               }
               
               // If no story yet, try the simple guest format (title + firstPageText)
+              // But this is just a preview - try to fetch the full story from /stories/my
               if (!story && hasSimpleGuestData) {
-                console.log('[pollAuthenticatedStory] Using simple guest data format');
-                mobileDebug('✨ Loading story preview...');
+                console.log('[pollAuthenticatedStory] Guest job completed, fetching full story from /stories/my');
+                mobileDebug('✨ Fetching full story...');
                 
-                story = {
-                  title: jobData.title,
-                  pages: [{
-                    pageNumber: 1,
-                    text: jobData.firstPageText,
-                    imageUrl: null,
-                    audioUrl: null
-                  }],
-                  createdAt: new Date().toISOString()
-                };
+                // The guest job is complete, so the story should now be in the user's account
+                // Try to fetch it from /stories/my
+                try {
+                  const storiesRes = await fetch(`${API_BASE}/stories/my`, {
+                    method: "GET",
+                    headers: getAuthHeaders({ "Content-Type": "application/json" }),
+                    credentials: "include"
+                  });
+                  
+                  if (storiesRes.ok) {
+                    const storiesData = await storiesRes.json();
+                    const stories = storiesData?.data?.stories || [];
+                    
+                    console.log('[pollAuthenticatedStory] Found', stories.length, 'stories');
+                    
+                    if (stories.length > 0) {
+                      // Find the story that matches the current job title, or use the most recent
+                      const matchingStory = stories.find(s => s.title === jobData.title) || stories[0];
+                      console.log('[pollAuthenticatedStory] Fetching story:', matchingStory._id);
+                      
+                      // Fetch the full story
+                      const storyRes = await fetch(`${API_BASE}/stories/${matchingStory._id}`, {
+                        method: "GET",
+                        headers: getAuthHeaders({ "Content-Type": "application/json" }),
+                        credentials: "include"
+                      });
+                      
+                      if (storyRes.ok) {
+                        const storyData = await storyRes.json();
+                        story = storyData?.data?.story;
+                        console.log('[pollAuthenticatedStory] Fetched full story with', story?.pages?.length, 'pages');
+                      }
+                    }
+                  }
+                } catch (err) {
+                  console.error('[pollAuthenticatedStory] Error fetching full story:', err);
+                }
+                
+                // If we couldn't get the full story, fall back to the preview
+                if (!story) {
+                  console.log('[pollAuthenticatedStory] Using preview (first page only)');
+                  mobileDebug('⚠️ Showing preview only', 'warn');
+                  
+                  story = {
+                    title: jobData.title,
+                    pages: [{
+                      pageNumber: 1,
+                      text: jobData.firstPageText,
+                      imageUrl: null,
+                      audioUrl: null
+                    }],
+                    createdAt: new Date().toISOString()
+                  };
+                }
               }
               
               if (story && story.pages) {
