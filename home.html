@@ -395,6 +395,16 @@
         const stories = data?.data?.stories || [];
         console.log('[loadMyStories] Stories array:', stories);
         console.log('[loadMyStories] Number of stories:', stories.length);
+        
+        // Also check if there's a pending jobId from previous session
+        let pendingJobId = null;
+        try {
+          pendingJobId = sessionStorage.getItem('yw_pending_story_jobid');
+          if (pendingJobId) {
+            console.log('[loadMyStories] Found pending jobId in session:', pendingJobId);
+            console.log('[loadMyStories] Note: This story may need to be claimed/associated with your account');
+          }
+        } catch(_) {}
 
         if (!stories.length) {
           paintEmpty(`<b>No stories yet.</b> Create your first one below!`);

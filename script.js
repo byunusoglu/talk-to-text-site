@@ -73,7 +73,9 @@
   const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
   // Partner story generation endpoints
   const API_GUEST_GENERATE = `${API_BASE}/stories/guest-generate`;
-  const API_JOB = (jobId) => `${API_BASE}/jobs/guest/${jobId}`;
+  const API_AUTH_GENERATE = `${API_BASE}/stories/generate`; // For authenticated users
+  const API_JOB = (jobId) => `${API_BASE}/jobs/${jobId}`; // Use authenticated endpoint
+  const API_GUEST_JOB = (jobId) => `${API_BASE}/jobs/guest/${jobId}`; // Keep for backward compatibility
 
   // Session model for cookie-based auth
   let SESSION_READY = false;
@@ -128,13 +130,24 @@
 
   // ---- API wrappers ----
   async function apiSignup({ childName, email, password, birthYear, gender }) {
-    // Don't send pendingStoryJobId to backend - handle story association client-side
-    console.log('[apiSignup] Sending signup request:', { childName, email, birthYear, gender });
+    // Check for pending story jobId and include it in signup
+    let pendingStoryJobId = null;
+    try {
+      pendingStoryJobId = sessionStorage.getItem('yw_pending_story_jobid');
+    } catch(_) {}
+    
+    const payload = { childName, email, password, birthYear, gender };
+    if (pendingStoryJobId) {
+      payload.pendingStoryJobId = pendingStoryJobId;
+      console.log('[apiSignup] Including pendingStoryJobId:', pendingStoryJobId);
+    }
+    
+    console.log('[apiSignup] Sending signup request:', payload);
     
     const res = await fetch(`${API_BASE}/users/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ childName, email, password, birthYear, gender }),
+      body: JSON.stringify(payload),
       credentials: "include"
     });
     
@@ -828,27 +841,61 @@ function paintFirstPage({ title, firstPageText }) {
 }
 
   async function startGuestGeneration(guestPayload) {
-    const res = await fetch(API_GUEST_GENERATE, {
+    // Check if user is authenticated - use proper endpoint
+    const isAuth = isSignedIn() || isProbablySignedIn();
+    const endpoint = isAuth ? API_AUTH_GENERATE : API_GUEST_GENERATE;
+    
+    console.log('[startGuestGeneration] Using endpoint:', endpoint, 'isAuth:', isAuth);
+    
+    // For authenticated users, convert payload to match /stories/generate format
+    let payload = guestPayload;
+    if (isAuth) {
+      // Build transcript from guest payload
+      const child = guestPayload.child || {};
+      const transcript = `Child name: ${child.name || 'Friend'}\nChild age: ${child.age || 4}\nChild gender: ${child.gender || 'unspecified'}\nPlace: ${guestPayload.location || 'forest'}`;
+      
+      payload = {
+        transcript: transcript,
+        language: guestPayload.language || 'en',
+        childImageUrl: guestPayload.childImageUrl || null
+      };
+      console.log('[startGuestGeneration] Converted to auth payload:', payload);
+    }
+    
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: getAuthHeaders({ "Content-Type": "application/json" }),
-      credentials: "include", // cookie varsa gönder
-      body: JSON.stringify(guestPayload)
+      credentials: "include",
+      body: JSON.stringify(payload)
     });
     const data = await res.json().catch(()=> ({}));
     if (!res.ok || !data?.ok || !data?.jobId) {
-      throw new Error(data?.message || `Guest generate failed (${res.status})`);
+      console.error('[startGuestGeneration] Failed:', data);
+      throw new Error(data?.message || `Story generation failed (${res.status})`);
     }
+    console.log('[startGuestGeneration] Job created:', data.jobId);
     return data.jobId;
   }
 
   async function fetchJob(jobId) {
-    const res = await fetch(API_JOB(jobId), {
+    // Use authenticated endpoint if user is signed in
+    const isAuth = isSignedIn() || isProbablySignedIn();
+    const endpoint = isAuth ? API_JOB(jobId) : API_GUEST_JOB(jobId);
+    
+    console.log('[fetchJob] Fetching job:', jobId, 'endpoint:', endpoint, 'isAuth:', isAuth);
+    
+    const res = await fetch(endpoint, {
       method: "GET",
       headers: getAuthHeaders({ "Content-Type": "application/json" }),
-      credentials: "include" // cookie varsa gönder
+      credentials: "include"
     });
-    if (!res.ok) throw new Error(`Job ${res.status}`);
-    return res.json();
+    if (!res.ok) {
+      console.error('[fetchJob] Failed:', res.status);
+      throw new Error(`Job ${res.status}`);
+    }
+    const data = await res.json();
+    console.log('[fetchJob] Job data received:', data?.data?.job?.status || data?.status);
+    return data;
   }
 
   // Poll every ~5s until completed
