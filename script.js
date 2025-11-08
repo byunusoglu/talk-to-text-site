@@ -140,9 +140,10 @@
     
     const data = await res.json().catch(()=>({}));
     console.log('[apiSignup] Response:', res.status, data);
+    console.log('[apiSignup] Errors:', JSON.stringify(data?.errors, null, 2));
     
     if (!res.ok) {
-      const msg = data?.message || data?.error || `Signup failed (${res.status})`;
+      const msg = data?.message || data?.error || (data?.errors?.[0]?.msg || data?.errors?.[0]) || `Signup failed (${res.status})`;
       throw new Error(msg);
     }
     const token = data?.token || "";
@@ -588,12 +589,13 @@ if (justAuthed) {
             // Try to auto-fill from transcript; allow user to override via fields
             const guess = deriveChildFromTranscript();
             const childName = $("#authChildName")?.value?.trim() || guess.childName;
-            const birthYear = $("#authBirthYear")?.value?.trim() || guess.birthYear;
+            const birthYearRaw = $("#authBirthYear")?.value?.trim() || guess.birthYear;
+            const birthYear = parseInt(birthYearRaw, 10);
             const gender    = $("#authGender")?.value || guess.gender;
             const email     = $("#authEmail")?.value?.trim();
             const password  = $("#authPass")?.value;
 
-            if (!childName || !birthYear || !gender || !email || !password) {
+            if (!childName || !birthYear || isNaN(birthYear) || !gender || !email || !password) {
               alert("Please fill all fields.");
               return;
             }
