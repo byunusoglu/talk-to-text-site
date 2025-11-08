@@ -1588,11 +1588,36 @@ if (!html && !md && !pending && teaser) {
                   sessionStorage.setItem('yw_current_story', JSON.stringify(story));
                 } catch(_) {}
                 
-                // Reload the page to display the story
+                // Directly inject the story HTML instead of reloading
                 mobileDebug('🎉 Displaying your story!');
-                setTimeout(() => {
-                  window.location.reload();
-                }, 500);
+                
+                // Find the story content container
+                const storyContent = document.getElementById('storyContent');
+                const storyTitle = document.getElementById('storyTitle');
+                
+                if (storyContent) {
+                  // Inject the story HTML
+                  storyContent.innerHTML = storyHtml;
+                  
+                  // Update the title if available
+                  if (storyTitle && story.title) {
+                    storyTitle.textContent = story.title;
+                    storyTitle.classList.remove('sr-only');
+                  }
+                  
+                  // Hide any loading messages
+                  const loadingMsg = document.querySelector('.loading-message');
+                  if (loadingMsg) {
+                    loadingMsg.remove();
+                  }
+                  
+                  console.log('[pollAuthenticatedStory] Story displayed successfully!');
+                } else {
+                  console.warn('[pollAuthenticatedStory] Could not find #storyContent, will reload page');
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 500);
+                }
                 
                 return; // Stop polling
               } else {
