@@ -1354,11 +1354,83 @@ if (!html && !md && !pending && teaser) {
             });
             
             if (!res.ok) {
+              // Guest job might not be available anymore (expired or cleaned up after signup)
+              // Fall back to fetching user's stories instead
+              console.log('[pollAuthenticatedStory] Guest job not found, fetching user stories instead');
+              
+              try {
+                const storiesRes = await fetch(`${API_BASE}/stories/my`, {
+                  method: "GET",
+                  headers: getAuthHeaders({ "Content-Type": "application/json" }),
+                  credentials: "include"
+                });
+                
+                if (storiesRes.ok) {
+                  const storiesData = await storiesRes.json();
+                  const stories = storiesData?.data?.stories || [];
+                  
+                  if (stories.length > 0) {
+                    // Get the most recent story
+                    const latestStory = stories[0];
+                    console.log('[pollAuthenticatedStory] Using most recent story:', latestStory._id);
+                    
+                    // Clear pending state
+                    try { 
+                      sessionStorage.removeItem('yw_pending_story_jobid'); 
+                      sessionStorage.removeItem(K_PENDING);
+                    } catch(_) {}
+                    
+                    // Fetch this story
+                    const storyRes = await fetch(`${API_BASE}/stories/${latestStory._id}`, {
+                      method: "GET",
+                      headers: getAuthHeaders({ "Content-Type": "application/json" }),
+                      credentials: "include"
+                    });
+                    
+                    if (storyRes.ok) {
+                      const storyData = await storyRes.json();
+                      const story = storyData?.data?.story;
+                      
+                      if (story && story.pages) {
+                        // Convert to HTML and store
+                        let storyHtml = '';
+                        if (story.title) {
+                          storyHtml += `<h1>${story.title}</h1>\n`;
+                        }
+                        
+                        story.pages.forEach((page, idx) => {
+                          if (story.pages.length > 1) {
+                            storyHtml += `<h2>Page ${page.pageNumber || idx + 1}</h2>\n`;
+                          }
+                          storyHtml += `<p>${page.text}</p>\n`;
+                        });
+                        
+                        try {
+                          sessionStorage.setItem('yw_story_html', storyHtml);
+                          sessionStorage.setItem('yw_current_story', JSON.stringify(story));
+                        } catch(_) {}
+                        
+                        mobileDebug('🎉 Displaying your story!');
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 500);
+                        return;
+                      }
+                    }
+                  }
+                }
+              } catch (err) {
+                console.error('[pollAuthenticatedStory] Error fetching stories list:', err);
+              }
+              
               throw new Error(`Failed to fetch job: ${res.status}`);
             }
             
             const data = await res.json();
-            const status = data?.data?.job?.status || data?.status;
+            
+            // Handle different response formats
+            const jobData = data?.data || {};
+            const status = jobData.status || data?.status;
             const outputData = data?.data?.job?.outputData || data?.data?.outputData || {};
             const guestData = data?.data?.job?.guestData || {};
             
@@ -1368,12 +1440,15 @@ if (!html && !md && !pending && teaser) {
             console.log('[pollAuthenticatedStory] GuestData:', JSON.stringify(guestData, null, 2));
             
             // Check for storyId in multiple possible locations
-            const storyId = outputData.storyId || outputData.id || data?.data?.storyId;
+            const storyId = outputData.storyId || outputData.id || jobData.storyId;
             
             // Check if we have guest story data (story not yet saved to DB)
             const hasGuestStory = guestData.storyJson && guestData.storyJson.pages;
             
-            if (status === 'completed' && (storyId || hasGuestStory)) {
+            // Check if we have the simplified guest response with title and firstPageText
+            const hasSimpleGuestData = jobData.title && jobData.firstPageText;
+            
+            if (status === 'completed' && (storyId || hasGuestStory || hasSimpleGuestData)) {
               console.log('[pollAuthenticatedStory] Story completed!');
               
               // Clear the pending jobId
@@ -1412,10 +1487,27 @@ if (!html && !md && !pending && teaser) {
                   pages: guestData.storyJson.pages.map(page => ({
                     pageNumber: page.pageNumber,
                     text: page.text,
-                    imageUrl: page.imageUrl || null, // May not be generated yet for guest stories
-                    audioUrl: page.audioUrl || null  // May not be generated yet for guest stories
+                    imageUrl: page.imageUrl || null,
+                    audioUrl: page.audioUrl || null
                   })),
                   createdAt: guestData.generatedAt || new Date().toISOString()
+                };
+              }
+              
+              // If no story yet, try the simple guest format (title + firstPageText)
+              if (!story && hasSimpleGuestData) {
+                console.log('[pollAuthenticatedStory] Using simple guest data format');
+                mobileDebug('✨ Loading story preview...');
+                
+                story = {
+                  title: jobData.title,
+                  pages: [{
+                    pageNumber: 1,
+                    text: jobData.firstPageText,
+                    imageUrl: null,
+                    audioUrl: null
+                  }],
+                  createdAt: new Date().toISOString()
                 };
               }
               
