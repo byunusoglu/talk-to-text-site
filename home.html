@@ -363,23 +363,38 @@
       try {
         // Get JWT token from localStorage for authentication
         const token = localStorage.getItem('yw_jwt_token');
+        console.log('[loadMyStories] Token exists:', !!token);
+        console.log('[loadMyStories] Token length:', token ? token.length : 0);
+        
         const headers = { 'Content-Type': 'application/json' };
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
+          console.log('[loadMyStories] Authorization header added');
+        } else {
+          console.warn('[loadMyStories] No token found in localStorage!');
         }
 
         // Ask for user stories with JWT auth
+        console.log('[loadMyStories] Fetching from:', `${API_BASE}/stories/my`);
         const res = await fetch(`${API_BASE}/stories/my`, { 
           credentials: 'include',
           headers: headers
         });
         
+        console.log('[loadMyStories] Response status:', res.status);
+        console.log('[loadMyStories] Response ok:', res.ok);
+        
         if (!res.ok) {
-          console.error('Failed to load stories:', res.status);
+          const errorText = await res.text();
+          console.error('[loadMyStories] Failed to load stories:', res.status, errorText);
           throw new Error('UNAUTH');
         }
         const data = await res.json();
+        console.log('[loadMyStories] Full response data:', data);
+        
         const stories = data?.data?.stories || [];
+        console.log('[loadMyStories] Stories array:', stories);
+        console.log('[loadMyStories] Number of stories:', stories.length);
 
         if (!stories.length) {
           paintEmpty(`<b>No stories yet.</b> Create your first one below!`);
