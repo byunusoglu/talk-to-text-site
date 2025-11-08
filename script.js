@@ -1364,18 +1364,21 @@ if (!html && !md && !pending && teaser) {
             const data = await res.json();
             const status = data?.data?.job?.status || data?.status;
             const outputData = data?.data?.job?.outputData || data?.data?.outputData || {};
+            const guestData = data?.data?.job?.guestData || {};
             
             console.log('[pollAuthenticatedStory] Status:', status, 'Attempt:', attempts);
             console.log('[pollAuthenticatedStory] Full response:', JSON.stringify(data, null, 2));
             console.log('[pollAuthenticatedStory] OutputData:', JSON.stringify(outputData, null, 2));
+            console.log('[pollAuthenticatedStory] GuestData:', JSON.stringify(guestData, null, 2));
             
             // Check for storyId in multiple possible locations
             const storyId = outputData.storyId || outputData.id || data?.data?.storyId;
             
-            if (status === 'completed' && storyId) {
-              // Story is complete! Fetch the full story
-              console.log('[pollAuthenticatedStory] Story completed! ID:', storyId);
-              mobileDebug('✨ Story ready!');
+            // Check if we have guest story data (story not yet saved to DB)
+            const hasGuestStory = guestData.storyJson && guestData.storyJson.pages;
+            
+            if (status === 'completed' && (storyId || hasGuestStory)) {
+              console.log('[pollAuthenticatedStory] Story completed!');
               
               // Clear the pending jobId
               try { 
@@ -1383,90 +1386,58 @@ if (!html && !md && !pending && teaser) {
                 sessionStorage.removeItem(K_PENDING);
               } catch(_) {}
               
-              // Fetch the full story
-              const storyRes = await fetch(`${API_BASE}/stories/${storyId}`, {
-                method: "GET",
-                headers: getAuthHeaders({ "Content-Type": "application/json" }),
-                credentials: "include"
-              });
+              let story = null;
               
-              if (storyRes.ok) {
-                const storyData = await storyRes.json();
-                const story = storyData?.data?.story;
+              // If we have a storyId, fetch from the stories API
+              if (storyId) {
+                console.log('[pollAuthenticatedStory] Fetching story by ID:', storyId);
+                mobileDebug('✨ Loading story...');
                 
-                if (story && story.pages) {
-                  // Store story data for the page to use
-                  try {
-                    sessionStorage.setItem('yw_current_story', JSON.stringify(story));
-                  } catch(_) {}
-                  
-                  // Reload the page to let existing storydetail logic render it
-                  mobileDebug('🎉 Displaying your story!');
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 500);
-                }
-              }
-            } else if (status === 'completed' && !storyId) {
-              // Status is completed but no storyId found - log the issue
-              console.error('[pollAuthenticatedStory] Story completed but no storyId found');
-              console.error('[pollAuthenticatedStory] Full outputData:', outputData);
-              mobileDebug('⚠️ Story completed but ID missing', 'warn');
-              
-              // Try to get stories list and pick the most recent one
-              try {
-                const storiesRes = await fetch(`${API_BASE}/stories/my`, {
+                const storyRes = await fetch(`${API_BASE}/stories/${storyId}`, {
                   method: "GET",
                   headers: getAuthHeaders({ "Content-Type": "application/json" }),
                   credentials: "include"
                 });
                 
-                if (storiesRes.ok) {
-                  const storiesData = await storiesRes.json();
-                  const stories = storiesData?.data?.stories || [];
-                  
-                  if (stories.length > 0) {
-                    // Get the most recent story
-                    const latestStory = stories[0];
-                    console.log('[pollAuthenticatedStory] Using most recent story:', latestStory._id);
-                    
-                    // Clear pending state
-                    try { 
-                      sessionStorage.removeItem('yw_pending_story_jobid'); 
-                      sessionStorage.removeItem(K_PENDING);
-                    } catch(_) {}
-                    
-                    // Fetch this story
-                    const storyRes = await fetch(`${API_BASE}/stories/${latestStory._id}`, {
-                      method: "GET",
-                      headers: getAuthHeaders({ "Content-Type": "application/json" }),
-                      credentials: "include"
-                    });
-                    
-                    if (storyRes.ok) {
-                      const storyData = await storyRes.json();
-                      const story = storyData?.data?.story;
-                      
-                      if (story && story.pages) {
-                        try {
-                          sessionStorage.setItem('yw_current_story', JSON.stringify(story));
-                        } catch(_) {}
-                        
-                        mobileDebug('🎉 Displaying your story!');
-                        setTimeout(() => {
-                          window.location.reload();
-                        }, 500);
-                        return;
-                      }
-                    }
-                  }
+                if (storyRes.ok) {
+                  const storyData = await storyRes.json();
+                  story = storyData?.data?.story;
                 }
-              } catch (err) {
-                console.error('[pollAuthenticatedStory] Error fetching stories list:', err);
+              } 
+              
+              // If no storyId or fetch failed, use guest story data directly
+              if (!story && hasGuestStory) {
+                console.log('[pollAuthenticatedStory] Using guest story data from job');
+                mobileDebug('✨ Loading guest story...');
+                
+                // Convert guest story format to expected format
+                story = {
+                  title: guestData.title || guestData.storyJson.title || 'Your Story',
+                  pages: guestData.storyJson.pages.map(page => ({
+                    pageNumber: page.pageNumber,
+                    text: page.text,
+                    imageUrl: page.imageUrl || null, // May not be generated yet for guest stories
+                    audioUrl: page.audioUrl || null  // May not be generated yet for guest stories
+                  })),
+                  createdAt: guestData.generatedAt || new Date().toISOString()
+                };
               }
               
-              // If we couldn't get the story, show error
-              mobileDebug('❌ Could not load story', 'error');
+              if (story && story.pages) {
+                // Store story data for the page to use
+                try {
+                  sessionStorage.setItem('yw_current_story', JSON.stringify(story));
+                } catch(_) {}
+                
+                // Reload the page to let existing storydetail logic render it
+                mobileDebug('🎉 Displaying your story!');
+                setTimeout(() => {
+                  window.location.reload();
+                }, 500);
+              } else {
+                console.error('[pollAuthenticatedStory] Could not get story data');
+                mobileDebug('❌ Could not load story', 'error');
+              }
               
             } else if (status === 'failed' || status === 'error') {
               console.error('[pollAuthenticatedStory] Story generation failed');
