@@ -2400,10 +2400,21 @@ function openVoicePicker() {
   const storybook = document.getElementById('storybook');
   if (!storybook) return; // Only run on storydetail page
 
-  const bookContainer = storybook.querySelector('.sb-book');
+  // Get or create the book container
+  let bookContainer = storybook.querySelector('.sb-book');
   const prevBtn = document.getElementById('sbPrev');
   const nextBtn = document.getElementById('sbNext');
   const dotsContainer = document.getElementById('sbDots');
+  
+  // Ensure we have the necessary DOM structure
+  if (!bookContainer) {
+    const stage = storybook.querySelector('.sb-stage');
+    if (stage) {
+      // Clear any loading messages and create the book container
+      stage.innerHTML = '<div class="sb-book"></div>';
+      bookContainer = stage.querySelector('.sb-book');
+    }
+  }
   
   if (!bookContainer || !prevBtn || !nextBtn || !dotsContainer) return;
 
@@ -2413,23 +2424,31 @@ function openVoicePicker() {
 
   // Initialize storybook with demo images (these will be replaced by actual story images)
   function initStorybook() {
-    // Example placeholder images - these should be replaced with actual story page images
-    const demoImages = [
-      'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1476362555312-ab9e108a0b7e?w=800&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&h=600&fit=crop'
+    // Use gradient placeholders instead of external images for instant loading
+    const demoPages = [
+      { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', label: '📖 Page 1' },
+      { bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', label: '📖 Page 2' },
+      { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', label: '📖 Page 3' }
     ];
 
     // Clear existing pages
     bookContainer.innerHTML = '';
     pages = [];
 
-    // Create pages
-    demoImages.forEach((img, idx) => {
+    // Create pages with gradients and labels
+    demoPages.forEach((pageData, idx) => {
       const page = document.createElement('div');
       page.className = 'sb-page';
       page.setAttribute('data-idx', idx);
-      page.style.backgroundImage = `url(${img})`;
+      page.style.background = pageData.bg;
+      page.style.display = 'flex';
+      page.style.alignItems = 'center';
+      page.style.justifyContent = 'center';
+      page.style.fontSize = '32px';
+      page.style.fontWeight = '700';
+      page.style.color = 'white';
+      page.style.textShadow = '2px 2px 4px rgba(0,0,0,0.3)';
+      page.textContent = pageData.label;
       
       // Set initial state
       if (idx === 0) {
@@ -2444,7 +2463,7 @@ function openVoicePicker() {
 
     // Create dots
     dotsContainer.innerHTML = '';
-    demoImages.forEach((_, idx) => {
+    demoPages.forEach((_, idx) => {
       const dot = document.createElement('button');
       dot.setAttribute('aria-current', idx === 0 ? 'true' : 'false');
       dot.setAttribute('aria-label', `Go to page ${idx + 1}`);
