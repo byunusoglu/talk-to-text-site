@@ -1424,8 +1424,23 @@ if (!html && !md && !pending && teaser) {
               }
               
               if (story && story.pages) {
-                // Store story data for the page to use
+                // Convert story to HTML format for storydetail page
+                let storyHtml = '';
+                if (story.title) {
+                  storyHtml += `<h1>${story.title}</h1>\n`;
+                }
+                
+                story.pages.forEach((page, idx) => {
+                  // Add page number as heading if there are multiple pages
+                  if (story.pages.length > 1) {
+                    storyHtml += `<h2>Page ${page.pageNumber || idx + 1}</h2>\n`;
+                  }
+                  storyHtml += `<p>${page.text}</p>\n`;
+                });
+                
+                // Store story data in the format storydetail.html expects
                 try {
+                  sessionStorage.setItem('yw_story_html', storyHtml);
                   sessionStorage.setItem('yw_current_story', JSON.stringify(story));
                 } catch(_) {}
                 
