@@ -363,7 +363,9 @@
       try {
         // Get JWT token from localStorage for authentication
         const token = localStorage.getItem('yw_jwt_token');
+        console.log('[loadMyStories] ========== FETCHING USER STORIES ==========');
         console.log('[loadMyStories] Token exists:', !!token);
+        console.log('[loadMyStories] Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'null');
         console.log('[loadMyStories] Token length:', token ? token.length : 0);
         
         const headers = { 'Content-Type': 'application/json' };
@@ -371,11 +373,13 @@
           headers['Authorization'] = `Bearer ${token}`;
           console.log('[loadMyStories] Authorization header added');
         } else {
-          console.warn('[loadMyStories] No token found in localStorage!');
+          console.warn('[loadMyStories] ⚠️ No token found in localStorage!');
         }
 
         // Ask for user stories with JWT auth
         console.log('[loadMyStories] Fetching from:', `${API_BASE}/stories/my`);
+        console.log('[loadMyStories] Request headers:', JSON.stringify(headers, null, 2));
+        
         const res = await fetch(`${API_BASE}/stories/my`, { 
           credentials: 'include',
           headers: headers
@@ -383,28 +387,61 @@
         
         console.log('[loadMyStories] Response status:', res.status);
         console.log('[loadMyStories] Response ok:', res.ok);
+        console.log('[loadMyStories] Response headers:', Object.fromEntries([...res.headers.entries()]));
         
         if (!res.ok) {
           const errorText = await res.text();
-          console.error('[loadMyStories] Failed to load stories:', res.status, errorText);
+          console.error('[loadMyStories] ❌ Failed to load stories:', res.status, errorText);
           throw new Error('UNAUTH');
         }
+        
         const data = await res.json();
-        console.log('[loadMyStories] Full response data:', data);
+        console.log('[loadMyStories] ========== FULL API RESPONSE ==========');
+        console.log('[loadMyStories] Full response data:', JSON.stringify(data, null, 2));
         
         const stories = data?.data?.stories || [];
-        console.log('[loadMyStories] Stories array:', stories);
+        console.log('[loadMyStories] ========== STORIES DETAILS ==========');
         console.log('[loadMyStories] Number of stories:', stories.length);
         
-        // Also check if there's a pending jobId from previous session
-        let pendingJobId = null;
-        try {
-          pendingJobId = sessionStorage.getItem('yw_pending_story_jobid');
-          if (pendingJobId) {
-            console.log('[loadMyStories] Found pending jobId in session:', pendingJobId);
-            console.log('[loadMyStories] Note: This story may need to be claimed/associated with your account');
-          }
-        } catch(_) {}
+        if (stories.length > 0) {
+          stories.forEach((story, idx) => {
+            console.log(`[loadMyStories] Story ${idx + 1}:`, {
+              id: story._id,
+              title: story.title,
+              createdAt: story.createdAt,
+              pages: story.pages?.length || 'N/A',
+              coverUrl: story.coverUrl || 'none',
+              fullStory: story
+            });
+          });
+        } else {
+          console.log('[loadMyStories] ⚠️ Stories array is EMPTY');
+        }
+        
+        // Check session storage for any story-related data
+        console.log('[loadMyStories] ========== SESSION STORAGE CHECK ==========');
+        const sessionKeys = ['yw_pending_story_jobid', 'yw_current_story', 'yw_story_html', 'yw_story_id', 'yw_story_teaser'];
+        sessionKeys.forEach(key => {
+          try {
+            const value = sessionStorage.getItem(key);
+            if (value) {
+              console.log(`[loadMyStories] sessionStorage.${key}:`, value.substring(0, 100) + (value.length > 100 ? '...' : ''));
+            } else {
+              console.log(`[loadMyStories] sessionStorage.${key}: null`);
+            }
+          } catch(_) {}
+        });
+        
+        // Check localStorage for story-related data
+        console.log('[loadMyStories] ========== LOCAL STORAGE CHECK ==========');
+        const localKeys = ['yw_signed_in'];
+        localKeys.forEach(key => {
+          try {
+            const value = localStorage.getItem(key);
+            console.log(`[loadMyStories] localStorage.${key}:`, value);
+          } catch(_) {}
+        });
+        console.log('[loadMyStories] ========================================');
 
         if (!stories.length) {
           paintEmpty(`<b>No stories yet.</b> Create your first one below!`);
