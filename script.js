@@ -1440,7 +1440,8 @@ if (!html && !md && !pending && teaser) {
             console.log('[pollAuthenticatedStory] GuestData:', JSON.stringify(guestData, null, 2));
             
             // Check for storyId in multiple possible locations
-            const storyId = outputData.storyId || outputData.id || jobData.storyId;
+            const storyId = outputData.storyId || outputData.id || jobData.storyId || jobData._id || data?.data?.storyId;
+            console.log('[pollAuthenticatedStory] Looking for storyId... Found:', storyId);
             
             // Check if we have guest story data (story not yet saved to DB)
             const hasGuestStory = guestData.storyJson && guestData.storyJson.pages;
