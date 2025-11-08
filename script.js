@@ -1366,10 +1366,15 @@ if (!html && !md && !pending && teaser) {
             const outputData = data?.data?.job?.outputData || data?.data?.outputData || {};
             
             console.log('[pollAuthenticatedStory] Status:', status, 'Attempt:', attempts);
+            console.log('[pollAuthenticatedStory] Full response:', JSON.stringify(data, null, 2));
+            console.log('[pollAuthenticatedStory] OutputData:', JSON.stringify(outputData, null, 2));
             
-            if (status === 'completed' && outputData.storyId) {
+            // Check for storyId in multiple possible locations
+            const storyId = outputData.storyId || outputData.id || data?.data?.storyId;
+            
+            if (status === 'completed' && storyId) {
               // Story is complete! Fetch the full story
-              console.log('[pollAuthenticatedStory] Story completed! ID:', outputData.storyId);
+              console.log('[pollAuthenticatedStory] Story completed! ID:', storyId);
               mobileDebug('✨ Story ready!');
               
               // Clear the pending jobId
@@ -1379,7 +1384,7 @@ if (!html && !md && !pending && teaser) {
               } catch(_) {}
               
               // Fetch the full story
-              const storyRes = await fetch(`${API_BASE}/stories/${outputData.storyId}`, {
+              const storyRes = await fetch(`${API_BASE}/stories/${storyId}`, {
                 method: "GET",
                 headers: getAuthHeaders({ "Content-Type": "application/json" }),
                 credentials: "include"
@@ -1402,6 +1407,67 @@ if (!html && !md && !pending && teaser) {
                   }, 500);
                 }
               }
+            } else if (status === 'completed' && !storyId) {
+              // Status is completed but no storyId found - log the issue
+              console.error('[pollAuthenticatedStory] Story completed but no storyId found');
+              console.error('[pollAuthenticatedStory] Full outputData:', outputData);
+              mobileDebug('⚠️ Story completed but ID missing', 'warn');
+              
+              // Try to get stories list and pick the most recent one
+              try {
+                const storiesRes = await fetch(`${API_BASE}/stories/my`, {
+                  method: "GET",
+                  headers: getAuthHeaders({ "Content-Type": "application/json" }),
+                  credentials: "include"
+                });
+                
+                if (storiesRes.ok) {
+                  const storiesData = await storiesRes.json();
+                  const stories = storiesData?.data?.stories || [];
+                  
+                  if (stories.length > 0) {
+                    // Get the most recent story
+                    const latestStory = stories[0];
+                    console.log('[pollAuthenticatedStory] Using most recent story:', latestStory._id);
+                    
+                    // Clear pending state
+                    try { 
+                      sessionStorage.removeItem('yw_pending_story_jobid'); 
+                      sessionStorage.removeItem(K_PENDING);
+                    } catch(_) {}
+                    
+                    // Fetch this story
+                    const storyRes = await fetch(`${API_BASE}/stories/${latestStory._id}`, {
+                      method: "GET",
+                      headers: getAuthHeaders({ "Content-Type": "application/json" }),
+                      credentials: "include"
+                    });
+                    
+                    if (storyRes.ok) {
+                      const storyData = await storyRes.json();
+                      const story = storyData?.data?.story;
+                      
+                      if (story && story.pages) {
+                        try {
+                          sessionStorage.setItem('yw_current_story', JSON.stringify(story));
+                        } catch(_) {}
+                        
+                        mobileDebug('🎉 Displaying your story!');
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 500);
+                        return;
+                      }
+                    }
+                  }
+                }
+              } catch (err) {
+                console.error('[pollAuthenticatedStory] Error fetching stories list:', err);
+              }
+              
+              // If we couldn't get the story, show error
+              mobileDebug('❌ Could not load story', 'error');
+              
             } else if (status === 'failed' || status === 'error') {
               console.error('[pollAuthenticatedStory] Story generation failed');
               mobileDebug('❌ Story generation failed', 'error');
