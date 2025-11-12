@@ -925,49 +925,226 @@ function paintFirstPage({ title, firstPageText }) {
   }
 
   /* ---------------------------------------------
+     Authenticated Story Generation (for logged-in users)
+  --------------------------------------------- */
+  
+  /**
+   * Generate a story for authenticated users
+   * @param {Object} params - Story generation parameters
+   * @param {string} params.transcript - The story transcript/prompt
+   * @param {string} params.language - Language code (e.g., 'en-GB')
+   * @param {string} [params.childImageUrl] - Optional child image URL
+   * @returns {Promise<string>} - Returns jobId
+   */
+  async function generateAuthenticatedStory({ transcript, language = 'en-GB', childImageUrl = null }) {
+    if (!isSignedIn() && !isProbablySignedIn()) {
+      throw new Error('User must be signed in to generate stories');
+    }
+
+    const payload = { transcript, language };
+    if (childImageUrl) payload.childImageUrl = childImageUrl;
+
+    console.log('[generateAuthenticatedStory] Starting generation:', payload);
+    
+    const res = await fetch(API_AUTH_GENERATE, {
+      method: "POST",
+      headers: getAuthHeaders({ "Content-Type": "application/json" }),
+      credentials: "include",
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    
+    if (!res.ok || !data?.ok || !data?.jobId) {
+      console.error('[generateAuthenticatedStory] Failed:', data);
+      throw new Error(data?.message || `Story generation failed (${res.status})`);
+    }
+
+    console.log('[generateAuthenticatedStory] Job created:', data.jobId);
+    return data.jobId;
+  }
+
+  /**
+   * Poll job status until completion and return full story data
+   * @param {string} jobId - The job ID to poll
+   * @param {Object} callbacks - Callback functions
+   * @param {Function} callbacks.onProgress - Called on each poll with status update
+   * @param {Function} callbacks.onComplete - Called when job completes with full story data
+   * @param {Function} callbacks.onError - Called on error
+   * @param {number} [intervalMs=5000] - Polling interval in milliseconds
+   * @returns {Function} - Cleanup function to stop polling
+   */
+  function pollJobUntilComplete(jobId, { onProgress, onComplete, onError, intervalMs = 5000 }) {
+    let timer = null;
+    let pollCount = 0;
+    const maxPolls = 120; // 10 minutes max (120 * 5 seconds)
+
+    const tick = async () => {
+      pollCount++;
+      
+      if (pollCount > maxPolls) {
+        clearInterval(timer);
+        if (typeof onError === 'function') {
+          onError(new Error('Story generation timeout - please try again'));
+        }
+        return;
+      }
+
+      try {
+        const data = await fetchJob(jobId);
+        const job = data?.data?.job || data?.data;
+        const status = job?.status;
+        const outputData = job?.outputData || {};
+        
+        console.log(`[pollJobUntilComplete] Poll #${pollCount}, Status: ${status}`);
+        
+        // Send progress update
+        if (typeof onProgress === 'function') {
+          const logs = job?.processingLogs || [];
+          const lastLog = logs[logs.length - 1]?.msg || '';
+          onProgress({ 
+            status, 
+            message: lastLog,
+            pollCount 
+          });
+        }
+
+        // Check if completed
+        if (status === 'completed') {
+          clearInterval(timer);
+          
+          // Extract full story data
+          const storyData = {
+            storyId: outputData.storyId,
+            title: outputData.title,
+            pages: outputData.pages || []
+          };
+          
+          console.log('[pollJobUntilComplete] Story complete:', storyData.title);
+          
+          if (typeof onComplete === 'function') {
+            onComplete(storyData);
+          }
+        } else if (status === 'failed') {
+          clearInterval(timer);
+          if (typeof onError === 'function') {
+            onError(new Error('Story generation failed'));
+          }
+        }
+        // else keep polling (status is 'pending' or 'processing')
+        
+      } catch (err) {
+        console.error('[pollJobUntilComplete] Error:', err);
+        clearInterval(timer);
+        if (typeof onError === 'function') {
+          onError(err);
+        }
+      }
+    };
+
+    timer = setInterval(tick, intervalMs);
+    tick(); // immediate first check
+
+    // Return cleanup function
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+        console.log('[pollJobUntilComplete] Polling stopped');
+      }
+    };
+  }
+
+  /* ---------------------------------------------
      API call + stash story + go checkout
-     (Updated: unify flows to use guest job on checkout)
+     (Updated: For authenticated users, generate story directly.
+               For guests, navigate to checkout with pending data)
   --------------------------------------------- */
 
-  // Instead of calling the old direct generator, we now:
-  // - stash transcript
-  // - (optionally) stash a structured guest payload if available
-  // - navigate to checkout where the loader + poller run
+  // For authenticated users: generate story and navigate to home.html with loading UI
+  // For guests: stash transcript and navigate to checkout
   async function generateStoryAndNavigate(transcript) {
     if (!transcript) throw new Error("Missing transcript");
+    
+    const btn = $('#chatGenerate') || $('#generateBtn');
+    const spinner = $('#genSpinner');
+    
     try {
-      const btn = $('#chatGenerate') || $('#generateBtn');
-      const spinner = $('#genSpinner');
       btn && (btn.disabled = true);
       spinner && spinner.classList.remove('hidden');
 
       try { SS.setItem(K_TRANSCRIPT, transcript); } catch (_) {}
-      try { SS.setItem(K_PENDING, transcript); } catch (_) {}
 
-      // If a guest payload hasn't been set yet, try best-effort fallback from transcript
-      const raw = SS.getItem(K_GUEST_PAYLOAD);
-      if (!raw) {
-        // derive minimal payload
-        const name = (transcript.match(/Child name:\s*([^\n]+)/i)?.[1] || 'Friend').trim();
-        const ageVal  = parseInt((transcript.match(/Child age:\s*([^\n]+)/i)?.[1] || '4'), 10);
-        const genderRaw = (transcript.match(/Child gender:\s*([^\n]+)/i)?.[1] || '').toLowerCase();
-        const place = (transcript.match(/Place:\s*([^\n]+)/i)?.[1] || 'forest').toLowerCase();
-        const guestPayload = {
-          language: 'en',
-          location: place,
-          child: { name, age: (isNaN(ageVal) ? 4 : Math.max(0, Math.min(12, ageVal))), gender: /girl|female/.test(genderRaw) ? 'female' : /boy|male/.test(genderRaw) ? 'male' : 'unspecified' },
-          pet: null
-        };
-        try { SS.setItem(K_GUEST_PAYLOAD, JSON.stringify(guestPayload)); } catch (_) {}
+      // Check if user is signed in
+      const signedIn = isSignedIn() || isProbablySignedIn();
+      
+      if (signedIn) {
+        // ===== AUTHENTICATED USER FLOW =====
+        console.log('[generateStoryAndNavigate] User is signed in, using authenticated flow');
+        
+        // Show a loading message in the chat
+        const elStream = $('#chatStream');
+        if (elStream) {
+          const loadingRow = document.createElement('div');
+          loadingRow.className = 'chat-row bot';
+          loadingRow.innerHTML = `
+            <div class="bubble">
+              <div class="wait-wrap" style="margin: 0;">
+                <div class="wait-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+                <div class="muted" style="font-size: 14px; margin-top: 8px;">Generating your story...</div>
+              </div>
+            </div>
+          `;
+          elStream.appendChild(loadingRow);
+          elStream.scrollTop = elStream.scrollHeight;
+        }
+
+        // Start authenticated story generation
+        const jobId = await generateAuthenticatedStory({
+          transcript,
+          language: 'en-GB'
+        });
+
+        console.log('[generateStoryAndNavigate] Job started:', jobId);
+        
+        // Store jobId for tracking
+        try { SS.setItem('yw_current_jobid', jobId); } catch (_) {}
+        
+        // Navigate to home.html with jobId parameter
+        // home.html will show a loading UI and poll the job
+        fadeOutAnd(() => {
+          window.location.href = `home.html?generating=${jobId}`;
+        }, 150);
+        
+      } else {
+        // ===== GUEST USER FLOW (existing behavior) =====
+        console.log('[generateStoryAndNavigate] User is guest, using checkout flow');
+        
+        try { SS.setItem(K_PENDING, transcript); } catch (_) {}
+
+        // If a guest payload hasn't been set yet, try best-effort fallback from transcript
+        const raw = SS.getItem(K_GUEST_PAYLOAD);
+        if (!raw) {
+          // derive minimal payload
+          const name = (transcript.match(/Child name:\s*([^\n]+)/i)?.[1] || 'Friend').trim();
+          const ageVal  = parseInt((transcript.match(/Child age:\s*([^\n]+)/i)?.[1] || '4'), 10);
+          const genderRaw = (transcript.match(/Child gender:\s*([^\n]+)/i)?.[1] || '').toLowerCase();
+          const place = (transcript.match(/Place:\s*([^\n]+)/i)?.[1] || 'forest').toLowerCase();
+          const guestPayload = {
+            language: 'en',
+            location: place,
+            child: { name, age: (isNaN(ageVal) ? 4 : Math.max(0, Math.min(12, ageVal))), gender: /girl|female/.test(genderRaw) ? 'female' : /boy|male/.test(genderRaw) ? 'male' : 'unspecified' },
+            pet: null
+          };
+          try { SS.setItem(K_GUEST_PAYLOAD, JSON.stringify(guestPayload)); } catch (_) {}
+        }
+
+        goCheckout();
       }
-
-      goCheckout();
+      
     } catch (err) {
-      console.error(err);
-      alert("Sorry, we couldn't start the story. Please try again.");
-    } finally {
-      const btn = $('#chatGenerate') || $('#generateBtn');
-      const spinner = $('#genSpinner');
+      console.error('[generateStoryAndNavigate] Error:', err);
+      alert(`Sorry, we couldn't start the story: ${err.message}`);
+      
       btn && (btn.disabled = false);
       spinner && spinner.classList.add('hidden');
     }
@@ -2156,6 +2333,11 @@ if (heroCta && !heroCta.dataset.wired) {
     signOut,
     isSignedIn
   };
+
+  // Expose story generation functions for home.html
+  window.pollJobUntilComplete = pollJobUntilComplete;
+  window.generateAuthenticatedStory = generateAuthenticatedStory;
+  window.fetchJob = fetchJob;
 
    // ===== Story Detail — Voice picker + Play (frontend-only for now) =====
 (() => {
