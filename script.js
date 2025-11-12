@@ -1027,8 +1027,16 @@ function paintFirstPage({ title, firstPageText }) {
           }
         } else if (status === 'failed') {
           clearInterval(timer);
+          
+          // Extract error message from job logs or errorMessage field
+          const logs = job?.processingLogs || [];
+          const errorLog = logs.find(log => log.msg && (log.msg.includes('Failed') || log.msg.includes('Error')));
+          const errorMessage = job?.errorMessage || errorLog?.msg || 'Story generation failed';
+          
+          console.error('[pollJobUntilComplete] Job failed:', errorMessage);
+          
           if (typeof onError === 'function') {
-            onError(new Error('Story generation failed'));
+            onError(new Error(errorMessage));
           }
         }
         // else keep polling (status is 'pending' or 'processing')

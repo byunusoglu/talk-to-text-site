@@ -440,7 +440,7 @@
   </section>
 
   <!-- PLAN COMPARISON -->
-  <section class="section fade-up">
+  <section class="section fade-up" id="plans">
     <h2>Grow the magic</h2>
     <p class="formats-sub">Choose the plan that fits your family's bedtime rhythm.</p>
 
@@ -731,16 +731,64 @@
           
           onError: (error) => {
             console.error('[Generation Error]', error);
-            updateProgress('Oops! Something went wrong', 0);
             
-            setTimeout(() => {
-              modal.remove();
-              alert('Sorry, story generation failed. Please try again.');
+            // Check if it's a coin balance issue
+            const errorMessage = error.message || '';
+            const isInsufficientBalance = errorMessage.toLowerCase().includes('insufficient balance') || 
+                                         errorMessage.toLowerCase().includes('coins');
+            
+            if (isInsufficientBalance) {
+              updateProgress('Insufficient credits', 0);
               
-              // Remove generating parameter from URL
-              const newUrl = window.location.pathname;
-              window.history.replaceState({}, '', newUrl);
-            }, 2000);
+              setTimeout(() => {
+                modal.remove();
+                
+                // Show a more helpful message for insufficient balance
+                const balanceMsg = document.createElement('div');
+                balanceMsg.style.cssText = `
+                  position: fixed;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%);
+                  background: white;
+                  padding: 32px;
+                  border-radius: 16px;
+                  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                  z-index: 10001;
+                  max-width: 400px;
+                  text-align: center;
+                `;
+                balanceMsg.innerHTML = `
+                  <h3 style="margin: 0 0 12px; color: var(--plum-dark);">💰 Out of Credits</h3>
+                  <p style="margin: 0 0 20px; color: #6b6479;">
+                    You've used all your free story credits this month. 
+                    Upgrade to continue creating unlimited stories!
+                  </p>
+                  <button class="btn" onclick="this.parentElement.remove(); window.location.href='home.html#plans';" style="width: 100%; margin-bottom: 8px;">
+                    View Plans
+                  </button>
+                  <button class="btn ghost" onclick="this.parentElement.remove();" style="width: 100%;">
+                    Close
+                  </button>
+                `;
+                document.body.appendChild(balanceMsg);
+                
+                // Remove generating parameter from URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+              }, 1500);
+            } else {
+              updateProgress('Oops! Something went wrong', 0);
+              
+              setTimeout(() => {
+                modal.remove();
+                alert('Sorry, story generation failed: ' + errorMessage + '\n\nPlease try again.');
+                
+                // Remove generating parameter from URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+              }, 2000);
+            }
           }
         });
         
