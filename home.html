@@ -632,9 +632,18 @@
         if (progressEl) progressEl.style.width = percent + '%';
       };
 
-      // Import pollJobUntilComplete from script.js scope
-      // Since we're in a separate script block, we need to access it via window
-      if (typeof window.pollJobUntilComplete === 'function') {
+      // Wait for script.js to load and expose the polling function
+      const startPolling = () => {
+        if (typeof window.pollJobUntilComplete !== 'function') {
+          console.log('[home.html] Waiting for pollJobUntilComplete to be available...');
+          updateProgress('Initializing story generation...', 5);
+          setTimeout(startPolling, 100);
+          return;
+        }
+        
+        console.log('[home.html] pollJobUntilComplete is available, starting poll');
+        
+        // Import pollJobUntilComplete from script.js scope
         const cleanup = window.pollJobUntilComplete(jobId, {
           onProgress: ({ status, message, pollCount }) => {
             console.log('[Generation Progress]', status, message);
@@ -737,11 +746,10 @@
         
         // Store cleanup function in case user navigates away
         window._storyGenerationCleanup = cleanup;
-      } else {
-        console.error('[home.html] pollJobUntilComplete function not found!');
-        alert('Error: Story generation system not loaded properly. Please refresh the page.');
-        modal.remove();
-      }
+      };
+      
+      // Start the polling process
+      startPolling();
     }
 
     // ========================================
