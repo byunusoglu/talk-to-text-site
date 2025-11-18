@@ -198,51 +198,175 @@
 (async () => {
   try {
     const hasLocal = !!SS.getItem('yw_story_html');
-    if (hasLocal) return;
+    if (hasLocal) {
+      // Even if we have HTML, try to load images for storybook if available
+      await loadStoryImages();
+      return;
+    }
 
     // Check auth — /users/me
+    const token = localStorage.getItem('yw_jwt_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const me = await fetch('https://imaginee-y9nk.onrender.com/api/v1/users/me', {
-      credentials: 'include'
+      credentials: 'include',
+      headers: headers
     });
     if (!me.ok) return; // not signed in → keep default message
 
-    // Get user's stories — /stories/my
-    const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
-      credentials: 'include'
-    });
-    if (!res.ok) return;
+    // Get specific story ID from sessionStorage, or fall back to latest
+    const storyId = SS.getItem('yw_story_id');
+    let story = null;
 
-    const data = await res.json();
-    const stories = data?.data?.stories || [];
-    if (!stories.length) return;
-
-    // Most recent story first
-    const latest = stories.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
-
-    // If pages included, render; else fetch by id — /stories/:id
-    let html = '';
-    if (latest.pages?.length) {
-      const body = latest.pages.map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
-      html = `<h1>${latest.title || ''}</h1>${body}`;
-    } else if (latest._id) {
-      const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${latest._id}`, {
-        credentials: 'include'
-      });
-      if (one.ok) {
-        const full = (await one.json())?.data?.story || {};
-        const body = (full.pages || []).map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
-        html = `<h1>${full.title || latest.title || ''}</h1>${body}`;
+    if (storyId && storyId !== 'cached-story') {
+      // Fetch the specific story by ID
+      try {
+        const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${storyId}`, {
+          credentials: 'include',
+          headers: headers
+        });
+        if (one.ok) {
+          const storyData = await one.json();
+          story = storyData?.data?.story;
+        }
+      } catch (e) {
+        console.error('Error fetching story by ID:', e);
       }
+    }
+
+    // If no specific story found, get the latest from /stories/my
+    if (!story) {
+      const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
+        credentials: 'include',
+        headers: headers
+      });
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const stories = data?.data?.stories || [];
+      if (!stories.length) return;
+
+      // Most recent story first
+      const latest = stories.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
+
+      // If pages included, use it; else fetch by id
+      if (latest.pages?.length) {
+        story = latest;
+      } else if (latest._id) {
+        const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${latest._id}`, {
+          credentials: 'include',
+          headers: headers
+        });
+        if (one.ok) {
+          const full = (await one.json())?.data?.story || {};
+          story = full;
+        }
+      }
+    }
+
+    if (!story) return;
+
+    // Render story HTML
+    let html = '';
+    if (story.pages?.length) {
+      const body = story.pages.map(p => `<p>${(p?.text || '').trim()}</p>`).join('');
+      html = `<h1>${story.title || ''}</h1>${body}`;
     }
 
     if (html) {
       SS.setItem('yw_story_html', html);
       storyEl.innerHTML = html;
     }
-  } catch (_) {
+
+    // Load images for storybook
+    await loadStoryImages(story);
+
+  } catch (e) {
+    console.error('Error loading story:', e);
     // silent fail to keep UX clean
   }
 })();
+
+    // Function to load story images and populate storybook
+    async function loadStoryImages(storyData = null) {
+      try {
+        let story = storyData;
+        
+        // If no story data provided, fetch it
+        if (!story) {
+          const token = localStorage.getItem('yw_jwt_token');
+          const headers = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const storyId = SS.getItem('yw_story_id');
+          
+          if (storyId && storyId !== 'cached-story') {
+            const res = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${storyId}`, {
+              credentials: 'include',
+              headers: headers
+            });
+            if (res.ok) {
+              const data = await res.json();
+              story = data?.data?.story;
+            }
+          } else {
+            // Get latest story
+            const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
+              credentials: 'include',
+              headers: headers
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const stories = data?.data?.stories || [];
+              if (stories.length > 0) {
+                const latest = stories.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
+                if (latest.pages?.length) {
+                  story = latest;
+                } else if (latest._id) {
+                  const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${latest._id}`, {
+                    credentials: 'include',
+                    headers: headers
+                  });
+                  if (one.ok) {
+                    const full = (await one.json())?.data?.story || {};
+                    story = full;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        if (story && story.pages) {
+          const imageUrls = story.pages
+            .map(page => page?.imageUrl)
+            .filter(url => url); // Filter out null/undefined URLs
+
+          if (imageUrls.length > 0) {
+            // Wait for updateStorybookPages to be available (from script.js)
+            let attempts = 0;
+            const maxAttempts = 50; // Wait up to 5 seconds
+            
+            const tryUpdate = () => {
+              if (window.updateStorybookPages) {
+                window.updateStorybookPages(imageUrls);
+              } else if (attempts < maxAttempts) {
+                attempts++;
+                setTimeout(tryUpdate, 100);
+              } else {
+                console.warn('updateStorybookPages not available after waiting');
+              }
+            };
+            
+            // Start trying after a short delay to ensure script.js is loaded
+            setTimeout(tryUpdate, 200);
+          }
+        }
+      } catch (e) {
+        console.error('Error loading story images:', e);
+      }
+    }
     
     // Show full controls in ?debug=1 mode
     const url = new URL(location.href);
