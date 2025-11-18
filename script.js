@@ -2542,13 +2542,263 @@ function openVoicePicker() {
 
 
 
-  // One-tap Play (dummy for now)
-  async function playStoryNow() {
-    const voiceId = getDefaultVoice();
-    const text = (storyEl.textContent || '').trim().slice(0, 400);
-    if (!text) { toast('No story content yet'); return; }
+  // Audio playback manager
+  let audioPlayback = {
+    audioElements: [],
+    currentAudioIndex: -1,
+    isPlaying: false,
+    isPaused: false,
+    audioUrls: [],
+    playButton: elPlay,
+    
+    init: function() {
+      // Get story data
+      const storyData = window.currentStoryData;
+      if (!storyData || !storyData.pages) {
+        toast('No story available to play');
+        return false;
+      }
+      
+      // Extract audio URLs from pages
+      this.audioUrls = storyData.pages
+        .map(page => page?.audioUrl)
+        .filter(url => url && url.trim() !== ''); // Filter out null/undefined/empty URLs
+      
+      if (this.audioUrls.length === 0) {
+        toast('No audio available for this story');
+        return false;
+      }
+      
+      // Create audio elements for each URL
+      this.audioElements = this.audioUrls.map(url => {
+        const audio = new Audio(url);
+        audio.preload = 'auto';
+        return audio;
+      });
+      
+      return true;
+    },
+    
+    reset: function() {
+      // Stop all audio
+      this.isPlaying = false;
+      this.isPaused = false;
+      
+      // Stop all audio elements
+      this.audioElements.forEach(audio => {
+        audio.pause();
+        audio.currentTime = 0;
+      });
+      
+      // Reset to first page
+      if (window.storybookGoToPage) {
+        window.storybookGoToPage(0);
+      }
+      
+      // Reset state
+      this.currentAudioIndex = -1;
+      
+      // Update button
+      this.updateButton();
+    },
+    
+    play: function() {
+      // If paused, resume from where we left off
+      if (this.isPaused && this.currentAudioIndex >= 0) {
+        this.resume();
+        return;
+      }
+      
+      // First play: reset to beginning
+      if (this.currentAudioIndex === -1) {
+        // Initialize if needed
+        if (this.audioElements.length === 0) {
+          if (!this.init()) {
+            return;
+          }
+        }
+        
+        // Reset to first page
+        if (window.storybookGoToPage) {
+          window.storybookGoToPage(0);
+        }
+        
+        // Reset state but keep audio elements
+        this.currentAudioIndex = -1;
+      }
+      
+      this.isPlaying = true;
+      this.isPaused = false;
+      this.updateButton();
+      
+      // Start playing from the beginning or continue
+      this.playNext();
+    },
+    
+    playNext: function() {
+      // Move to next audio
+      this.currentAudioIndex++;
+      
+      // Check if we've finished all audio (after incrementing)
+      if (this.currentAudioIndex >= this.audioElements.length) {
+        // Finished all audio
+        this.onComplete();
+        return;
+      }
+      
+      // Update page display - each audio corresponds to one page image
+      // Since storybook uses spreads (2 images per spread), we calculate the spread index
+      // Audio index 0 = page 0 (spread 0, left)
+      // Audio index 1 = page 1 (spread 0, right)  
+      // Audio index 2 = page 2 (spread 1, left)
+      // Audio index 3 = page 3 (spread 1, right)
+      // So: spread = floor(audioIndex / 2)
+      const targetPage = Math.floor(this.currentAudioIndex / 2);
+      
+      // Turn to the appropriate page before playing audio
+      if (window.storybookGoToPage && typeof window.storybookGetTotalPages === 'function') {
+        const totalPages = window.storybookGetTotalPages();
+        if (targetPage < totalPages) {
+          window.storybookGoToPage(targetPage);
+        }
+      }
+      
+      const audio = this.audioElements[this.currentAudioIndex];
+      if (!audio) {
+        // Skip if audio doesn't exist and try next
+        if (this.currentAudioIndex < this.audioElements.length - 1) {
+          this.playNext();
+        } else {
+          this.onComplete();
+        }
+        return;
+      }
+      
+      // Set up event listeners for this audio (only once)
+      if (!audio.hasListener) {
+        audio.onended = () => {
+          // Move to next audio when current one ends
+          if (this.isPlaying) {
+            this.playNext();
+          }
+        };
+        
+        audio.onerror = (e) => {
+          console.error('Audio playback error:', e);
+          // Skip to next on error
+          if (this.isPlaying) {
+            toast('Error playing audio. Skipping to next...');
+            this.playNext();
+          }
+        };
+        
+        audio.hasListener = true;
+      }
+      
+      // Play the audio
+      if (this.isPlaying) {
+        // Small delay to ensure page turn completes
+        setTimeout(() => {
+          if (this.isPlaying) {
+            audio.play().catch(err => {
+              console.error('Error playing audio:', err);
+              // Skip to next on error
+              if (this.isPlaying) {
+                toast('Error playing audio. Skipping to next...');
+                this.playNext();
+              }
+            });
+          }
+        }, 200);
+      }
+    },
+    
+    pause: function() {
+      if (!this.isPlaying) return;
+      
+      this.isPaused = true;
+      this.isPlaying = false;
+      
+      // Pause current audio if playing
+      if (this.currentAudioIndex >= 0 && this.audioElements[this.currentAudioIndex]) {
+        this.audioElements[this.currentAudioIndex].pause();
+      }
+      
+      this.updateButton();
+    },
+    
+    resume: function() {
+      if (!this.isPaused) return;
+      
+      this.isPlaying = true;
+      this.isPaused = false;
+      
+      // Resume current audio
+      if (this.currentAudioIndex >= 0 && this.audioElements[this.currentAudioIndex]) {
+        this.audioElements[this.currentAudioIndex].play().catch(err => {
+          console.error('Error resuming audio:', err);
+          this.playNext(); // If resume fails, try next
+        });
+      } else {
+        // If no current audio, start from beginning
+        this.playNext();
+      }
+      
+      this.updateButton();
+    },
+    
+    stop: function() {
+      this.isPlaying = false;
+      this.isPaused = false;
+      
+      // Stop all audio elements
+      this.audioElements.forEach(audio => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.onended = null;
+        audio.onerror = null;
+      });
+      
+      this.updateButton();
+    },
+    
+    onComplete: function() {
+      this.isPlaying = false;
+      this.isPaused = false;
+      this.updateButton();
+      
+      toast('✨ Story finished! Click play to listen again.');
+      
+      // Reset after a short delay
+      setTimeout(() => {
+        this.reset();
+      }, 1000);
+    },
+    
+    updateButton: function() {
+      if (!this.playButton) return;
+      
+      if (this.isPlaying) {
+        this.playButton.textContent = '⏸️ Pause story';
+      } else if (this.isPaused) {
+        this.playButton.textContent = '▶️ Resume story';
+      } else {
+        this.playButton.textContent = '▶️ Play story';
+      }
+    },
+    
+    toggle: function() {
+      if (this.isPlaying) {
+        this.pause();
+      } else {
+        this.play();
+      }
+    }
+  };
 
-    toast(`▶️ Playing in ${voiceId.replaceAll('_',' ').toUpperCase()} (demo)`);
+  // One-tap Play
+  async function playStoryNow() {
+    audioPlayback.toggle();
   }
 
   elVoice.addEventListener('click', openVoicePicker);
@@ -2655,6 +2905,21 @@ function openVoicePicker() {
   let currentPage = 0;
   let pages = [];
   let isAnimating = false;
+  
+  // Expose goToPage globally for audio playback control
+  window.storybookGoToPage = function(targetIndex) {
+    goToPage(targetIndex);
+  };
+  
+  // Expose getCurrentPage for audio playback
+  window.storybookGetCurrentPage = function() {
+    return currentPage;
+  };
+  
+  // Expose getTotalPages for audio playback
+  window.storybookGetTotalPages = function() {
+    return pages.length;
+  };
 
   // Initialize with demo book pages
   function initStorybook() {

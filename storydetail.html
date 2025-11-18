@@ -279,6 +279,9 @@
       storyEl.innerHTML = html;
     }
 
+    // Store story data globally for audio playback access
+    window.currentStoryData = story;
+    
     // Load images for storybook
     await loadStoryImages(story);
 
@@ -339,6 +342,9 @@
         }
 
         if (story && story.pages) {
+          // Store story data globally for audio playback
+          window.currentStoryData = story;
+          
           const imageUrls = story.pages
             .map(page => page?.imageUrl)
             .filter(url => url); // Filter out null/undefined URLs
