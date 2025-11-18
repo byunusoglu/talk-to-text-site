@@ -2994,35 +2994,54 @@ function openVoicePicker() {
     const direction = targetIndex > currentPage ? 'forward' : 'backward';
     const oldPageIndex = currentPage;
     
-    // CRITICAL: Set target page to active FIRST, before starting animation
-    // This ensures the next page is visible behind the turning page from the start
+    // Preload images on the target page to prevent delays during animation
+    const targetPage = pages[targetIndex];
+    if (targetPage) {
+      const targetImages = targetPage.querySelectorAll('.sb-page-left, .sb-page-right');
+      targetImages.forEach(imgEl => {
+        const bgImage = getComputedStyle(imgEl).backgroundImage;
+        if (bgImage && bgImage !== 'none') {
+          // Extract URL and preload
+          const urlMatch = bgImage.match(/url\(["']?([^"')]+)["']?\)/);
+          if (urlMatch && urlMatch[1]) {
+            const img = new Image();
+            img.src = urlMatch[1];
+          }
+        }
+      });
+    }
+    
+    // Set all pages to their correct states IMMEDIATELY (synchronously)
     pages.forEach((page, idx) => {
       page.classList.remove('active', 'turning', 'turning-back', 'flipped');
-      page.style.zIndex = '';
       
       if (idx < targetIndex) {
         page.classList.add('flipped');
+        page.style.zIndex = '1';
       } else if (idx === targetIndex) {
-        // Make target page active immediately - it should be visible behind turning page
+        // Make target page active immediately - visible behind turning page
         page.classList.add('active');
         page.style.zIndex = '15'; // Behind turning page (z-index 200) but visible
+      } else {
+        page.style.zIndex = '1';
       }
     });
 
-    // Use requestAnimationFrame to ensure DOM updates before animation starts
-    requestAnimationFrame(() => {
-      if (direction === 'forward') {
-        // Turn forward: animate the current (old) page's right side
-        pages[oldPageIndex].style.zIndex = '200'; // Turning page on top
-        pages[oldPageIndex].classList.add('turning');
-      } else {
-        // Turn backward: animate the previous page back
-        if (oldPageIndex > 0 && pages[oldPageIndex - 1]) {
-          pages[oldPageIndex - 1].style.zIndex = '200';
-          pages[oldPageIndex - 1].classList.add('turning-back');
-        }
+    // Start animation IMMEDIATELY (no requestAnimationFrame delay)
+    // Force a synchronous reflow to ensure DOM updates are applied
+    void bookContainer.offsetHeight;
+    
+    if (direction === 'forward') {
+      // Turn forward: animate the current (old) page's right side
+      pages[oldPageIndex].style.zIndex = '200'; // Turning page on top
+      pages[oldPageIndex].classList.add('turning');
+    } else {
+      // Turn backward: animate the previous page back
+      if (oldPageIndex > 0 && pages[oldPageIndex - 1]) {
+        pages[oldPageIndex - 1].style.zIndex = '200';
+        pages[oldPageIndex - 1].classList.add('turning-back');
       }
-    });
+    }
 
     currentPage = targetIndex;
 
@@ -3087,9 +3106,21 @@ function openVoicePicker() {
     }
   }, { passive: true });
 
+  // Preload images to ensure smooth animations
+  function preloadImage(url) {
+    if (!url) return;
+    const img = new Image();
+    img.src = url;
+  }
+
   // API to update with real story images
   window.updateStorybookPages = function(imageUrls) {
     if (!Array.isArray(imageUrls) || imageUrls.length === 0) return;
+
+    // Preload all images immediately for smooth page turning
+    imageUrls.forEach(url => {
+      if (url) preloadImage(url);
+    });
 
     bookContainer.innerHTML = '';
     pages = [];
