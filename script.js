@@ -2726,29 +2726,59 @@ function openVoicePicker() {
     bookContainer.classList.remove('breathing');
     isAnimating = true;
     
+    const direction = targetIndex > currentPage ? 'forward' : 'backward';
+    const oldPageIndex = currentPage;
+    
+    // CRITICAL: Set target page to active FIRST, before starting animation
+    // This ensures the next page is visible behind the turning page from the start
     pages.forEach((page, idx) => {
       page.classList.remove('active', 'turning', 'turning-back', 'flipped');
+      page.style.zIndex = '';
       
       if (idx < targetIndex) {
         page.classList.add('flipped');
       } else if (idx === targetIndex) {
+        // Make target page active immediately - it should be visible behind turning page
         page.classList.add('active');
+        page.style.zIndex = '15'; // Behind turning page (z-index 200) but visible
       }
     });
 
-    if (targetIndex > currentPage) {
-      for (let i = currentPage; i < targetIndex; i++) {
-        pages[i].classList.add('turning');
+    // Use requestAnimationFrame to ensure DOM updates before animation starts
+    requestAnimationFrame(() => {
+      if (direction === 'forward') {
+        // Turn forward: animate the current (old) page's right side
+        pages[oldPageIndex].style.zIndex = '200'; // Turning page on top
+        pages[oldPageIndex].classList.add('turning');
+      } else {
+        // Turn backward: animate the previous page back
+        if (oldPageIndex > 0 && pages[oldPageIndex - 1]) {
+          pages[oldPageIndex - 1].style.zIndex = '200';
+          pages[oldPageIndex - 1].classList.add('turning-back');
+        }
       }
-    } else if (targetIndex < currentPage) {
-      for (let i = targetIndex; i < currentPage; i++) {
-        pages[i].classList.add('turning-back');
-      }
-    }
+    });
 
     currentPage = targetIndex;
 
     setTimeout(() => {
+      // Clean up z-index overrides and finalize states
+      pages.forEach((page, idx) => {
+        page.style.zIndex = '';
+        
+        if (idx < targetIndex) {
+          if (!page.classList.contains('flipped')) {
+            page.classList.add('flipped');
+          }
+        } else if (idx === targetIndex) {
+          if (!page.classList.contains('active')) {
+            page.classList.add('active');
+          }
+        } else {
+          page.classList.remove('turning', 'turning-back');
+        }
+      });
+      
       updateNavigationState();
       isAnimating = false;
       bookContainer.classList.add('breathing');

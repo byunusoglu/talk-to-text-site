@@ -2045,6 +2045,7 @@ body.age-no-bar main > section:first-child {
     rgba(0,0,0,0.02) 0%, 
     rgba(0,0,0,0) 5%),
     #fff;
+  backface-visibility: hidden;
 }
 
 .sb-page-right {
@@ -2055,6 +2056,7 @@ body.age-no-bar main > section:first-child {
     rgba(0,0,0,0.02) 0%, 
     rgba(0,0,0,0) 5%),
     #fff;
+  backface-visibility: hidden;
 }
 
 /* Page back (when flipped) */
@@ -2075,11 +2077,26 @@ body.age-no-bar main > section:first-child {
 .sb-page.turning .sb-page-right {
   animation: turnPage 0.8s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
   z-index: 200;
+  backface-visibility: hidden;
 }
 
 .sb-page.turning-back .sb-page-right {
   animation: turnPageBack 0.8s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
   z-index: 200;
+  backface-visibility: hidden;
+}
+
+/* Ensure next page is visible behind turning page */
+.sb-page.active ~ .sb-page,
+.sb-page.active {
+  transform-style: preserve-3d;
+}
+
+/* When a page is turning forward, the next active page should be visible behind */
+.sb-page.turning ~ .sb-page.active,
+.sb-page.turning + .sb-page.active {
+  z-index: 15 !important;
+  opacity: 1;
 }
 
 /* Turn page forward (right page flips to the left) */
