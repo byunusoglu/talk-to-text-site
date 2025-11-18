@@ -2994,47 +2994,45 @@ function openVoicePicker() {
     const direction = targetIndex > currentPage ? 'forward' : 'backward';
     const oldPageIndex = currentPage;
     
-    // Preload images on the target page to prevent delays during animation
-    const targetPage = pages[targetIndex];
-    if (targetPage) {
-      const targetImages = targetPage.querySelectorAll('.sb-page-left, .sb-page-right');
-      targetImages.forEach(imgEl => {
-        const bgImage = getComputedStyle(imgEl).backgroundImage;
-        if (bgImage && bgImage !== 'none') {
-          // Extract URL and preload
-          const urlMatch = bgImage.match(/url\(["']?([^"')]+)["']?\)/);
-          if (urlMatch && urlMatch[1]) {
-            const img = new Image();
-            img.src = urlMatch[1];
-          }
-        }
-      });
+    // Prepare target page first (before removing classes from current page)
+    // This ensures the target page is ready to be visible
+    const targetPageEl = pages[targetIndex];
+    if (targetPageEl) {
+      targetPageEl.classList.remove('turning', 'turning-back', 'flipped');
+      targetPageEl.classList.add('active');
+      targetPageEl.style.zIndex = '15'; // Behind turning page but visible
     }
     
-    // Set all pages to their correct states IMMEDIATELY (synchronously)
+    // Set other pages to their states
     pages.forEach((page, idx) => {
-      page.classList.remove('active', 'turning', 'turning-back', 'flipped');
+      if (idx === targetIndex) return; // Already handled above
+      
+      page.classList.remove('active', 'turning', 'turning-back');
       
       if (idx < targetIndex) {
         page.classList.add('flipped');
         page.style.zIndex = '1';
-      } else if (idx === targetIndex) {
-        // Make target page active immediately - visible behind turning page
-        page.classList.add('active');
-        page.style.zIndex = '15'; // Behind turning page (z-index 200) but visible
       } else {
         page.style.zIndex = '1';
       }
     });
 
-    // Start animation IMMEDIATELY (no requestAnimationFrame delay)
-    // Force a synchronous reflow to ensure DOM updates are applied
+    // Remove turning class from old page if it exists (clean slate)
+    const oldPageEl = pages[oldPageIndex];
+    if (oldPageEl) {
+      oldPageEl.classList.remove('turning', 'turning-back');
+    }
+    
+    // Force a synchronous reflow to ensure all DOM updates are applied
     void bookContainer.offsetHeight;
     
+    // Start animation IMMEDIATELY after reflow
     if (direction === 'forward') {
       // Turn forward: animate the current (old) page's right side
-      pages[oldPageIndex].style.zIndex = '200'; // Turning page on top
-      pages[oldPageIndex].classList.add('turning');
+      if (oldPageEl) {
+        oldPageEl.style.zIndex = '200'; // Turning page on top
+        oldPageEl.classList.add('turning');
+      }
     } else {
       // Turn backward: animate the previous page back
       if (oldPageIndex > 0 && pages[oldPageIndex - 1]) {
