@@ -136,7 +136,13 @@
       pendingStoryJobId = sessionStorage.getItem('yw_pending_story_jobid');
     } catch(_) {}
     
-    const payload = { childName, email, password, birthYear, gender };
+    // Convert gender to API format: boy, girl, or other
+    let apiGender = (gender || '').toLowerCase();
+    if (['boy', 'male', 'erkek'].includes(apiGender)) apiGender = 'boy';
+    else if (['girl', 'female', 'kız', 'kiz'].includes(apiGender)) apiGender = 'girl';
+    else apiGender = 'other';
+    
+    const payload = { childName, email, password, birthYear, gender: apiGender };
     if (pendingStoryJobId) {
       payload.pendingStoryJobId = pendingStoryJobId;
       console.log('[apiSignup] Including pendingStoryJobId:', pendingStoryJobId);
@@ -269,10 +275,10 @@
     const ageRaw    = read(/Child age:\s*([^\n]+)/i) || read(/Age:\s*([^\n]+)/i);
 
     let gender = (genderRaw || "").toLowerCase();
-    if (["boy","male","erkek"].includes(gender)) gender = "male";
-    else if (["girl","female","kız","kiz"].includes(gender)) gender = "female";
-    else if (["non-binary","nonbinary"].includes(gender)) gender = "non-binary";
-    else if (!gender) gender = "prefer-not-to-say";
+    if (["boy","male","erkek"].includes(gender)) gender = "boy";
+    else if (["girl","female","kız","kiz"].includes(gender)) gender = "girl";
+    else if (["non-binary","nonbinary","other"].includes(gender)) gender = "other";
+    else if (!gender) gender = "other";
 
     let birthYear = "";
     const age = parseInt((ageRaw || "").replace(/\D/g, ""), 10);
@@ -528,10 +534,9 @@ if (justAuthed) {
             <label style="font-weight:700">Gender</label>
             <select id="authGender" style="width:100%;padding:12px;border:1px solid #e0dcec;border-radius:12px;">
               <option value="" disabled selected>Select</option>
-              <option value="female">Girl</option>
-              <option value="male">Boy</option>
-              <option value="other">Non-binary</option>
-              <option value="prefer-not-to-say">Prefer not to say</option>
+              <option value="girl">Girl</option>
+              <option value="boy">Boy</option>
+              <option value="other">Other</option>
             </select>
           </div>
         </div>
