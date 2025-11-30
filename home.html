@@ -1237,7 +1237,10 @@
           throw new Error(data.message || data.error || 'Failed to create checkout session');
         }
         
-        if (data.status === 'success' && data.url) {
+        // API returns checkoutUrl, not url
+        const checkoutUrl = data.checkoutUrl || data.url;
+        
+        if (data.status === 'success' && checkoutUrl) {
           // Store that we're expecting a subscription callback
           try {
             sessionStorage.setItem('yw_pending_subscription', JSON.stringify({
@@ -1249,7 +1252,7 @@
           
           // Redirect to Stripe checkout
           loadingModal.remove();
-          window.location.href = data.url;
+          window.location.href = checkoutUrl;
         } else {
           throw new Error('Invalid response from server');
         }
