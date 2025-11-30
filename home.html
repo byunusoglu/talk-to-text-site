@@ -1307,6 +1307,7 @@
     async function pollSubscriptionStatus(maxDuration = 120000) { // 2 minutes
       const startTime = Date.now();
       const pollInterval = 2000; // Poll every 2 seconds
+      let stopped = false; // Flag to stop polling
       
       const modal = showLoadingModal('Confirming your subscription...');
       
@@ -1316,6 +1317,8 @@
       };
       
       const poll = async () => {
+        if (stopped) return; // Already stopped, don't continue
+        
         try {
           const token = localStorage.getItem('yw_jwt_token');
           const headers = { 'Content-Type': 'application/json' };
@@ -1330,7 +1333,8 @@
           
           // API returns isSubscribed, not hasSubscription
           if (data.status === 'success' && data.data?.isSubscribed) {
-            // Subscription confirmed!
+            // Subscription confirmed! Stop polling
+            stopped = true;
             modal.remove();
             
             // Clear pending subscription flag
@@ -1342,34 +1346,40 @@
             // Update UI with new subscription data
             updateSubscriptionUI(data.data);
             
-            return true;
+            return; // Exit, don't continue polling
           }
           
           // Check timeout
           if (Date.now() - startTime >= maxDuration) {
+            stopped = true;
             modal.remove();
             alert('Subscription confirmation is taking longer than expected. Please refresh the page or contact support if the issue persists.');
             try { sessionStorage.removeItem('yw_pending_subscription'); } catch(_) {}
-            return false;
+            return;
           }
           
-          // Continue polling
-          updateMessage('Still confirming... Please wait.');
-          setTimeout(poll, pollInterval);
+          // Continue polling only if not stopped
+          if (!stopped) {
+            updateMessage('Still confirming... Please wait.');
+            setTimeout(poll, pollInterval);
+          }
           
         } catch (error) {
           console.error('Polling error:', error);
           
           // Check timeout
           if (Date.now() - startTime >= maxDuration) {
+            stopped = true;
             modal.remove();
             alert('Failed to confirm subscription. Please refresh the page or contact support.');
             try { sessionStorage.removeItem('yw_pending_subscription'); } catch(_) {}
-            return false;
+            return;
           }
           
-          // Retry on error
-          setTimeout(poll, pollInterval);
+          // Retry on error only if not stopped
+          if (!stopped) {
+            setTimeout(poll, pollInterval);
+          }
         }
       };
       
@@ -1559,6 +1569,9 @@
       
       console.log('[Subscription] Updating UI with:', { subscriptionPlan, planLimits, usage, remaining });
       
+      // Update global current plan for upgrade logic
+      currentUserPlan = subscriptionPlan || 'basic';
+      
       // Update plan cards to show current plan
       document.querySelectorAll('.plan-card').forEach(card => {
         const cardPlan = card.getAttribute('data-plan');
@@ -1736,17 +1749,237 @@
       yearlyBtn.addEventListener('click', () => updatePriceDisplay('yearly'));
     }
 
-    // Upgrade button handler - uses current billing interval
-    function goUpgrade(tier) {
+    // Track current user's plan (will be set by loadSubscriptionStatus)
+    let currentUserPlan = 'basic';
+    
+    // Upgrade/Change plan button handler
+    async function goUpgrade(tier) {
       // Check if user is logged in
       const token = localStorage.getItem('yw_jwt_token');
       if (!token) {
         alert('Please sign in to upgrade your plan.');
-        // Optionally open auth modal here
         return;
       }
       
-      startCheckout(tier, currentBillingInterval);
+      // If user is on basic (free) plan, use Stripe Checkout
+      if (currentUserPlan === 'basic') {
+        startCheckout(tier, currentBillingInterval);
+        return;
+      }
+      
+      // User is on a paid plan - use plan change flow
+      await handlePlanChange(tier, currentBillingInterval);
+    }
+    
+    // Preview and confirm plan change (for existing subscribers)
+    async function handlePlanChange(newPlan, interval) {
+      const loadingModal = showLoadingModal('Loading plan details...');
+      
+      try {
+        const token = localStorage.getItem('yw_jwt_token');
+        const headers = { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        };
+        
+        // Step 1: Get preview of plan change
+        const previewRes = await fetch(`${PAYMENT_API_BASE}/preview-plan-change`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: headers,
+          body: JSON.stringify({
+            plan: newPlan,
+            interval: interval
+          })
+        });
+        
+        const previewData = await previewRes.json();
+        loadingModal.remove();
+        
+        if (!previewRes.ok || previewData.status !== 'success') {
+          throw new Error(previewData.message || previewData.error || 'Failed to preview plan change');
+        }
+        
+        // Step 2: Show confirmation modal
+        const confirmed = await showPlanChangeModal(previewData.data || previewData);
+        
+        if (!confirmed) {
+          return; // User cancelled
+        }
+        
+        // Step 3: Execute plan change
+        const changeModal = showLoadingModal('Changing your plan...');
+        
+        const changeRes = await fetch(`${PAYMENT_API_BASE}/change-plan`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: headers,
+          body: JSON.stringify({
+            plan: newPlan,
+            interval: interval,
+            confirmed: true
+          })
+        });
+        
+        const changeData = await changeRes.json();
+        changeModal.remove();
+        
+        if (!changeRes.ok || changeData.status !== 'success') {
+          throw new Error(changeData.message || changeData.error || 'Failed to change plan');
+        }
+        
+        // Step 4: Show success and update UI
+        showPlanChangeSuccess(newPlan);
+        
+        // Refresh subscription status
+        await loadSubscriptionStatus();
+        
+      } catch (error) {
+        console.error('Plan change error:', error);
+        alert('Failed to change plan: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    // Show plan change confirmation modal
+    function showPlanChangeModal(preview) {
+      return new Promise((resolve) => {
+        const { currentPlan, newPlan, proration } = preview;
+        
+        const isUpgrade = (newPlan?.price || 0) > (currentPlan?.price || 0);
+        const actionText = isUpgrade ? 'Upgrade' : 'Change';
+        const emoji = isUpgrade ? '🚀' : '📦';
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(58, 52, 80, 0.95);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          backdrop-filter: blur(8px);
+        `;
+        
+        modal.innerHTML = `
+          <div style="
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(142, 68, 236, 0.3);
+          ">
+            <div style="font-size: 48px; margin-bottom: 16px;">${emoji}</div>
+            <h2 style="color: #3a3450; margin: 0 0 8px; font-size: 24px;">
+              ${actionText} to ${(newPlan?.name || '').charAt(0).toUpperCase() + (newPlan?.name || '').slice(1)}?
+            </h2>
+            
+            <div style="
+              background: #f8f7fc;
+              border-radius: 12px;
+              padding: 16px;
+              margin: 20px 0;
+              text-align: left;
+            ">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #6b6479;">Current Plan:</span>
+                <span style="font-weight: 600; color: #3a3450;">${(currentPlan?.name || 'Basic').charAt(0).toUpperCase() + (currentPlan?.name || 'basic').slice(1)} (£${currentPlan?.price || 0}/mo)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #6b6479;">New Plan:</span>
+                <span style="font-weight: 600; color: #8E44EC;">${(newPlan?.name || '').charAt(0).toUpperCase() + (newPlan?.name || '').slice(1)} (£${newPlan?.price || 0}/mo)</span>
+              </div>
+            </div>
+            
+            ${proration ? `
+              <div style="
+                background: ${proration.amount >= 0 ? '#fef3c7' : '#d1fae5'};
+                border-radius: 8px;
+                padding: 12px;
+                margin-bottom: 20px;
+              ">
+                <span style="font-size: 20px;">💳</span>
+                <p style="margin: 8px 0 0; color: #3a3450; font-weight: 500;">
+                  ${proration.description || (proration.amount >= 0 ? `You will be charged £${Math.abs(proration.amount).toFixed(2)} now` : `You will receive £${Math.abs(proration.amount).toFixed(2)} credit`)}
+                </p>
+              </div>
+            ` : ''}
+            
+            <div style="display: flex; gap: 12px;">
+              <button id="cancelPlanChange" style="
+                flex: 1;
+                padding: 14px;
+                border-radius: 12px;
+                border: 2px solid #e5e3eb;
+                background: white;
+                color: #6b6479;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 15px;
+              ">Cancel</button>
+              <button id="confirmPlanChange" style="
+                flex: 1;
+                padding: 14px;
+                border-radius: 12px;
+                border: none;
+                background: linear-gradient(135deg, #8E44EC, #B67AF3);
+                color: white;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 15px;
+              ">✓ Confirm</button>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        document.getElementById('cancelPlanChange').addEventListener('click', () => {
+          modal.remove();
+          resolve(false);
+        });
+        
+        document.getElementById('confirmPlanChange').addEventListener('click', () => {
+          modal.remove();
+          resolve(true);
+        });
+      });
+    }
+    
+    // Show plan change success message
+    function showPlanChangeSuccess(newPlan) {
+      const planName = PLAN_DISPLAY_NAMES[newPlan] || newPlan.charAt(0).toUpperCase() + newPlan.slice(1);
+      
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #10b981, #34d399);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      `;
+      toast.innerHTML = `<span style="font-size: 20px;">🎉</span> Successfully changed to ${planName}!`;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
     }
     
     document.querySelectorAll('[data-upgrade]').forEach(btn => {
