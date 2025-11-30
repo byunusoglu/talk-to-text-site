@@ -500,7 +500,7 @@
           <li><b>1 image story</b> / month</li>
           <li><b>No voice cloning</b></li>
         </ul>
-        <button class="btn ghost" disabled>Current plan</button>
+        <button class="btn ghost" id="basicPlanBtn" disabled>Free Plan</button>
       </article>
 
       <!-- Plus -->
@@ -1564,6 +1564,9 @@
         const cardPlan = card.getAttribute('data-plan');
         const btn = card.querySelector('.btn');
         
+        // Reset card border first
+        card.style.border = '';
+        
         if (cardPlan === subscriptionPlan) {
           // This is the current plan
           if (btn) {
@@ -1572,11 +1575,27 @@
             btn.classList.add('ghost');
           }
           // Add visual indicator
-          card.style.border = '2px solid var(--plum)';
-        } else if (btn && btn.hasAttribute('data-upgrade')) {
-          // Reset other plan buttons
-          btn.disabled = false;
-          btn.classList.remove('ghost');
+          card.style.border = '2px solid #8E44EC';
+        } else {
+          // Not the current plan - reset button
+          if (btn) {
+            if (cardPlan === 'basic') {
+              btn.textContent = 'Free Plan';
+              btn.disabled = true;
+              btn.classList.add('ghost');
+            } else {
+              // Restore upgrade button text
+              const upgradeTexts = {
+                'plus': 'Upgrade to Plus',
+                'premium': 'Go Premium',
+                'infinite': 'Go Infinite'
+              };
+              btn.textContent = upgradeTexts[cardPlan] || 'Upgrade';
+              btn.disabled = false;
+              btn.classList.remove('ghost');
+            }
+          }
+          card.style.border = '';
         }
       });
       
