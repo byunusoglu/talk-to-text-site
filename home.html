@@ -1593,8 +1593,8 @@
         }
       });
       
-      // Update usage bars - show REMAINING quota (not used)
-      if (planLimits) {
+      // Update usage bars - show remaining / total format
+      if (planLimits && remaining) {
         const storiesBar = document.getElementById('freeStoriesBar');
         const storiesText = document.getElementById('freeStoriesText');
         const imageStoriesBar = document.getElementById('imageStoriesBar');
@@ -1602,12 +1602,13 @@
         const voicesBar = document.getElementById('freeVoicesBar');
         const voicesText = document.getElementById('freeVoicesText');
         
-        // Text stories - show remaining
+        // Text stories - show remaining/total
         if (storiesBar && storiesText && planLimits.textStories) {
-          const remainingStories = remaining.textStories ?? planLimits.textStories;
-          const percentRemaining = (remainingStories / planLimits.textStories) * 100;
+          const total = planLimits.textStories;
+          const left = remaining.textStories ?? total;
+          const percentRemaining = (left / total) * 100;
           storiesBar.style.width = percentRemaining + '%';
-          storiesText.textContent = `${remainingStories} text stories remaining`;
+          storiesText.textContent = `${left}/${total} text stories`;
           
           // Change color if running low
           if (percentRemaining <= 10) {
@@ -1619,16 +1620,17 @@
           }
         }
         
-        // Image stories - show remaining
+        // Image stories - show remaining/total
         if (imageStoriesBar && imageStoriesText && planLimits.imageStories !== undefined) {
-          if (planLimits.imageStories === 0) {
+          const total = planLimits.imageStories;
+          if (total === 0) {
             imageStoriesBar.style.width = '0%';
             imageStoriesText.textContent = 'Upgrade for image stories';
           } else {
-            const remainingImages = remaining.imageStories ?? planLimits.imageStories;
-            const percentRemaining = (remainingImages / planLimits.imageStories) * 100;
+            const left = remaining.imageStories ?? total;
+            const percentRemaining = (left / total) * 100;
             imageStoriesBar.style.width = percentRemaining + '%';
-            imageStoriesText.textContent = `${remainingImages} image story remaining`;
+            imageStoriesText.textContent = `${left}/${total} image stories`;
             
             // Change color if running low
             if (percentRemaining <= 10) {
@@ -1641,16 +1643,26 @@
           }
         }
         
-        // Voice clones - show remaining
+        // Voice clones - show remaining/total
         if (voicesBar && voicesText && planLimits.voiceClones !== undefined) {
-          if (planLimits.voiceClones === 0) {
+          const total = planLimits.voiceClones;
+          if (total === 0) {
             voicesBar.style.width = '0%';
             voicesText.textContent = 'Upgrade for voice cloning';
           } else {
-            const remainingVoices = remaining.voiceClones ?? planLimits.voiceClones;
-            const percentRemaining = (remainingVoices / planLimits.voiceClones) * 100;
+            const left = remaining.voiceClones ?? total;
+            const percentRemaining = (left / total) * 100;
             voicesBar.style.width = percentRemaining + '%';
-            voicesText.textContent = `${remainingVoices} voice clones remaining`;
+            voicesText.textContent = `${left}/${total} voice clones`;
+            
+            // Change color if running low
+            if (percentRemaining <= 10) {
+              voicesBar.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+            } else if (percentRemaining <= 30) {
+              voicesBar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+            } else {
+              voicesBar.style.background = 'linear-gradient(90deg, var(--plum), var(--mauve))';
+            }
           }
         }
       }
