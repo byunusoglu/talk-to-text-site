@@ -1328,7 +1328,8 @@
           
           const data = await res.json();
           
-          if (data.status === 'success' && data.data?.hasSubscription) {
+          // API returns isSubscribed, not hasSubscription
+          if (data.status === 'success' && data.data?.isSubscribed) {
             // Subscription confirmed!
             modal.remove();
             
