@@ -1107,31 +1107,7 @@
     // ========================================
     // FEATURE 4: USAGE TRACKING
     // ========================================
-    function renderUsageTracking() {
-      // Dummy usage data (in real app, fetch from API)
-      const usage = {
-        stories: { used: 1, limit: 2 },
-        voices: { used: 0, limit: 2 }
-      };
-      
-      const storiesPercent = (usage.stories.used / usage.stories.limit) * 100;
-      const voicesPercent = (usage.voices.used / usage.voices.limit) * 100;
-      
-      const storiesBar = document.getElementById('freeStoriesBar');
-      const storiesText = document.getElementById('freeStoriesText');
-      const voicesBar = document.getElementById('freeVoicesBar');
-      const voicesText = document.getElementById('freeVoicesText');
-      
-      if (storiesBar) {
-        storiesBar.style.width = storiesPercent + '%';
-        storiesText.textContent = `${usage.stories.used} of ${usage.stories.limit} stories created this month`;
-      }
-      
-      if (voicesBar) {
-        voicesBar.style.width = voicesPercent + '%';
-        voicesText.textContent = `${usage.voices.used} of ${usage.voices.limit} voiceovers used`;
-      }
-    }
+    // Usage tracking is now handled by loadSubscriptionStatus() which calls the API
 
     // ========================================
     // PERSONALIZE WELCOME
@@ -1453,25 +1429,8 @@
         }
       }
       
-      // Update usage bars if available
-      if (limits && usage) {
-        const storiesBar = document.getElementById('freeStoriesBar');
-        const storiesText = document.getElementById('freeStoriesText');
-        const voicesBar = document.getElementById('freeVoicesBar');
-        const voicesText = document.getElementById('freeVoicesText');
-        
-        if (storiesBar && storiesText && limits.textStories) {
-          const percent = (usage.textStoriesUsed / limits.textStories) * 100;
-          storiesBar.style.width = Math.min(100, percent) + '%';
-          storiesText.textContent = `${usage.textStoriesUsed} of ${limits.textStories} stories created`;
-        }
-        
-        if (voicesBar && voicesText && limits.voiceCloneStories) {
-          const percent = (usage.voiceCloneStoriesUsed / limits.voiceCloneStories) * 100;
-          voicesBar.style.width = Math.min(100, percent) + '%';
-          voicesText.textContent = `${usage.voiceCloneStoriesUsed} of ${limits.voiceCloneStories} voice clones used`;
-        }
-      }
+      // Refresh subscription info from API to update usage bars correctly
+      loadSubscriptionStatus();
     }
 
     // Check for pending subscription on page load (user returning from Stripe)
@@ -1602,11 +1561,14 @@
         const voicesBar = document.getElementById('freeVoicesBar');
         const voicesText = document.getElementById('freeVoicesText');
         
+        console.log('[Subscription] Updating bars:', { storiesBar, imageStoriesBar, voicesBar });
+        
         // Text stories - show remaining/total
         if (storiesBar && storiesText && planLimits.textStories) {
           const total = planLimits.textStories;
           const left = remaining.textStories ?? total;
           const percentRemaining = (left / total) * 100;
+          console.log('[Subscription] Text stories:', { left, total, percentRemaining });
           storiesBar.style.width = percentRemaining + '%';
           storiesText.textContent = `${left}/${total} text stories`;
           
@@ -1910,7 +1872,6 @@
     initTestimonials();
     renderRecommendations();
     renderRecentActivity();
-    renderUsageTracking();
     loadMyStories();
     
     // Subscription checks
