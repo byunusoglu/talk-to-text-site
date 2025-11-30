@@ -300,12 +300,13 @@
     /* Keep your existing plan & hero helpers from the previous version */
     .plans-grid { 
       display: grid; 
-      grid-template-columns: repeat(3, minmax(0, 1fr)); 
-      gap: 14px; 
-      max-width: 980px; 
+      grid-template-columns: repeat(4, minmax(0, 1fr)); 
+      gap: 12px; 
+      max-width: 1200px; 
       margin: 0 auto; 
     }
-    @media (max-width: 900px) { .plans-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) { .plans-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .plans-grid { grid-template-columns: 1fr; } }
 
     .plan-card { 
       background: rgba(255,255,255,0.9);
@@ -313,21 +314,25 @@
       border-radius: 18px;
       box-shadow: var(--shadow);
       text-align: left;
-      padding: 18px;
+      padding: 16px;
       position: relative;
       overflow: hidden;
     }
-    .plan-card h3 { margin: 0 0 8px; color: var(--plum-dark); font-size: 20px; }
-    .plan-card .price { font-weight: 800; color: var(--plum-dark); margin-bottom: 6px; }
-    .plan-card ul { margin: 10px 0 14px; padding-left: 18px; }
-    .plan-card li { margin: 6px 0; color: #3a3450; }
-    .plan-card .btn { width: 100%; }
+    .plan-card h3 { margin: 0 0 8px; color: var(--plum-dark); font-size: 18px; }
+    .plan-card .price { font-weight: 800; color: var(--plum-dark); margin-bottom: 6px; font-size: 15px; }
+    .plan-card ul { margin: 10px 0 14px; padding-left: 16px; font-size: 13px; }
+    .plan-card li { margin: 5px 0; color: #3a3450; }
+    .plan-card .btn { width: 100%; font-size: 13px; padding: 10px 16px; }
 
-    .plan-card.free  { background: #ffffff; }
-    .plan-card.pro   { background: linear-gradient(180deg, rgba(243,240,250,.6), rgba(233,220,255,.6)); }
+    .plan-card.basic  { background: #ffffff; }
+    .plan-card.plus   { background: linear-gradient(180deg, rgba(243,240,250,.6), rgba(233,220,255,.6)); }
     .plan-card.premium { 
       background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(246,241,255,0.9));
       box-shadow: 0 16px 30px rgba(142,68,236,0.18);
+    }
+    .plan-card.infinite {
+      background: linear-gradient(180deg, rgba(255,215,0,0.1), rgba(255,165,0,0.15));
+      border: 2px solid rgba(255,165,0,0.3);
     }
 
     .ribbon {
@@ -445,16 +450,16 @@
     <p class="formats-sub">Choose the plan that fits your family's bedtime rhythm.</p>
 
     <div class="plans-grid">
-      <!-- Free -->
-      <article class="plan-card free">
-        <h3>Free</h3>
+      <!-- Basic (Free) -->
+      <article class="plan-card basic" data-plan="basic">
+        <h3>Basic</h3>
         <div class="price">£0 / month</div>
         
         <!-- Usage tracking -->
         <div class="usage-bar">
           <div class="usage-bar-fill" id="freeStoriesBar"></div>
         </div>
-        <div class="usage-text" id="freeStoriesText">1 of 2 stories created this month</div>
+        <div class="usage-text" id="freeStoriesText">0 of 2 stories created this month</div>
 
         <div class="usage-bar">
           <div class="usage-bar-fill" id="freeVoicesBar"></div>
@@ -469,33 +474,48 @@
         <button class="btn ghost" disabled>Current plan</button>
       </article>
 
-      <!-- Pro -->
-      <article class="plan-card pro">
-        <h3>Pro</h3>
-        <div class="price">£7.99 / month</div>
+      <!-- Plus -->
+      <article class="plan-card plus" data-plan="plus">
+        <h3>Plus</h3>
+        <div class="price">£4.99 / month</div>
         <ul>
-          <li><b>Unlimited</b> stories</li>
-          <li><b>Unlimited voiceovers</b></li>
+          <li><b>15 stories</b> / month</li>
+          <li><b>10 voiceovers</b> / month</li>
           <li><b>5 voice options</b></li>
           <li><b>1 voice cloning</b></li>
-          <li><b>3 storybook customization</b></li>
+          <li><b>Basic customization</b></li>
         </ul>
-        <button class="btn" data-upgrade="pro">Upgrade to Pro</button>
+        <button class="btn" data-upgrade="plus">Upgrade to Plus</button>
       </article>
 
       <!-- Premium -->
-      <article class="plan-card premium">
+      <article class="plan-card premium" data-plan="premium">
         <div class="ribbon">⭐ Most loved</div>
         <h3>Premium</h3>
-        <div class="price">£10.99 / month</div>
+        <div class="price">£9.99 / month</div>
         <ul>
-          <li><b>Unlimited</b> stories</li>
-          <li><b>Unlimited voiceovers</b></li>
-          <li><b>8 voice options</b></li>
+          <li><b>50 stories</b> / month</li>
+          <li><b>30 voiceovers</b> / month</li>
+          <li><b>10 voice options</b></li>
           <li><b>3 voice cloning</b></li>
-          <li><b>10 storybook customization</b></li>
+          <li><b>Advanced customization</b></li>
         </ul>
         <button class="btn" data-upgrade="premium">Go Premium</button>
+      </article>
+
+      <!-- Infinite -->
+      <article class="plan-card infinite" data-plan="infinite">
+        <h3>Infinite</h3>
+        <div class="price">£19.99 / month</div>
+        <ul>
+          <li><b>Unlimited</b> stories</li>
+          <li><b>Unlimited</b> voiceovers</li>
+          <li><b>All voice options</b></li>
+          <li><b>Unlimited voice cloning</b></li>
+          <li><b>Priority support</b></li>
+          <li><b>Early access features</b></li>
+        </ul>
+        <button class="btn" data-upgrade="infinite">Go Infinite</button>
       </article>
     </div>
   </section>
@@ -1173,10 +1193,385 @@
       });
     }
 
-    // Upgrade buttons (placeholder)
-    function goUpgrade(tier) {
-      window.location.href = 'checkout.html?upgrade=' + encodeURIComponent(tier);
+    // ========================================
+    // STRIPE SUBSCRIPTION INTEGRATION
+    // ========================================
+    const PAYMENT_API_BASE = 'https://storyai-backend-production.up.railway.app/api/v1/payments';
+    
+    // Plan names match API directly now: basic, plus, premium, infinite
+    const PLAN_DISPLAY_NAMES = {
+      'basic': 'Basic',
+      'plus': 'Plus',
+      'premium': 'Premium',
+      'infinite': 'Infinite'
+    };
+
+    // Create Stripe checkout session and redirect
+    async function startCheckout(plan, interval = 'monthly') {
+      // Plan names now match API directly (plus, premium, infinite)
+      
+      // Show loading state
+      const loadingModal = showLoadingModal('Preparing checkout...');
+      
+      try {
+        const token = localStorage.getItem('yw_jwt_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        
+        const response = await fetch(`${PAYMENT_API_BASE}/create-checkout-session`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: headers,
+          body: JSON.stringify({
+            plan: plan,
+            interval: interval
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || data.error || 'Failed to create checkout session');
+        }
+        
+        if (data.status === 'success' && data.url) {
+          // Store that we're expecting a subscription callback
+          try {
+            sessionStorage.setItem('yw_pending_subscription', JSON.stringify({
+              plan: apiPlan,
+              interval: interval,
+              startedAt: Date.now()
+            }));
+          } catch(_) {}
+          
+          // Redirect to Stripe checkout
+          loadingModal.remove();
+          window.location.href = data.url;
+        } else {
+          throw new Error('Invalid response from server');
+        }
+        
+      } catch (error) {
+        loadingModal.remove();
+        console.error('Checkout error:', error);
+        alert('Failed to start checkout: ' + (error.message || 'Please try again.'));
+      }
     }
+
+    // Show loading modal helper
+    function showLoadingModal(message) {
+      const modal = document.createElement('div');
+      modal.id = 'loadingModal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(58, 52, 80, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        backdrop-filter: blur(8px);
+      `;
+      modal.innerHTML = `
+        <div style="
+          background: white;
+          border-radius: 20px;
+          padding: 40px;
+          max-width: 400px;
+          width: 90%;
+          text-align: center;
+          box-shadow: 0 20px 60px rgba(142, 68, 236, 0.3);
+        ">
+          <div class="wait-dots" aria-hidden="true" style="margin-bottom: 24px;">
+            <span></span><span></span><span></span>
+          </div>
+          <p style="color: var(--plum-dark); margin: 0; font-size: 18px; font-weight: 600;">
+            ${message}
+          </p>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      return modal;
+    }
+
+    // Poll subscription status after returning from Stripe
+    async function pollSubscriptionStatus(maxDuration = 120000) { // 2 minutes
+      const startTime = Date.now();
+      const pollInterval = 2000; // Poll every 2 seconds
+      
+      const modal = showLoadingModal('Confirming your subscription...');
+      
+      const updateMessage = (msg) => {
+        const msgEl = modal.querySelector('p');
+        if (msgEl) msgEl.textContent = msg;
+      };
+      
+      const poll = async () => {
+        try {
+          const token = localStorage.getItem('yw_jwt_token');
+          const headers = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+          
+          const res = await fetch(`${PAYMENT_API_BASE}/my-subscription`, {
+            credentials: 'include',
+            headers: headers
+          });
+          
+          const data = await res.json();
+          
+          if (data.status === 'success' && data.data?.hasSubscription) {
+            // Subscription confirmed!
+            modal.remove();
+            
+            // Clear pending subscription flag
+            try { sessionStorage.removeItem('yw_pending_subscription'); } catch(_) {}
+            
+            // Show success message
+            showSubscriptionSuccess(data.data.subscription);
+            
+            // Update UI with new subscription data
+            updateSubscriptionUI(data.data);
+            
+            return true;
+          }
+          
+          // Check timeout
+          if (Date.now() - startTime >= maxDuration) {
+            modal.remove();
+            alert('Subscription confirmation is taking longer than expected. Please refresh the page or contact support if the issue persists.');
+            try { sessionStorage.removeItem('yw_pending_subscription'); } catch(_) {}
+            return false;
+          }
+          
+          // Continue polling
+          updateMessage('Still confirming... Please wait.');
+          setTimeout(poll, pollInterval);
+          
+        } catch (error) {
+          console.error('Polling error:', error);
+          
+          // Check timeout
+          if (Date.now() - startTime >= maxDuration) {
+            modal.remove();
+            alert('Failed to confirm subscription. Please refresh the page or contact support.');
+            try { sessionStorage.removeItem('yw_pending_subscription'); } catch(_) {}
+            return false;
+          }
+          
+          // Retry on error
+          setTimeout(poll, pollInterval);
+        }
+      };
+      
+      poll();
+    }
+
+    // Show subscription success modal
+    function showSubscriptionSuccess(subscription) {
+      const planName = PLAN_DISPLAY_NAMES[subscription.plan] || 
+                       subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1);
+      
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(58, 52, 80, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        backdrop-filter: blur(8px);
+      `;
+      modal.innerHTML = `
+        <div style="
+          background: white;
+          border-radius: 20px;
+          padding: 40px;
+          max-width: 450px;
+          width: 90%;
+          text-align: center;
+          box-shadow: 0 20px 60px rgba(142, 68, 236, 0.3);
+        ">
+          <div style="font-size: 64px; margin-bottom: 16px;">🎉</div>
+          <h2 style="color: var(--plum-dark); margin: 0 0 12px; font-size: 28px;">
+            Welcome to ${planName}!
+          </h2>
+          <p style="color: #6b6479; margin: 0 0 24px; font-size: 16px; line-height: 1.5;">
+            Your subscription is now active. Enjoy unlimited stories and premium features!
+          </p>
+          <button class="btn" onclick="this.closest('div').parentElement.remove();" style="width: 100%;">
+            Start Creating Stories
+          </button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    // Update UI with subscription data
+    function updateSubscriptionUI(subData) {
+      if (!subData) return;
+      
+      const { subscription, limits, usage } = subData;
+      
+      // Update plan cards to show current plan
+      document.querySelectorAll('.plan-card').forEach(card => {
+        const cardPlan = card.getAttribute('data-plan');
+        const btn = card.querySelector('.btn');
+        
+        if (cardPlan === subscription?.plan) {
+          // This is the current plan
+          if (btn) {
+            btn.textContent = 'Current Plan';
+            btn.disabled = true;
+            btn.classList.add('ghost');
+            btn.classList.remove('btn');
+            btn.classList.add('btn');
+          }
+        } else if (btn && btn.hasAttribute('data-upgrade')) {
+          // Reset other plan buttons
+          btn.disabled = false;
+          btn.classList.remove('ghost');
+        }
+      });
+      
+      // Update Basic plan card if user has subscription
+      if (subscription?.status === 'active' && subscription?.plan !== 'basic') {
+        const basicCard = document.querySelector('.plan-card.basic .btn');
+        if (basicCard) {
+          basicCard.textContent = 'Basic Plan';
+          basicCard.disabled = true;
+          basicCard.classList.add('ghost');
+        }
+      }
+      
+      // Update usage bars if available
+      if (limits && usage) {
+        const storiesBar = document.getElementById('freeStoriesBar');
+        const storiesText = document.getElementById('freeStoriesText');
+        const voicesBar = document.getElementById('freeVoicesBar');
+        const voicesText = document.getElementById('freeVoicesText');
+        
+        if (storiesBar && storiesText && limits.textStories) {
+          const percent = (usage.textStoriesUsed / limits.textStories) * 100;
+          storiesBar.style.width = Math.min(100, percent) + '%';
+          storiesText.textContent = `${usage.textStoriesUsed} of ${limits.textStories} stories created`;
+        }
+        
+        if (voicesBar && voicesText && limits.voiceCloneStories) {
+          const percent = (usage.voiceCloneStoriesUsed / limits.voiceCloneStories) * 100;
+          voicesBar.style.width = Math.min(100, percent) + '%';
+          voicesText.textContent = `${usage.voiceCloneStoriesUsed} of ${limits.voiceCloneStories} voice clones used`;
+        }
+      }
+    }
+
+    // Check for pending subscription on page load (user returning from Stripe)
+    function checkPendingSubscription() {
+      // Check URL parameters first (more reliable)
+      const urlParams = new URLSearchParams(window.location.search);
+      const subscriptionStatus = urlParams.get('subscription');
+      
+      // Clean URL (remove subscription parameter)
+      const cleanUrl = () => {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      };
+      
+      if (subscriptionStatus === 'success') {
+        console.log('[Subscription] User returned from Stripe with success');
+        cleanUrl();
+        pollSubscriptionStatus();
+        return;
+      }
+      
+      if (subscriptionStatus === 'cancel') {
+        console.log('[Subscription] User cancelled Stripe checkout');
+        cleanUrl();
+        // Show cancellation message
+        const cancelMsg = document.createElement('div');
+        cancelMsg.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #f59e0b;
+          color: white;
+          padding: 16px 24px;
+          border-radius: 12px;
+          font-weight: 600;
+          z-index: 9999;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        `;
+        cancelMsg.textContent = 'Checkout cancelled. You can try again anytime!';
+        document.body.appendChild(cancelMsg);
+        setTimeout(() => {
+          cancelMsg.style.opacity = '0';
+          cancelMsg.style.transition = 'opacity 0.3s';
+          setTimeout(() => cancelMsg.remove(), 300);
+        }, 4000);
+        // Clear any pending subscription data
+        try { sessionStorage.removeItem('yw_pending_subscription'); } catch(_) {}
+        return;
+      }
+      
+      // Fallback: check sessionStorage (in case URL param was lost)
+      try {
+        const pending = sessionStorage.getItem('yw_pending_subscription');
+        if (pending) {
+          const data = JSON.parse(pending);
+          // Only poll if started within last 5 minutes
+          if (Date.now() - data.startedAt < 300000) {
+            console.log('[Subscription] Detected pending subscription from sessionStorage, starting poll...');
+            pollSubscriptionStatus();
+          } else {
+            sessionStorage.removeItem('yw_pending_subscription');
+          }
+        }
+      } catch(_) {}
+    }
+
+    // Load current subscription status on page load
+    async function loadSubscriptionStatus() {
+      try {
+        const token = localStorage.getItem('yw_jwt_token');
+        if (!token) return;
+        
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        
+        const res = await fetch(`${PAYMENT_API_BASE}/my-subscription`, {
+          credentials: 'include',
+          headers: headers
+        });
+        
+        const data = await res.json();
+        
+        if (data.status === 'success' && data.data) {
+          updateSubscriptionUI(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to load subscription status:', error);
+      }
+    }
+
+    // Upgrade button handler
+    function goUpgrade(tier) {
+      // Check if user is logged in
+      const token = localStorage.getItem('yw_jwt_token');
+      if (!token) {
+        alert('Please sign in to upgrade your plan.');
+        // Optionally open auth modal here
+        return;
+      }
+      
+      startCheckout(tier, 'monthly');
+    }
+    
     document.querySelectorAll('[data-upgrade]').forEach(btn => {
       btn.addEventListener('click', () => goUpgrade(btn.getAttribute('data-upgrade')));
     });
@@ -1400,6 +1795,10 @@
     renderRecentActivity();
     renderUsageTracking();
     loadMyStories();
+    
+    // Subscription checks
+    checkPendingSubscription(); // Check if returning from Stripe
+    loadSubscriptionStatus();   // Load current subscription status
 
     // Set year in footer
     document.getElementById('year').textContent = new Date().getFullYear();
