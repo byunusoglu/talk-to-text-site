@@ -2234,8 +2234,8 @@ if (!html && !md && !pending && teaser) {
         child: {
           name: state.kidName || 'Friend',
           age: isNaN(kidAgeNum) ? 4 : Math.max(0, Math.min(12, kidAgeNum)),
-          gender: /girl|female/.test((state.kidGender||'').toLowerCase()) ? 'female'
-                : /boy|male/.test((state.kidGender||'').toLowerCase())    ? 'male'
+          gender: /girl|female/.test((state.kidGender||'').toLowerCase()) ? 'girl'
+                : /boy|male/.test((state.kidGender||'').toLowerCase())    ? 'boy'
                 : 'unspecified'
         },
         pet: (state.pets === 'yes') ? {
