@@ -622,7 +622,7 @@
       document.body.appendChild(modal);
       
       // Start polling
-      const API_BASE = 'https://imaginee-y9nk.onrender.com/api/v1';
+      const API_BASE = 'https://storyai-backend-production.up.railway.app/api/v1';
       let pollCount = 0;
       
       const updateProgress = (message, percent) => {
@@ -1139,7 +1139,7 @@
           const headers = { 'Content-Type': 'application/json' };
           if (token) headers['Authorization'] = `Bearer ${token}`;
           
-          const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
+          const res = await fetch('https://storyai-backend-production.up.railway.app/api/v1/stories/my', {
             credentials: 'include',
             headers: headers
           });
@@ -1197,7 +1197,7 @@
     }
 
     // ===== LOAD MY STORIES WITH NEW FEATURES =====
-    const API_BASE = 'https://imaginee-y9nk.onrender.com/api/v1';
+    const API_BASE = 'https://storyai-backend-production.up.railway.app/api/v1';
     async function loadMyStories() {
       const listEl = document.getElementById('storiesList');
       if (!listEl) return;

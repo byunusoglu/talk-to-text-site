@@ -209,7 +209,7 @@
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const me = await fetch('https://imaginee-y9nk.onrender.com/api/v1/users/me', {
+    const me = await fetch('https://storyai-backend-production.up.railway.app/api/v1/users/me', {
       credentials: 'include',
       headers: headers
     });
@@ -222,7 +222,7 @@
     if (storyId && storyId !== 'cached-story') {
       // Fetch the specific story by ID
       try {
-        const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${storyId}`, {
+        const one = await fetch(`https://storyai-backend-production.up.railway.app/api/v1/stories/${storyId}`, {
           credentials: 'include',
           headers: headers
         });
@@ -237,7 +237,7 @@
 
     // If no specific story found, get the latest from /stories/my
     if (!story) {
-      const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
+      const res = await fetch('https://storyai-backend-production.up.railway.app/api/v1/stories/my', {
         credentials: 'include',
         headers: headers
       });
@@ -254,7 +254,7 @@
       if (latest.pages?.length) {
         story = latest;
       } else if (latest._id) {
-        const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${latest._id}`, {
+        const one = await fetch(`https://storyai-backend-production.up.railway.app/api/v1/stories/${latest._id}`, {
           credentials: 'include',
           headers: headers
         });
@@ -305,7 +305,7 @@
           const storyId = SS.getItem('yw_story_id');
           
           if (storyId && storyId !== 'cached-story') {
-            const res = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${storyId}`, {
+            const res = await fetch(`https://storyai-backend-production.up.railway.app/api/v1/stories/${storyId}`, {
               credentials: 'include',
               headers: headers
             });
@@ -315,7 +315,7 @@
             }
           } else {
             // Get latest story
-            const res = await fetch('https://imaginee-y9nk.onrender.com/api/v1/stories/my', {
+            const res = await fetch('https://storyai-backend-production.up.railway.app/api/v1/stories/my', {
               credentials: 'include',
               headers: headers
             });
@@ -327,7 +327,7 @@
                 if (latest.pages?.length) {
                   story = latest;
                 } else if (latest._id) {
-                  const one = await fetch(`https://imaginee-y9nk.onrender.com/api/v1/stories/${latest._id}`, {
+                  const one = await fetch(`https://storyai-backend-production.up.railway.app/api/v1/stories/${latest._id}`, {
                     credentials: 'include',
                     headers: headers
                   });

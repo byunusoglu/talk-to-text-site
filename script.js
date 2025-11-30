@@ -70,9 +70,9 @@
   /* ---------------------------------------------
      REAL Auth client (JWT)
   --------------------------------------------- */
-  const API_BASE = "https://imaginee-y9nk.onrender.com/api/v1";
+  const API_BASE = "https://storyai-backend-production.up.railway.app/api/v1";
   // Partner story generation endpoints
-  const API_GUEST_GENERATE = `${API_BASE}/stories/guest-generate`;
+  const API_GUEST_GENERATE = `${API_BASE}/stories/generate`;
   const API_AUTH_GENERATE = `${API_BASE}/stories/generate`; // For authenticated users
   const API_JOB = (jobId) => `${API_BASE}/jobs/${jobId}`; // Use authenticated endpoint
   const API_GUEST_JOB = (jobId) => `${API_BASE}/jobs/guest/${jobId}`; // Keep for backward compatibility
@@ -2152,10 +2152,19 @@ if (!html && !md && !pending && teaser) {
      Quick Create Overlay (index)
      =========================== */
   function openQuickCreate() {
+    console.log('[openQuickCreate] Fonksiyon çağrıldı');
+    mobileDebug('🚀 Quick Create açılıyor...', 'info');
+    
     const $ = (s, r=document)=>r.querySelector(s);
 
     const ov   = $('#quickCreate');
     const step = (name) => $(`.qc-step[data-step="${name}"]`, ov);
+    
+    console.log('[openQuickCreate] Overlay element:', ov);
+    if (!ov) {
+      console.error('[openQuickCreate] #quickCreate bulunamadı!');
+      mobileDebug('❌ quickCreate bulunamadı!', 'error');
+    }
 
     const sPlace      = step('place');
     const sPetsYN     = step('pets-yn');
