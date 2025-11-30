@@ -1593,8 +1593,8 @@
         }
       });
       
-      // Update usage bars
-      if (planLimits && usage) {
+      // Update usage bars - show REMAINING quota (not used)
+      if (planLimits) {
         const storiesBar = document.getElementById('freeStoriesBar');
         const storiesText = document.getElementById('freeStoriesText');
         const imageStoriesBar = document.getElementById('imageStoriesBar');
@@ -1602,48 +1602,55 @@
         const voicesBar = document.getElementById('freeVoicesBar');
         const voicesText = document.getElementById('freeVoicesText');
         
-        // Text stories usage
+        // Text stories - show remaining
         if (storiesBar && storiesText && planLimits.textStories) {
-          const percent = (usage.textStoriesUsed / planLimits.textStories) * 100;
-          storiesBar.style.width = Math.min(100, percent) + '%';
-          storiesText.textContent = `${usage.textStoriesUsed} of ${planLimits.textStories} text stories`;
+          const remainingStories = remaining.textStories ?? planLimits.textStories;
+          const percentRemaining = (remainingStories / planLimits.textStories) * 100;
+          storiesBar.style.width = percentRemaining + '%';
+          storiesText.textContent = `${remainingStories} text stories remaining`;
           
-          // Change color if near limit
-          if (percent >= 90) {
+          // Change color if running low
+          if (percentRemaining <= 10) {
             storiesBar.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
-          } else if (percent >= 70) {
+          } else if (percentRemaining <= 30) {
             storiesBar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+          } else {
+            storiesBar.style.background = 'linear-gradient(90deg, var(--plum), var(--mauve))';
           }
         }
         
-        // Image stories usage
+        // Image stories - show remaining
         if (imageStoriesBar && imageStoriesText && planLimits.imageStories !== undefined) {
           if (planLimits.imageStories === 0) {
             imageStoriesBar.style.width = '0%';
-            imageStoriesText.textContent = 'Image stories not available on this plan';
+            imageStoriesText.textContent = 'Upgrade for image stories';
           } else {
-            const percent = (usage.imageStoriesUsed / planLimits.imageStories) * 100;
-            imageStoriesBar.style.width = Math.min(100, percent) + '%';
-            imageStoriesText.textContent = `${usage.imageStoriesUsed} of ${planLimits.imageStories} image stories`;
+            const remainingImages = remaining.imageStories ?? planLimits.imageStories;
+            const percentRemaining = (remainingImages / planLimits.imageStories) * 100;
+            imageStoriesBar.style.width = percentRemaining + '%';
+            imageStoriesText.textContent = `${remainingImages} image story remaining`;
             
-            // Change color if near limit
-            if (percent >= 90) {
+            // Change color if running low
+            if (percentRemaining <= 10) {
               imageStoriesBar.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
-            } else if (percent >= 70) {
+            } else if (percentRemaining <= 30) {
               imageStoriesBar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+            } else {
+              imageStoriesBar.style.background = 'linear-gradient(90deg, var(--plum), var(--mauve))';
             }
           }
         }
         
-        // Voice clones usage
+        // Voice clones - show remaining
         if (voicesBar && voicesText && planLimits.voiceClones !== undefined) {
           if (planLimits.voiceClones === 0) {
             voicesBar.style.width = '0%';
-            voicesText.textContent = 'Voice cloning not available on this plan';
+            voicesText.textContent = 'Upgrade for voice cloning';
           } else {
-            const percent = (usage.voiceClonesUsed / planLimits.voiceClones) * 100;
-            voicesBar.style.width = Math.min(100, percent) + '%';
-            voicesText.textContent = `${usage.voiceClonesUsed} of ${planLimits.voiceClones} voice clones`;
+            const remainingVoices = remaining.voiceClones ?? planLimits.voiceClones;
+            const percentRemaining = (remainingVoices / planLimits.voiceClones) * 100;
+            voicesBar.style.width = percentRemaining + '%';
+            voicesText.textContent = `${remainingVoices} voice clones remaining`;
           }
         }
       }
