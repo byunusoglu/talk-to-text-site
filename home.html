@@ -457,19 +457,24 @@
         
         <!-- Usage tracking -->
         <div class="usage-bar">
-          <div class="usage-bar-fill" id="freeStoriesBar"></div>
+          <div class="usage-bar-fill" id="freeStoriesBar" style="width: 0%"></div>
         </div>
-        <div class="usage-text" id="freeStoriesText">0 of 2 stories created this month</div>
+        <div class="usage-text" id="freeStoriesText">Loading...</div>
 
         <div class="usage-bar">
-          <div class="usage-bar-fill" id="freeVoicesBar"></div>
+          <div class="usage-bar-fill" id="imageStoriesBar" style="width: 0%"></div>
         </div>
-        <div class="usage-text" id="freeVoicesText">0 of 2 voiceovers used</div>
+        <div class="usage-text" id="imageStoriesText">Loading...</div>
+
+        <div class="usage-bar">
+          <div class="usage-bar-fill" id="freeVoicesBar" style="width: 0%"></div>
+        </div>
+        <div class="usage-text" id="freeVoicesText">Loading...</div>
 
         <ul>
-          <li>Create <b>2 stories</b> / month</li>
-          <li><b>2 voiceovers</b> / month</li>
-          <li><b>2 voice options</b></li>
+          <li><b>10 text stories</b> / month</li>
+          <li><b>1 image story</b> / month</li>
+          <li><b>No voice cloning</b></li>
         </ul>
         <button class="btn ghost" disabled>Current plan</button>
       </article>
@@ -479,11 +484,10 @@
         <h3>Plus</h3>
         <div class="price">£4.99 / month</div>
         <ul>
-          <li><b>15 stories</b> / month</li>
-          <li><b>10 voiceovers</b> / month</li>
-          <li><b>5 voice options</b></li>
-          <li><b>1 voice cloning</b></li>
-          <li><b>Basic customization</b></li>
+          <li><b>50 text stories</b> / month</li>
+          <li><b>20 image stories</b> / month</li>
+          <li><b>5 voice clones</b></li>
+          <li><b>Priority support</b></li>
         </ul>
         <button class="btn" data-upgrade="plus">Upgrade to Plus</button>
       </article>
@@ -494,10 +498,10 @@
         <h3>Premium</h3>
         <div class="price">£9.99 / month</div>
         <ul>
-          <li><b>50 stories</b> / month</li>
-          <li><b>30 voiceovers</b> / month</li>
-          <li><b>10 voice options</b></li>
-          <li><b>3 voice cloning</b></li>
+          <li><b>200 text stories</b> / month</li>
+          <li><b>100 image stories</b> / month</li>
+          <li><b>20 voice clones</b></li>
+          <li><b>Priority support</b></li>
           <li><b>Advanced customization</b></li>
         </ul>
         <button class="btn" data-upgrade="premium">Go Premium</button>
@@ -508,10 +512,9 @@
         <h3>Infinite</h3>
         <div class="price">£19.99 / month</div>
         <ul>
-          <li><b>Unlimited</b> stories</li>
-          <li><b>Unlimited</b> voiceovers</li>
-          <li><b>All voice options</b></li>
-          <li><b>Unlimited voice cloning</b></li>
+          <li><b>Unlimited</b> text stories</li>
+          <li><b>Unlimited</b> image stories</li>
+          <li><b>Unlimited</b> voice clones</li>
           <li><b>Priority support</b></li>
           <li><b>Early access features</b></li>
         </ul>
@@ -1543,19 +1546,114 @@
         if (!token) return;
         
         const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const API_BASE = 'https://storyai-backend-production.up.railway.app/api/v1';
         
-        const res = await fetch(`${PAYMENT_API_BASE}/my-subscription`, {
+        const res = await fetch(`${API_BASE}/users/subscription-info`, {
           credentials: 'include',
           headers: headers
         });
         
         const data = await res.json();
+        console.log('[Subscription] Loaded subscription info:', data);
         
         if (data.status === 'success' && data.data) {
-          updateSubscriptionUI(data.data);
+          updateSubscriptionUIFromInfo(data.data);
         }
       } catch (error) {
         console.error('Failed to load subscription status:', error);
+      }
+    }
+    
+    // Update UI with subscription-info response
+    function updateSubscriptionUIFromInfo(info) {
+      if (!info) return;
+      
+      const { subscriptionPlan, planLimits, usage, remaining, walletBalance } = info;
+      
+      console.log('[Subscription] Updating UI with:', { subscriptionPlan, planLimits, usage, remaining });
+      
+      // Update plan cards to show current plan
+      document.querySelectorAll('.plan-card').forEach(card => {
+        const cardPlan = card.getAttribute('data-plan');
+        const btn = card.querySelector('.btn');
+        
+        if (cardPlan === subscriptionPlan) {
+          // This is the current plan
+          if (btn) {
+            btn.textContent = 'Current Plan';
+            btn.disabled = true;
+            btn.classList.add('ghost');
+          }
+          // Add visual indicator
+          card.style.border = '2px solid var(--plum)';
+        } else if (btn && btn.hasAttribute('data-upgrade')) {
+          // Reset other plan buttons
+          btn.disabled = false;
+          btn.classList.remove('ghost');
+        }
+      });
+      
+      // Update usage bars
+      if (planLimits && usage) {
+        const storiesBar = document.getElementById('freeStoriesBar');
+        const storiesText = document.getElementById('freeStoriesText');
+        const imageStoriesBar = document.getElementById('imageStoriesBar');
+        const imageStoriesText = document.getElementById('imageStoriesText');
+        const voicesBar = document.getElementById('freeVoicesBar');
+        const voicesText = document.getElementById('freeVoicesText');
+        
+        // Text stories usage
+        if (storiesBar && storiesText && planLimits.textStories) {
+          const percent = (usage.textStoriesUsed / planLimits.textStories) * 100;
+          storiesBar.style.width = Math.min(100, percent) + '%';
+          storiesText.textContent = `${usage.textStoriesUsed} of ${planLimits.textStories} text stories`;
+          
+          // Change color if near limit
+          if (percent >= 90) {
+            storiesBar.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+          } else if (percent >= 70) {
+            storiesBar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+          }
+        }
+        
+        // Image stories usage
+        if (imageStoriesBar && imageStoriesText && planLimits.imageStories !== undefined) {
+          if (planLimits.imageStories === 0) {
+            imageStoriesBar.style.width = '0%';
+            imageStoriesText.textContent = 'Image stories not available on this plan';
+          } else {
+            const percent = (usage.imageStoriesUsed / planLimits.imageStories) * 100;
+            imageStoriesBar.style.width = Math.min(100, percent) + '%';
+            imageStoriesText.textContent = `${usage.imageStoriesUsed} of ${planLimits.imageStories} image stories`;
+            
+            // Change color if near limit
+            if (percent >= 90) {
+              imageStoriesBar.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+            } else if (percent >= 70) {
+              imageStoriesBar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+            }
+          }
+        }
+        
+        // Voice clones usage
+        if (voicesBar && voicesText && planLimits.voiceClones !== undefined) {
+          if (planLimits.voiceClones === 0) {
+            voicesBar.style.width = '0%';
+            voicesText.textContent = 'Voice cloning not available on this plan';
+          } else {
+            const percent = (usage.voiceClonesUsed / planLimits.voiceClones) * 100;
+            voicesBar.style.width = Math.min(100, percent) + '%';
+            voicesText.textContent = `${usage.voiceClonesUsed} of ${planLimits.voiceClones} voice clones`;
+          }
+        }
+      }
+      
+      // Show wallet balance if available
+      if (walletBalance !== undefined) {
+        const walletEl = document.getElementById('walletBalance');
+        if (walletEl) {
+          walletEl.textContent = `${walletBalance} coins`;
+        }
       }
     }
 
