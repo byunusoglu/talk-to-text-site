@@ -449,11 +449,35 @@
     <h2>Grow the magic</h2>
     <p class="formats-sub">Choose the plan that fits your family's bedtime rhythm.</p>
 
+    <!-- Billing Toggle -->
+    <div class="billing-toggle" style="display: flex; justify-content: center; gap: 8px; margin-bottom: 32px;">
+      <button id="monthlyBtn" class="billing-btn active" data-interval="monthly" style="
+        padding: 10px 24px;
+        border-radius: 999px;
+        border: 2px solid #8E44EC;
+        background: #8E44EC;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      ">Monthly</button>
+      <button id="yearlyBtn" class="billing-btn" data-interval="yearly" style="
+        padding: 10px 24px;
+        border-radius: 999px;
+        border: 2px solid #8E44EC;
+        background: transparent;
+        color: #8E44EC;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      ">Yearly <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 999px; font-size: 11px; margin-left: 4px;">Save 20%</span></button>
+    </div>
+
     <div class="plans-grid">
       <!-- Basic (Free) -->
       <article class="plan-card basic" data-plan="basic">
         <h3>Basic</h3>
-        <div class="price">£0 / month</div>
+        <div class="price" data-monthly="£0" data-yearly="£0">£0 <span class="price-period">/ month</span></div>
         
         <!-- Usage tracking -->
         <div class="usage-bar">
@@ -482,7 +506,7 @@
       <!-- Plus -->
       <article class="plan-card plus" data-plan="plus">
         <h3>Plus</h3>
-        <div class="price">£4.99 / month</div>
+        <div class="price" data-monthly="£4.99" data-yearly="£47.90">£4.99 <span class="price-period">/ month</span></div>
         <ul>
           <li><b>50 text stories</b> / month</li>
           <li><b>20 image stories</b> / month</li>
@@ -496,7 +520,7 @@
       <article class="plan-card premium" data-plan="premium">
         <div class="ribbon">⭐ Most loved</div>
         <h3>Premium</h3>
-        <div class="price">£9.99 / month</div>
+        <div class="price" data-monthly="£9.99" data-yearly="£95.90">£9.99 <span class="price-period">/ month</span></div>
         <ul>
           <li><b>200 text stories</b> / month</li>
           <li><b>100 image stories</b> / month</li>
@@ -510,7 +534,7 @@
       <!-- Infinite -->
       <article class="plan-card infinite" data-plan="infinite">
         <h3>Infinite</h3>
-        <div class="price">£19.99 / month</div>
+        <div class="price" data-monthly="£19.99" data-yearly="£191.90">£19.99 <span class="price-period">/ month</span></div>
         <ul>
           <li><b>Unlimited</b> text stories</li>
           <li><b>Unlimited</b> image stories</li>
@@ -1217,7 +1241,7 @@
           // Store that we're expecting a subscription callback
           try {
             sessionStorage.setItem('yw_pending_subscription', JSON.stringify({
-              plan: apiPlan,
+              plan: plan,
               interval: interval,
               startedAt: Date.now()
             }));
@@ -1638,7 +1662,58 @@
       }
     }
 
-    // Upgrade button handler
+    // ========================================
+    // BILLING TOGGLE (Monthly/Yearly)
+    // ========================================
+    let currentBillingInterval = 'monthly';
+    
+    function updatePriceDisplay(interval) {
+      currentBillingInterval = interval;
+      
+      // Update toggle buttons
+      const monthlyBtn = document.getElementById('monthlyBtn');
+      const yearlyBtn = document.getElementById('yearlyBtn');
+      
+      if (interval === 'monthly') {
+        monthlyBtn.style.background = '#8E44EC';
+        monthlyBtn.style.color = 'white';
+        yearlyBtn.style.background = 'transparent';
+        yearlyBtn.style.color = '#8E44EC';
+      } else {
+        yearlyBtn.style.background = '#8E44EC';
+        yearlyBtn.style.color = 'white';
+        monthlyBtn.style.background = 'transparent';
+        monthlyBtn.style.color = '#8E44EC';
+      }
+      
+      // Update prices on cards
+      document.querySelectorAll('.plan-card .price').forEach(priceEl => {
+        const monthlyPrice = priceEl.getAttribute('data-monthly');
+        const yearlyPrice = priceEl.getAttribute('data-yearly');
+        const periodSpan = priceEl.querySelector('.price-period');
+        
+        if (interval === 'monthly') {
+          priceEl.childNodes[0].textContent = monthlyPrice + ' ';
+          if (periodSpan) periodSpan.textContent = '/ month';
+        } else {
+          priceEl.childNodes[0].textContent = yearlyPrice + ' ';
+          if (periodSpan) periodSpan.textContent = '/ year';
+        }
+      });
+    }
+    
+    // Initialize billing toggle
+    const monthlyBtn = document.getElementById('monthlyBtn');
+    const yearlyBtn = document.getElementById('yearlyBtn');
+    
+    if (monthlyBtn) {
+      monthlyBtn.addEventListener('click', () => updatePriceDisplay('monthly'));
+    }
+    if (yearlyBtn) {
+      yearlyBtn.addEventListener('click', () => updatePriceDisplay('yearly'));
+    }
+
+    // Upgrade button handler - uses current billing interval
     function goUpgrade(tier) {
       // Check if user is logged in
       const token = localStorage.getItem('yw_jwt_token');
@@ -1648,7 +1723,7 @@
         return;
       }
       
-      startCheckout(tier, 'monthly');
+      startCheckout(tier, currentBillingInterval);
     }
     
     document.querySelectorAll('[data-upgrade]').forEach(btn => {
