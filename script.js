@@ -72,7 +72,7 @@
   --------------------------------------------- */
   const API_BASE = "https://storyai-backend-production.up.railway.app/api/v1";
   // Partner story generation endpoints
-  const API_GUEST_GENERATE = `${API_BASE}/stories/generate`;
+  const API_GUEST_GENERATE = `${API_BASE}/stories/guest-generate`;
   const API_AUTH_GENERATE = `${API_BASE}/stories/generate`; // For authenticated users
   const API_JOB = (jobId) => `${API_BASE}/jobs/${jobId}`; // Use authenticated endpoint
   const API_GUEST_JOB = (jobId) => `${API_BASE}/jobs/guest/${jobId}`; // Keep for backward compatibility
