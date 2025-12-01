@@ -2250,6 +2250,13 @@ if (!html && !md && !pending && teaser) {
       };
       try { sessionStorage.setItem(K_GUEST_PAYLOAD, JSON.stringify(guestPayload)); } catch (_) {}
 
+      // Clear old story data so checkout triggers fresh generation
+      try { 
+        sessionStorage.removeItem(K_STORY_HTML); 
+        sessionStorage.removeItem(K_STORY_MD);
+        sessionStorage.removeItem('yw_story_teaser');
+      } catch (_) {}
+
       document.body.classList.add("fade-out");
       setTimeout(()=>{ window.location.href = "checkout.html"; }, 100);
     });
